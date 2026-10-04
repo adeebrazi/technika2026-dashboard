@@ -8,7 +8,8 @@ import {
 import {
   ClipboardList, Building2, Users, GraduationCap,
   ArrowUpRight, RefreshCw, Download, Sparkles,
-  Info, LogOut, Cpu, Palette, Calendar, Terminal
+  Info, LogOut, Cpu, Palette, Calendar, Terminal,
+  Lock
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
 
@@ -71,6 +72,27 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
+
+  const [adminAuth, setAdminAuth] = useState(() => ({
+    token: localStorage.getItem('adminToken'),
+    role: localStorage.getItem('adminRole'),
+    name: localStorage.getItem('adminName') || 'Administrator',
+    designation: localStorage.getItem('adminDesignation') || 'Admin'
+  }));
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminRole');
+    localStorage.removeItem('adminName');
+    localStorage.removeItem('adminDesignation');
+    setAdminAuth({
+      token: null,
+      role: null,
+      name: 'Administrator',
+      designation: 'Admin'
+    });
+    if (onLogout) onLogout();
+  };
 
   const fetchAnalytics = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
@@ -392,20 +414,49 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             <span className="clay-status-text">Registration analytics</span>
           </div>
 
-          {/* User Initials Bubble */}
-          <div className="clay-avatar-bubble" title="Admin Workspace">
-            AJ
-          </div>
-
-          {/* Optional Logout */}
-          {onLogout && (
+          {/* Admin / Login Portal (Replaces old AJ avatar bubble) */}
+          {adminAuth.token ? (
+            <div className="clay-auth-group">
+              <button 
+                onClick={() => navigate('/admin/users')}
+                className="clay-portal-user-btn"
+                title="Go to Admin Workspace"
+              >
+                <div className="clay-portal-avatar">
+                  {adminAuth.name
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((n: string) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase() || 'AD'}
+                </div>
+                <div className="clay-portal-meta">
+                  <span className="clay-portal-user-name">{adminAuth.name}</span>
+                  <span className="clay-portal-user-role">{adminAuth.designation}</span>
+                </div>
+                <span className="clay-portal-workspace-tag">Portal →</span>
+              </button>
+              <button 
+                onClick={handleAdminLogout} 
+                className="clay-logout-btn" 
+                title="Log out of Admin Portal"
+              >
+                <LogOut size={14} />
+                <span>Logout</span>
+              </button>
+            </div>
+          ) : (
             <button 
-              onClick={onLogout} 
-              className="clay-logout-btn" 
-              title="Sign Out of Dashboard"
+              onClick={() => navigate('/admin/login')}
+              className="clay-login-portal-btn"
+              title="Access Admin & Organizer Portal"
             >
-              <LogOut size={16} />
-              <span>Logout</span>
+              <div className="clay-portal-icon-box">
+                <Lock size={13} />
+              </div>
+              <span className="clay-login-portal-text">Login Portal</span>
+              <span className="clay-portal-badge">Admin</span>
             </button>
           )}
         </div>
@@ -1313,29 +1364,156 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           color: #94a3b8;
         }
 
-        .clay-avatar-bubble {
+        /* ── Login Portal & Auth Group ── */
+        .clay-auth-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .clay-login-portal-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 6px 14px 6px 8px;
+          border-radius: 9999px;
+          background: linear-gradient(135deg, #1e293b 0%, #111827 100%);
+          border: 1px solid rgba(251, 191, 36, 0.35);
+          color: #f1f5f9;
+          font-family: inherit;
+          cursor: pointer;
+          box-shadow: 
+            5px 5px 14px rgba(0, 0, 0, 0.45),
+            -2px -2px 6px rgba(255, 255, 255, 0.05),
+            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.12),
+            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+          transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-login-portal-btn:hover {
+          transform: translateY(-2px);
+          border-color: rgba(251, 191, 36, 0.7);
+          box-shadow: 
+            0 8px 20px rgba(251, 191, 36, 0.22),
+            5px 5px 14px rgba(0, 0, 0, 0.45),
+            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.18);
+        }
+
+        .clay-login-portal-btn:active {
+          transform: translateY(1px);
+        }
+
+        .clay-portal-icon-box {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 40px;
-          height: 40px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
-          background: #141c2e;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          color: #fbbf24;
-          font-weight: 700;
-          font-size: 13px;
+          background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+          color: #0f172a;
           box-shadow: 
-            4px 4px 12px rgba(0, 0, 0, 0.5),
-            -2px -2px 6px rgba(255, 255, 255, 0.04),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.12),
-            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
-          cursor: pointer;
-          transition: transform 0.2s ease;
+            2px 2px 6px rgba(0, 0, 0, 0.35),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.6);
+          flex-shrink: 0;
         }
 
-        .clay-avatar-bubble:hover {
-          transform: scale(1.05);
+        .clay-login-portal-text {
+          font-size: 12.5px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          color: #f8fafc;
+        }
+
+        .clay-portal-badge {
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          padding: 2px 7px;
+          border-radius: 6px;
+          background: rgba(251, 191, 36, 0.15);
+          color: #fbbf24;
+          border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .clay-portal-user-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 5px 12px 5px 6px;
+          border-radius: 9999px;
+          background: #192238;
+          border: 1px solid rgba(59, 130, 246, 0.35);
+          color: #f8fafc;
+          font-family: inherit;
+          cursor: pointer;
+          box-shadow: 
+            4px 4px 12px rgba(0, 0, 0, 0.45),
+            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.08),
+            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+          transition: all 0.2s ease;
+        }
+
+        .clay-portal-user-btn:hover {
+          transform: translateY(-1px);
+          border-color: rgba(59, 130, 246, 0.65);
+          box-shadow: 
+            0 6px 18px rgba(59, 130, 246, 0.25),
+            4px 4px 12px rgba(0, 0, 0, 0.45);
+        }
+
+        .clay-portal-avatar {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 800;
+          box-shadow: 
+            2px 2px 6px rgba(0,0,0,0.3),
+            inset 1px 1px 2px rgba(255,255,255,0.4);
+        }
+
+        .clay-portal-meta {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          line-height: 1.2;
+          text-align: left;
+        }
+
+        .clay-portal-user-name {
+          font-size: 12px;
+          font-weight: 700;
+          color: #f8fafc;
+          max-width: 110px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .clay-portal-user-role {
+          font-size: 10px;
+          font-weight: 600;
+          color: #60a5fa;
+          max-width: 110px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .clay-portal-workspace-tag {
+          font-size: 10px;
+          font-weight: 700;
+          color: #93c5fd;
+          padding: 2px 6px;
+          border-radius: 6px;
+          background: rgba(59, 130, 246, 0.15);
         }
 
         .clay-logout-btn {
