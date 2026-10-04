@@ -5,8 +5,9 @@ import {
   CheckCircle2, RefreshCw, Clock, ArrowUpRight,
   ExternalLink, Layers, Wifi, Terminal, ShieldCheck,
   FileSpreadsheet, Cpu, BarChart3, ChevronRight,
-  Play, Check, Copy
+  Play, Check, Copy, Lock
 } from 'lucide-react';
+import { DeveloperPinGuard } from '../components/DeveloperPinGuard';
 
 const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://reg.technika2026.online');
 
@@ -44,6 +45,9 @@ interface PipelineNode {
 
 export const DeveloperDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    return sessionStorage.getItem('dev_dashboard_unlocked') === '2207';
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -283,6 +287,7 @@ export const DeveloperDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!isUnlocked) return;
     probeSystem();
     addLog('INFO', 'Developer Dashboard initialized. 3 servers & 5 pipelines connected.');
 
@@ -293,7 +298,7 @@ export const DeveloperDashboard: React.FC = () => {
       }, 15000);
     }
     return () => clearInterval(interval);
-  }, [autoRefresh]);
+  }, [autoRefresh, isUnlocked]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -302,6 +307,17 @@ export const DeveloperDashboard: React.FC = () => {
   };
 
   const selectedPipeDetails = pipelines.find(p => p.id === selectedNode) || pipelines[0];
+
+  if (!isUnlocked) {
+    return (
+      <DeveloperPinGuard
+        onSuccess={() => {
+          sessionStorage.setItem('dev_dashboard_unlocked', '2207');
+          setIsUnlocked(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="dev-wrapper">
@@ -365,6 +381,18 @@ export const DeveloperDashboard: React.FC = () => {
           >
             <RefreshCw size={16} className={isRefreshing ? 'dev-spin' : ''} />
             <span>Probe Systems</span>
+          </button>
+
+          <button
+            className="dev-lock-btn"
+            onClick={() => {
+              sessionStorage.removeItem('dev_dashboard_unlocked');
+              setIsUnlocked(false);
+            }}
+            title="Lock Developer Dashboard"
+          >
+            <Lock size={14} />
+            <span>Lock Console</span>
           </button>
         </div>
       </header>
@@ -1841,6 +1869,28 @@ export const DeveloperDashboard: React.FC = () => {
         .dev-term-run-btn:hover {
           background: rgba(245, 158, 11, 0.3);
           color: #ffffff;
+        }
+
+        .dev-lock-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          background: rgba(239, 68, 68, 0.12);
+          border: 1.5px solid rgba(239, 68, 68, 0.35);
+          border-radius: 14px;
+          color: #f87171;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .dev-lock-btn:hover {
+          background: rgba(239, 68, 68, 0.25);
+          border-color: #ef4444;
+          color: #ffffff;
+          transform: translateY(-1px);
         }
 
         /* ── Responsiveness ── */
