@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -7,7 +8,7 @@ import {
 import {
   ClipboardList, Building2, Users, GraduationCap,
   ArrowUpRight, RefreshCw, Download, Sparkles,
-  Info, LogOut, Cpu, Palette, Calendar
+  Info, LogOut, Cpu, Palette, Calendar, Terminal
 } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://reg.technika2026.online');
@@ -64,6 +65,7 @@ function useAnimatedCounter(target: number, duration = 1000): number {
 }
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
+  const navigate = useNavigate();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -315,6 +317,66 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
           <div className="clay-nav-brand">
             Technika <span className="clay-brand-cyan">6.0</span>
+          </div>
+        </div>
+
+        <div className="clay-nav-center" style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{
+            display: 'flex',
+            background: 'rgba(30, 41, 59, 0.75)',
+            border: '1.5px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px',
+            padding: '4px',
+            gap: '4px',
+            boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.3)'
+          }}>
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 14px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 800,
+                color: '#ffffff',
+                background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.25) 0%, rgba(14, 165, 233, 0.2) 100%)',
+                border: '1px solid rgba(34, 211, 238, 0.4)',
+                cursor: 'pointer',
+                boxShadow: '0 4px 10px rgba(34, 211, 238, 0.15)'
+              }}
+            >
+              <span>Registration Analytics</span>
+            </button>
+            <button
+              onClick={() => navigate('/developer')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 14px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#94a3b8',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#94a3b8';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <Terminal size={14} style={{ color: '#22d3ee' }} />
+              <span>Developer Dashboard</span>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 6px #22d3ee' }} />
+            </button>
           </div>
         </div>
 
