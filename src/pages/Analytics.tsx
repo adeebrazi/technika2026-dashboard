@@ -475,7 +475,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         <section className="clay-hero-section">
           <div className="clay-hero-left">
             <div className="clay-breadcrumb">
-              TECHNIKA 6.0 &nbsp;/&nbsp; ANALYTICS WORKSPACE
+              TECHNIKA 6.0 &nbsp;/&nbsp; REGISTRATION DASHBOARD
             </div>
             <h1 className="clay-hero-heading">
               Registration overview<span className="clay-period">.</span>
@@ -688,8 +688,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           <div className="clay-card clay-age-card">
             <div className="clay-card-header-row">
               <div>
-                <h2 className="clay-card-serif-title">Age category analytics</h2>
-                <p className="clay-card-subtitle">Demographic cohorts &amp; participant age distribution</p>
+                <h2 className="clay-card-serif-title">Age breakdown</h2>
+                <p className="clay-card-subtitle">Participant age groups &amp; distribution</p>
               </div>
               <div className="clay-badge-pill clay-badge-cyan">
                 Avg: {averageAge} yrs
@@ -702,10 +702,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 const colors = ['fill-emerald', 'fill-cyan', 'fill-amber', 'fill-purple'];
                 const badgeColors = ['badge-emerald', 'badge-cyan', 'badge-amber', 'badge-purple'];
                 const subLabels = [
-                  'High school & young prodigies',
-                  'Core collegiate undergraduate bracket',
-                  'Senior collegiate & graduating seniors',
-                  'Postgraduate, research & adult participants'
+                  'School students (Under 18)',
+                  'College students (18–20)',
+                  'Senior students (21–23)',
+                  'Postgraduates & older (24+)'
                 ];
                 return (
                   <div key={idx} className="clay-age-cohort-card">
@@ -714,7 +714,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                         <span className={`clay-age-badge ${badgeColors[idx % 4]}`}>
                           {item.category}
                         </span>
-                        <span className="clay-age-sublabel">{subLabels[idx] || 'Participant cohort'}</span>
+                        <span className="clay-age-sublabel">{subLabels[idx] || 'Age group'}</span>
                       </div>
                       <div className="clay-age-cohort-nums">
                         <span className="clay-age-count">{item.count}</span>
@@ -740,13 +740,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 <Calendar size={18} />
               </div>
               <div className="clay-age-insight-text">
-                <span className="clay-age-insight-title">Collegiate Core:</span> Average participant age is <strong className="clay-brand-cyan">{averageAge} years</strong>, heavily centered in the 18–20 undergraduate bracket.
+                <span className="clay-age-insight-title">Key Insight:</span> Average participant age is <strong className="clay-brand-cyan">{averageAge} years</strong>, mostly college students aged 18–20.
               </div>
             </div>
 
             <div className="clay-card-footer-info">
               <Info size={14} className="clay-info-icon" />
-              <span>Real-time age telemetry captured during portal registration.</span>
+              <span>Live age details calculated from participant registrations.</span>
             </div>
           </div>
         </section>
@@ -1218,8 +1218,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               <Info size={14} className="clay-info-icon" />
               <span>
                 {data?.dailyTrend?.length && data.dailyTrend.length > 1
-                  ? 'Real-time timeline synced from central registry.'
-                  : 'One recorded day. Data not provided in the source.'}
+                  ? 'Live registrations timeline updated automatically.'
+                  : 'Registrations recorded for today.'}
               </span>
             </div>
           </div>
@@ -1231,7 +1231,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             Arka Jain University &nbsp;/&nbsp; Technika 6.0
           </div>
           <div className="clay-foot-right">
-            Registration analytics &nbsp;·&nbsp; Reference snapshot
+            Technika 6.0 &nbsp;·&nbsp; Official Registration Dashboard
           </div>
         </footer>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, RefreshCw, AlertCircle, Sparkles, Activity } from 'lucide-react';
+import { BarChart3, RefreshCw, AlertCircle, Sparkles, Activity } from 'lucide-react';
 
 interface AnalyticsLoaderProps {
   error?: string;
@@ -8,11 +8,11 @@ interface AnalyticsLoaderProps {
 }
 
 const LOADING_STEPS = [
-  'Connecting to Technika 6.0 Telemetry Gateway...',
-  'Querying MongoDB Atlas Cluster (ap-south-1)...',
-  'Synthesizing Event Popularity & Demographic Cohorts...',
-  'Synchronizing Real-time Institutional Registrations...',
-  'Preparing Executive Claymorphism Workspace...'
+  'Connecting to Technika 6.0 registration portal...',
+  'Fetching latest participant numbers...',
+  'Organizing college & event statistics...',
+  'Preparing charts and festival insights...',
+  'Almost ready! Opening your dashboard...'
 ];
 
 export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
@@ -88,7 +88,7 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
               {error ? (
                 <AlertCircle size={32} className="text-red" />
               ) : (
-                <Cpu size={32} className="al-cpu-icon" />
+                <BarChart3 size={32} className="al-chart-icon" />
               )}
             </div>
           </div>
@@ -98,19 +98,19 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
         <div className="al-status-section">
           {error ? (
             <div className="al-error-box">
-              <div className="al-error-title">Telemetry Connection Notice</div>
+              <div className="al-error-title">Unable to Load Data</div>
               <div className="al-error-msg">{error}</div>
               <div className="al-actions-row">
                 {onRetry && (
                   <button className="al-retry-btn" onClick={onRetry}>
                     <RefreshCw size={14} />
-                    <span>Retry Connection</span>
+                    <span>Try Again</span>
                   </button>
                 )}
                 {onLoadFallback && (
                   <button className="al-preview-btn" onClick={onLoadFallback}>
                     <Sparkles size={14} />
-                    <span>Open Analytics Workspace</span>
+                    <span>View Dashboard</span>
                   </button>
                 )}
               </div>
@@ -118,7 +118,7 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
           ) : (
             <>
               <div className="al-loading-title-row">
-                <h3 className="al-loading-title">Initializing Analytics Workspace</h3>
+                <h3 className="al-loading-title">Loading Technika Dashboard</h3>
                 <span className="al-percent-pill">{progress}%</span>
               </div>
 
@@ -139,17 +139,17 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
               {/* If taking longer than expected */}
               {tookLong && (
                 <div className="al-took-long-box">
-                  <span>Server taking a few seconds to wake up?</span>
+                  <span>Taking a few seconds to load...</span>
                   <div className="al-took-long-actions">
                     {onRetry && (
                       <button className="al-mini-btn" onClick={onRetry}>
                         <RefreshCw size={12} />
-                        <span>Force Refresh</span>
+                        <span>Refresh</span>
                       </button>
                     )}
                     {onLoadFallback && (
                       <button className="al-mini-btn al-mini-accent" onClick={onLoadFallback}>
-                        <span>Continue to Workspace &rarr;</span>
+                        <span>Continue to Dashboard &rarr;</span>
                       </button>
                     )}
                   </div>
@@ -159,17 +159,17 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
           )}
         </div>
 
-        {/* Footer Security Badges */}
+        {/* Footer Badges in simple terms */}
         <div className="al-footer">
           <div className="al-pill">
             <span className="al-pulse-dot" />
-            <span>LIVE REST API</span>
+            <span>LIVE REGISTRATIONS</span>
           </div>
           <div className="al-pill">
-            <span>MONGODB ATLAS SYNC</span>
+            <span>REAL-TIME STATS</span>
           </div>
           <div className="al-pill">
-            <span>TLS 1.3 ENCRYPTED</span>
+            <span>OFFICIAL PORTAL</span>
           </div>
         </div>
 
@@ -386,6 +386,7 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
           z-index: 2;
         }
 
+        .al-chart-icon,
         .al-cpu-icon {
           color: #22d3ee;
           filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.8));
