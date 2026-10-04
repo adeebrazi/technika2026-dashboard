@@ -45,9 +45,14 @@ interface PipelineNode {
 
 export const DeveloperDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
-    return sessionStorage.getItem('dev_dashboard_unlocked') === '2207';
-  });
+  // Strictly require PIN 2207 on every page load, refresh, or back navigation (no persistent storage)
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+
+  useEffect(() => {
+    sessionStorage.removeItem('dev_dashboard_unlocked');
+    localStorage.removeItem('dev_dashboard_unlocked');
+  }, []);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -312,7 +317,6 @@ export const DeveloperDashboard: React.FC = () => {
     return (
       <DeveloperPinGuard
         onSuccess={() => {
-          sessionStorage.setItem('dev_dashboard_unlocked', '2207');
           setIsUnlocked(true);
         }}
       />
