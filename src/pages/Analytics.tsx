@@ -10,8 +10,9 @@ import {
   ArrowUpRight, RefreshCw, Download, Sparkles,
   Info, LogOut, Cpu, Palette, Calendar, Terminal
 } from 'lucide-react';
+import { AnalyticsLoader } from '../components/AnalyticsLoader';
 
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://reg.technika2026.online');
+const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
 
 interface AnalyticsData {
   totalRegistrations: number;
@@ -287,12 +288,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   if (loading) {
     return (
-      <div className="clay-loading-screen">
-        <div className="clay-spinner-box">
-          <div className="clay-spinner" />
-          <p className="clay-loading-text">Loading Technika Analytics...</p>
-        </div>
-      </div>
+      <AnalyticsLoader
+        error={error}
+        onRetry={() => {
+          setLoading(true);
+          fetchAnalytics(true);
+        }}
+        onLoadFallback={() => {
+          setLoading(false);
+        }}
+      />
     );
   }
 
