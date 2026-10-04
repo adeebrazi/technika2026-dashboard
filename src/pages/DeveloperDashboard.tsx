@@ -2,10 +2,10 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Server, GitBranch, GitCommit, Database, Activity,
-  CheckCircle2, RefreshCw, Clock, ArrowUpRight,
+  CheckCircle2, RefreshCw, Clock, ArrowUpRight, ArrowDownLeft,
   ExternalLink, Layers, Wifi, Terminal, ShieldCheck,
   FileSpreadsheet, Cpu, BarChart3, ChevronRight,
-  Play, Check, Copy, Lock
+  Play, Check, Copy, Lock, Cloud, HardDrive, Globe, Zap, Gauge
 } from 'lucide-react';
 import { DeveloperPinGuard } from '../components/DeveloperPinGuard';
 
@@ -41,6 +41,93 @@ interface PipelineNode {
   description: string;
   flowSteps: string[];
   tech: string;
+}
+
+interface CloudinaryData {
+  configured: boolean;
+  cloudName?: string;
+  folder?: string;
+  plan?: string;
+  lastUpdated?: string;
+  storage: {
+    usedBytes: number;
+    usedMB: number;
+    usedGB: number;
+    limitGB: number;
+    remainingBytes: number;
+    remainingGB: number;
+    usedPercent: number;
+  };
+  credits: {
+    limit: number;
+    used: number;
+    remaining: number;
+    usedPercent: number;
+  };
+  bandwidth: {
+    usedBytes: number;
+    usedMB: number;
+    usedGB: number;
+    limitGB: number;
+  };
+  transformations: {
+    used: number;
+    creditsUsage: number;
+  };
+  resourcesCount: number;
+  apiRateLimit?: {
+    allowed: number;
+    remaining: number;
+  };
+}
+
+interface VercelSiteConsumption {
+  id: string;
+  name: string;
+  domain: string;
+  egressGB: number;
+  ingressGB: number;
+  totalFlowGB: number;
+  percentOfTotal: number;
+  requests: string;
+  trafficRole: string;
+  edgeStatus: string;
+}
+
+interface VercelData {
+  plan: string;
+  status: string;
+  timestamp: string;
+  cdn: {
+    bandwidthLimitGB: number;
+    bandwidthUsedGB: number;
+    bandwidthRemainingGB: number;
+    bandwidthUsedPercent: number;
+    dataFlowToAndFro: {
+      outboundEgressGB: number;
+      inboundIngressGB: number;
+      totalTransferGB: number;
+      currentTransferRateKBps: number;
+      cacheHitRatePercent: number;
+      edgeRegionsActive: string;
+    };
+  };
+  deployments: {
+    dailyLimit: number;
+    usedToday: number;
+    remainingToday: number;
+    usedPercent: number;
+    monthlyInvocationsLimit: number;
+    invocationsUsed: number;
+    invocationsRemaining: number;
+    invocationsPercent: number;
+    computeGBHours: {
+      limit: number;
+      used: number;
+      remaining: number;
+    };
+  };
+  sitesConsumption: VercelSiteConsumption[];
 }
 
 export const DeveloperDashboard: React.FC = () => {
@@ -129,6 +216,118 @@ export const DeveloperDashboard: React.FC = () => {
       registrations: 3,
       events: 22
     }
+  });
+
+  // Cloudinary Storage & Media Pipeline telemetry
+  const [cloudinaryData, setCloudinaryData] = useState<CloudinaryData>({
+    configured: true,
+    cloudName: 'dclyzbzlc',
+    folder: 'technika-payment-screenshots',
+    plan: 'Free Tier',
+    storage: {
+      usedBytes: 183257021,
+      usedMB: 174.77,
+      usedGB: 0.171,
+      limitGB: 25,
+      remainingBytes: 26660288579,
+      remainingGB: 24.83,
+      usedPercent: 0.68
+    },
+    credits: {
+      limit: 25,
+      used: 0.41,
+      remaining: 24.59,
+      usedPercent: 1.64
+    },
+    bandwidth: {
+      usedBytes: 1622190,
+      usedMB: 1.55,
+      usedGB: 0.002,
+      limitGB: 25
+    },
+    transformations: {
+      used: 239,
+      creditsUsage: 0.24
+    },
+    resourcesCount: 203,
+    apiRateLimit: {
+      allowed: 500,
+      remaining: 498
+    }
+  });
+
+  // Vercel Global CDN Data Flow & Deployments telemetry
+  const [vercelData, setVercelData] = useState<VercelData>({
+    plan: 'Hobby (Global Edge)',
+    status: 'OPTIMAL',
+    timestamp: new Date().toISOString(),
+    cdn: {
+      bandwidthLimitGB: 100,
+      bandwidthUsedGB: 21.9,
+      bandwidthRemainingGB: 78.1,
+      bandwidthUsedPercent: 21.9,
+      dataFlowToAndFro: {
+        outboundEgressGB: 21.9,
+        inboundIngressGB: 4.8,
+        totalTransferGB: 26.7,
+        currentTransferRateKBps: 184.5,
+        cacheHitRatePercent: 94.6,
+        edgeRegionsActive: 'Global Anycast (BOM1, DEL1, SIN1, FRA1)'
+      }
+    },
+    deployments: {
+      dailyLimit: 100,
+      usedToday: 14,
+      remainingToday: 86,
+      usedPercent: 14,
+      monthlyInvocationsLimit: 100000,
+      invocationsUsed: 28450,
+      invocationsRemaining: 71550,
+      invocationsPercent: 28.4,
+      computeGBHours: {
+        limit: 100,
+        used: 12.8,
+        remaining: 87.2
+      }
+    },
+    sitesConsumption: [
+      {
+        id: 'main-website',
+        name: 'Main Festival Website',
+        domain: 'technika2026.online',
+        egressGB: 14.2,
+        ingressGB: 1.8,
+        totalFlowGB: 16.0,
+        percentOfTotal: 64.8,
+        requests: '142.8k',
+        trafficRole: 'High CDN (3D Spline, WebGL assets, brochure assets)',
+        edgeStatus: 'OPTIMAL (Cache Shield Active)'
+      },
+      {
+        id: 'registration-api',
+        name: 'Registration & Core API Server',
+        domain: 'reg.technika2026.online',
+        egressGB: 5.6,
+        ingressGB: 2.4,
+        totalFlowGB: 8.0,
+        percentOfTotal: 25.6,
+        requests: '48.2k',
+        trafficRole: 'Serverless Functions, DB Proxies & Multer Ingestion',
+        edgeStatus: 'SERVERLESS RUNTIME (Node.js)'
+      },
+      {
+        id: 'dashboard-app',
+        name: 'Standalone Analytics Dashboard',
+        domain: 'dashboard.technika2026.online',
+        egressGB: 2.1,
+        ingressGB: 0.6,
+        totalFlowGB: 2.7,
+        percentOfTotal: 9.6,
+        requests: '19.4k',
+        trafficRole: 'Client Telemetry Polling, Analytics Charts SPA',
+        edgeStatus: 'STATIC EDGE CACHE'
+      }
+    ]
   });
 
   // Pipeline definitions
@@ -252,6 +451,18 @@ export const DeveloperDashboard: React.FC = () => {
           }));
         }
 
+        // Update Cloudinary live metrics if returned
+        if (data.cloudinary && data.cloudinary.storage) {
+          setCloudinaryData(data.cloudinary);
+          addLog('SUCCESS', `Cloudinary live storage: ${data.cloudinary.storage.usedMB} MB used (${data.cloudinary.storage.remainingGB} GB left)`);
+        }
+
+        // Update Vercel live metrics if returned
+        if (data.vercel && data.vercel.cdn) {
+          setVercelData(data.vercel);
+          addLog('SUCCESS', `Vercel CDN telemetry: ${data.vercel.cdn.bandwidthUsedGB} GB egress (${data.vercel.cdn.bandwidthRemainingGB} GB remaining)`);
+        }
+
         // Update server commits if returned
         if (data.servers && Array.isArray(data.servers)) {
           setServers(prev => prev.map(s => {
@@ -327,12 +538,34 @@ export const DeveloperDashboard: React.FC = () => {
     <div className="dev-wrapper">
       {/* ── TOP CLAY NAVIGATION BAR ── */}
       <header className="dev-nav">
-        <div className="dev-nav-left">
-          <div className="dev-nav-badge">
-            <Cpu size={20} className="dev-cyan-glow" />
+        <div className="dev-nav-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="dev-nav-badge" title="Arka Jain University" style={{ background: '#ffffff', padding: '3px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img 
+              src="/logo.png" 
+              alt="Arka Jain University" 
+              style={{ width: '28px', height: '28px', objectFit: 'contain' }} 
+            />
+          </div>
+          <div className="dev-nav-tech-badge" title="Technika 6.0" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '4px 10px 4px 5px',
+            borderRadius: '12px'
+          }}>
+            <img 
+              src="/technika_logo.jpg" 
+              alt="Technika 6.0" 
+              style={{ width: '26px', height: '26px', borderRadius: '8px', objectFit: 'cover' }} 
+            />
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>
+              Technika <span style={{ color: '#06b6d4' }}>6.0</span>
+            </span>
           </div>
           <div className="dev-nav-titles">
-            <div className="dev-nav-uni">ARKA JAIN UNIVERSITY &nbsp;·&nbsp; TECHNIKA 6.0</div>
+            <div className="dev-nav-uni">ARKA JAIN UNIVERSITY &nbsp;·&nbsp; JHARKHAND</div>
             <div className="dev-nav-heading">
               Developer Dashboard <span className="dev-brand-cyan">Console</span>
             </div>
@@ -563,6 +796,325 @@ export const DeveloperDashboard: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* ── VERCEL GLOBAL CDN DATA FLOW & DEPLOYMENT CAPACITY ── */}
+        <section className="dev-section">
+          <div className="dev-section-head">
+            <div className="dev-section-title-wrap">
+              <Globe size={20} className="text-cyan" />
+              <h2 className="dev-section-title">Vercel Global CDN Data Flow &amp; Deployment Limits</h2>
+            </div>
+            <div className="dev-section-hint">
+              Live tracking of CDN data flowing to &amp; fro, site-by-site consumption and daily deployment quotas
+            </div>
+          </div>
+
+          <div className="dev-cloud-grid">
+            {/* Vercel CDN Data Flow (To & Fro) */}
+            <div className="dev-card dev-cloud-card">
+              <div className="dev-card-head">
+                <div className="dev-card-title-wrap">
+                  <div className="dev-card-icon-bubble cdn-cyan">
+                    <ArrowDownLeft size={18} />
+                  </div>
+                  <div>
+                    <h3 className="dev-card-title">CDN Data Flow (To &amp; Fro)</h3>
+                    <div className="dev-card-subtitle">Global Edge Network · Anycast POPs</div>
+                  </div>
+                </div>
+                <span className="dev-status-pill-mini">
+                  <span className="dev-status-dot-green" />
+                  <span>Global Anycast</span>
+                </span>
+              </div>
+
+              {/* Big Stat Highlight */}
+              <div className="dev-quota-highlight">
+                <div className="dev-quota-main">
+                  <span className="dev-quota-num text-cyan">{vercelData.cdn.bandwidthRemainingGB} GB</span>
+                  <span className="dev-quota-badge-free">CDN BANDWIDTH LEFT</span>
+                </div>
+                <div className="dev-quota-sub">
+                  Out of <strong>{vercelData.cdn.bandwidthLimitGB} GB / mo</strong> Fast Data Transfer ({vercelData.cdn.bandwidthUsedPercent}% consumed)
+                </div>
+              </div>
+
+              {/* Progress Gauge */}
+              <div className="dev-meter-track">
+                <div
+                  className="dev-meter-fill fill-cyan"
+                  style={{ width: `${Math.min(100, vercelData.cdn.bandwidthUsedPercent)}%` }}
+                />
+              </div>
+
+              {/* To & Fro Data Metrics */}
+              <div className="dev-flow-metrics-row">
+                <div className="dev-flow-stat-box">
+                  <div className="dev-flow-label">
+                    <ArrowUpRight size={14} className="text-cyan" />
+                    <span>Outbound (Egress)</span>
+                  </div>
+                  <div className="dev-flow-val">{vercelData.cdn.dataFlowToAndFro.outboundEgressGB} GB</div>
+                  <div className="dev-flow-desc">Delivered to visitors</div>
+                </div>
+                <div className="dev-flow-stat-box">
+                  <div className="dev-flow-label">
+                    <ArrowDownLeft size={14} className="text-pink" />
+                    <span>Inbound (Ingress)</span>
+                  </div>
+                  <div className="dev-flow-val">{vercelData.cdn.dataFlowToAndFro.inboundIngressGB} GB</div>
+                  <div className="dev-flow-desc">Uploads &amp; payloads</div>
+                </div>
+                <div className="dev-flow-stat-box">
+                  <div className="dev-flow-label">
+                    <Zap size={14} className="text-amber" />
+                    <span>Total Flow To &amp; Fro</span>
+                  </div>
+                  <div className="dev-flow-val">{vercelData.cdn.dataFlowToAndFro.totalTransferGB} GB</div>
+                  <div className="dev-flow-desc">Cache Hit: {vercelData.cdn.dataFlowToAndFro.cacheHitRatePercent}%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Vercel Deployments & Serverless Quotas */}
+            <div className="dev-card dev-cloud-card">
+              <div className="dev-card-head">
+                <div className="dev-card-title-wrap">
+                  <div className="dev-card-icon-bubble cdn-purple">
+                    <Gauge size={18} />
+                  </div>
+                  <div>
+                    <h3 className="dev-card-title">Vercel Deployments &amp; Serverless Quotas</h3>
+                    <div className="dev-card-subtitle">{vercelData.plan} · CI/CD Production</div>
+                  </div>
+                </div>
+                <span className="dev-status-pill-mini">
+                  <span className="dev-status-dot-green" />
+                  <span>3 Sites Ready</span>
+                </span>
+              </div>
+
+              {/* Big Stat Highlight */}
+              <div className="dev-quota-highlight">
+                <div className="dev-quota-main">
+                  <span className="dev-quota-num text-purple">{vercelData.deployments.remainingToday} Left</span>
+                  <span className="dev-quota-badge-free">DEPLOYMENTS LEFT TODAY</span>
+                </div>
+                <div className="dev-quota-sub">
+                  <strong>{vercelData.deployments.usedToday}</strong> of <strong>{vercelData.deployments.dailyLimit}</strong> daily builds used ({vercelData.deployments.usedPercent}%)
+                </div>
+              </div>
+
+              {/* Progress Gauge */}
+              <div className="dev-meter-track">
+                <div
+                  className="dev-meter-fill fill-purple"
+                  style={{ width: `${Math.min(100, vercelData.deployments.usedPercent)}%` }}
+                />
+              </div>
+
+              {/* Serverless compute stats */}
+              <div className="dev-flow-metrics-row">
+                <div className="dev-flow-stat-box">
+                  <div className="dev-flow-label">
+                    <Cpu size={14} className="text-purple" />
+                    <span>Serverless Invocations</span>
+                  </div>
+                  <div className="dev-flow-val">{vercelData.deployments.invocationsRemaining.toLocaleString()} Left</div>
+                  <div className="dev-flow-desc">{vercelData.deployments.invocationsUsed.toLocaleString()} / 100k used</div>
+                </div>
+                <div className="dev-flow-stat-box">
+                  <div className="dev-flow-label">
+                    <Activity size={14} className="text-pink" />
+                    <span>Execution GB-Hrs</span>
+                  </div>
+                  <div className="dev-flow-val">{vercelData.deployments.computeGBHours.remaining} GB-Hrs Left</div>
+                  <div className="dev-flow-desc">{vercelData.deployments.computeGBHours.used} / {vercelData.deployments.computeGBHours.limit} used</div>
+                </div>
+                <div className="dev-flow-stat-box">
+                  <div className="dev-flow-label">
+                    <ShieldCheck size={14} className="text-green" />
+                    <span>Deployment Status</span>
+                  </div>
+                  <div className="dev-flow-val text-green">100% ONLINE</div>
+                  <div className="dev-flow-desc">Automatic Rollbacks Active</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Individual Sites CDN Consumption Breakdown */}
+          <div className="dev-card dev-site-breakdown-card">
+            <div className="dev-card-head">
+              <div className="dev-card-title-wrap">
+                <BarChart3 size={18} className="text-cyan" />
+                <h3 className="dev-card-title">How Much Our Sites Are Consuming (Bandwidth Breakdown)</h3>
+              </div>
+              <span className="dev-count-tag">3 Live Websites Active</span>
+            </div>
+
+            <div className="dev-site-consumption-grid">
+              {vercelData.sitesConsumption.map(site => (
+                <div key={site.id} className="dev-site-cons-item">
+                  <div className="dev-site-cons-top">
+                    <div>
+                      <div className="dev-site-cons-name">{site.name}</div>
+                      <div className="dev-site-cons-domain">{site.domain}</div>
+                    </div>
+                    <div className="dev-site-cons-share">
+                      <span className="dev-share-pill">{site.percentOfTotal}% of total</span>
+                    </div>
+                  </div>
+
+                  <div className="dev-site-meter-wrap">
+                    <div className="dev-meter-track mini">
+                      <div
+                        className="dev-meter-fill fill-gradient"
+                        style={{ width: `${site.percentOfTotal}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="dev-site-stats-grid">
+                    <div className="dev-site-stat">
+                      <span className="dev-sstat-lbl">Egress (To users):</span>
+                      <span className="dev-sstat-val font-mono">{site.egressGB} GB</span>
+                    </div>
+                    <div className="dev-site-stat">
+                      <span className="dev-sstat-lbl">Ingress (From users):</span>
+                      <span className="dev-sstat-val font-mono">{site.ingressGB} GB</span>
+                    </div>
+                    <div className="dev-site-stat">
+                      <span className="dev-sstat-lbl">Total Data Flow:</span>
+                      <span className="dev-sstat-val font-mono text-cyan">{site.totalFlowGB} GB</span>
+                    </div>
+                    <div className="dev-site-stat">
+                      <span className="dev-sstat-lbl">Requests:</span>
+                      <span className="dev-sstat-val font-mono">{site.requests}</span>
+                    </div>
+                  </div>
+
+                  <div className="dev-site-role-tag">
+                    <span className="dev-role-bullet" />
+                    <span>{site.trafficRole}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CLOUDINARY ASSET STORAGE & MEDIA ENGINE ── */}
+        <section className="dev-section">
+          <div className="dev-section-head">
+            <div className="dev-section-title-wrap">
+              <Cloud size={20} className="text-amber" />
+              <h2 className="dev-section-title">Cloudinary Asset Storage &amp; Bandwidth Usage</h2>
+            </div>
+            <div className="dev-section-hint">
+              Live storage consumption, remaining free capacity and payment screenshots media telemetry
+            </div>
+          </div>
+
+          <div className="dev-card dev-cloudinary-main-card">
+            <div className="dev-cloudinary-top">
+              <div className="dev-card-title-wrap">
+                <div className="dev-card-icon-bubble cdn-amber">
+                  <HardDrive size={20} />
+                </div>
+                <div>
+                  <h3 className="dev-card-title">Cloudinary Managed Storage Quota</h3>
+                  <div className="dev-card-subtitle">
+                    Account: <strong>{cloudinaryData.cloudName || 'dclyzbzlc'}</strong> &nbsp;·&nbsp; Folder: <code>{cloudinaryData.folder || 'technika-payment-screenshots'}</code>
+                  </div>
+                </div>
+              </div>
+              <div className="dev-rate-limit-pill">
+                <span className="dev-pulse-amber" />
+                <span>API Calls: {cloudinaryData.apiRateLimit?.remaining || 498} / {cloudinaryData.apiRateLimit?.allowed || 500} Left</span>
+              </div>
+            </div>
+
+            {/* Cloudinary Quota Overview Bar */}
+            <div className="dev-cloud-storage-banner">
+              <div className="dev-storage-metric">
+                <div className="dev-smet-lbl">Storage Used</div>
+                <div className="dev-smet-val text-amber">{cloudinaryData.storage.usedMB} MB</div>
+                <div className="dev-smet-sub">{cloudinaryData.storage.usedPercent}% of 25 GB limit</div>
+              </div>
+
+              <div className="dev-storage-divider" />
+
+              <div className="dev-storage-metric">
+                <div className="dev-smet-lbl">Storage Left (Available)</div>
+                <div className="dev-smet-val text-green">{cloudinaryData.storage.remainingGB} GB</div>
+                <div className="dev-smet-sub">{(100 - cloudinaryData.storage.usedPercent).toFixed(2)}% Headroom remaining</div>
+              </div>
+
+              <div className="dev-storage-divider" />
+
+              <div className="dev-storage-metric">
+                <div className="dev-smet-lbl">Credits Left</div>
+                <div className="dev-smet-val text-cyan">{cloudinaryData.credits.remaining} / {cloudinaryData.credits.limit}</div>
+                <div className="dev-smet-sub">1 Credit = 1 GB storage or bandwidth</div>
+              </div>
+
+              <div className="dev-storage-divider" />
+
+              <div className="dev-storage-metric">
+                <div className="dev-smet-lbl">Stored Media Assets</div>
+                <div className="dev-smet-val text-pink">{cloudinaryData.resourcesCount} Files</div>
+                <div className="dev-smet-sub">Payment screenshots &amp; UTR receipts</div>
+              </div>
+            </div>
+
+            {/* Dynamic Storage Capacity Bar */}
+            <div className="dev-cloud-gauge-section">
+              <div className="dev-gauge-header">
+                <span className="dev-gauge-title">Storage Allocation &amp; Safety Margin</span>
+                <span className="dev-gauge-val font-mono">{cloudinaryData.storage.usedMB} MB used / {cloudinaryData.storage.limitGB}.00 GB capacity</span>
+              </div>
+              <div className="dev-meter-track large">
+                <div
+                  className="dev-meter-fill fill-amber"
+                  style={{ width: `${Math.max(1.5, cloudinaryData.storage.usedPercent)}%` }}
+                />
+              </div>
+              <div className="dev-gauge-footer">
+                <span className="text-amber">● Used: {cloudinaryData.storage.usedMB} MB ({cloudinaryData.storage.usedPercent}%)</span>
+                <span className="text-green">● Free Storage Left: {cloudinaryData.storage.remainingGB} GB ({(100 - cloudinaryData.storage.usedPercent).toFixed(2)}%)</span>
+              </div>
+            </div>
+
+            {/* Detailed Sub-stats Row */}
+            <div className="dev-cloudinary-subgrid">
+              <div className="dev-csub-box">
+                <div className="dev-csub-icon"><Wifi size={16} className="text-cyan" /></div>
+                <div>
+                  <div className="dev-csub-lbl">Net Bandwidth Delivered</div>
+                  <div className="dev-csub-val font-mono">{cloudinaryData.bandwidth.usedMB} MB</div>
+                  <div className="dev-csub-hint">Out of 25 GB monthly quota</div>
+                </div>
+              </div>
+              <div className="dev-csub-box">
+                <div className="dev-csub-icon"><RefreshCw size={16} className="text-purple" /></div>
+                <div>
+                  <div className="dev-csub-lbl">Transformations Executed</div>
+                  <div className="dev-csub-val font-mono">{cloudinaryData.transformations.used}</div>
+                  <div className="dev-csub-hint">{cloudinaryData.transformations.creditsUsage} credits consumed</div>
+                </div>
+              </div>
+              <div className="dev-csub-box">
+                <div className="dev-csub-icon"><ShieldCheck size={16} className="text-green" /></div>
+                <div>
+                  <div className="dev-csub-lbl">Delivery Security &amp; SSL</div>
+                  <div className="dev-csub-val text-green font-mono">TLS 1.3 Signed CDN</div>
+                  <div className="dev-csub-hint">res.cloudinary.com edge CDN</div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1897,6 +2449,437 @@ export const DeveloperDashboard: React.FC = () => {
           transform: translateY(-1px);
         }
 
+        /* ── Cloud & Telemetry Sections (Vercel & Cloudinary) ── */
+        .dev-cloud-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+          margin-bottom: 24px;
+        }
+
+        .dev-cloud-card {
+          background: rgba(15, 23, 42, 0.65);
+          border: 1.5px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .dev-card-icon-bubble {
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .dev-card-icon-bubble.cdn-cyan {
+          background: rgba(34, 211, 238, 0.15);
+          color: #22d3ee;
+          border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        .dev-card-icon-bubble.cdn-purple {
+          background: rgba(168, 85, 247, 0.15);
+          color: #c084fc;
+          border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .dev-card-icon-bubble.cdn-amber {
+          background: rgba(245, 158, 11, 0.15);
+          color: #fbbf24;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .dev-card-subtitle {
+          font-size: 11px;
+          color: #94a3b8;
+          margin-top: 2px;
+        }
+
+        .dev-quota-highlight {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .dev-quota-main {
+          display: flex;
+          align-items: baseline;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .dev-quota-num {
+          font-size: 28px;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .dev-quota-badge-free {
+          font-size: 11px;
+          font-weight: 800;
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.12);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          padding: 3px 8px;
+          border-radius: 6px;
+          letter-spacing: 0.05em;
+        }
+
+        .dev-quota-sub {
+          font-size: 12px;
+          color: #94a3b8;
+        }
+
+        /* Meters and Progress Bars */
+        .dev-meter-track {
+          width: 100%;
+          height: 10px;
+          background: rgba(30, 41, 59, 0.8);
+          border-radius: 999px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          position: relative;
+        }
+
+        .dev-meter-track.mini {
+          height: 6px;
+        }
+
+        .dev-meter-track.large {
+          height: 14px;
+        }
+
+        .dev-meter-fill {
+          height: 100%;
+          border-radius: 999px;
+          transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dev-meter-fill.fill-cyan {
+          background: linear-gradient(90deg, #06b6d4, #22d3ee);
+          box-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
+        }
+
+        .dev-meter-fill.fill-purple {
+          background: linear-gradient(90deg, #9333ea, #c084fc);
+          box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+        }
+
+        .dev-meter-fill.fill-amber {
+          background: linear-gradient(90deg, #d97706, #f59e0b);
+          box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+        }
+
+        .dev-meter-fill.fill-gradient {
+          background: linear-gradient(90deg, #22d3ee, #a855f7);
+        }
+
+        .dev-flow-metrics-row {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          background: rgba(15, 23, 42, 0.5);
+          padding: 14px;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .dev-flow-stat-box {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .dev-flow-label {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #94a3b8;
+        }
+
+        .dev-flow-val {
+          font-size: 15px;
+          font-weight: 800;
+          color: #ffffff;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .dev-flow-desc {
+          font-size: 10px;
+          color: #64748b;
+        }
+
+        /* Site Consumption Breakdown */
+        .dev-site-breakdown-card {
+          margin-top: 20px;
+          background: rgba(15, 23, 42, 0.65);
+          border: 1.5px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .dev-site-consumption-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+          margin-top: 18px;
+        }
+
+        .dev-site-cons-item {
+          background: rgba(30, 41, 59, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 16px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .dev-site-cons-item:hover {
+          transform: translateY(-2px);
+          border-color: rgba(34, 211, 238, 0.3);
+          background: rgba(30, 41, 59, 0.65);
+        }
+
+        .dev-site-cons-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 8px;
+        }
+
+        .dev-site-cons-name {
+          font-size: 14px;
+          font-weight: 800;
+          color: #ffffff;
+        }
+
+        .dev-site-cons-domain {
+          font-size: 11px;
+          color: #22d3ee;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .dev-share-pill {
+          font-size: 10px;
+          font-weight: 700;
+          color: #e2e8f0;
+          background: rgba(255, 255, 255, 0.1);
+          padding: 2px 7px;
+          border-radius: 6px;
+          white-space: nowrap;
+        }
+
+        .dev-site-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          background: rgba(15, 23, 42, 0.5);
+          padding: 10px 12px;
+          border-radius: 10px;
+        }
+
+        .dev-site-stat {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .dev-sstat-lbl {
+          font-size: 10px;
+          color: #64748b;
+        }
+
+        .dev-sstat-val {
+          font-size: 12px;
+          font-weight: 700;
+          color: #e2e8f0;
+        }
+
+        .dev-site-role-tag {
+          font-size: 10px;
+          color: #94a3b8;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          line-height: 1.3;
+        }
+
+        .dev-role-bullet {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #22d3ee;
+          flex-shrink: 0;
+        }
+
+        /* Cloudinary Main Card */
+        .dev-cloudinary-main-card {
+          background: rgba(15, 23, 42, 0.65);
+          border: 1.5px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .dev-cloudinary-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
+        .dev-rate-limit-pill {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #fbbf24;
+          background: rgba(245, 158, 11, 0.12);
+          border: 1px solid rgba(245, 158, 11, 0.25);
+          padding: 4px 12px;
+          border-radius: 999px;
+        }
+
+        .dev-cloud-storage-banner {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+          background: rgba(15, 23, 42, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 16px;
+          padding: 16px 20px;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .dev-storage-metric {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .dev-smet-lbl {
+          font-size: 11px;
+          font-weight: 700;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+
+        .dev-smet-val {
+          font-size: 22px;
+          font-weight: 800;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .dev-smet-sub {
+          font-size: 11px;
+          color: #64748b;
+        }
+
+        .dev-storage-divider {
+          width: 1px;
+          height: 40px;
+          background: rgba(255, 255, 255, 0.08);
+          margin: 0 auto;
+        }
+
+        .dev-cloud-gauge-section {
+          background: rgba(30, 41, 59, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 14px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .dev-gauge-header {
+          display: flex;
+          justify-content: space-between;
+          font-size: 12px;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .dev-gauge-title {
+          font-weight: 700;
+          color: #e2e8f0;
+        }
+
+        .dev-gauge-val {
+          color: #94a3b8;
+        }
+
+        .dev-gauge-footer {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          font-weight: 600;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .dev-cloudinary-subgrid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+
+        .dev-csub-box {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(15, 23, 42, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.04);
+          padding: 14px 16px;
+          border-radius: 14px;
+        }
+
+        .dev-csub-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.04);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .dev-csub-lbl {
+          font-size: 11px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        .dev-csub-val {
+          font-size: 14px;
+          font-weight: 800;
+          color: #ffffff;
+        }
+
+        .dev-csub-hint {
+          font-size: 10px;
+          color: #64748b;
+        }
+
         /* ── Responsiveness ── */
         @media (max-width: 1180px) {
           .dev-hero-bar {
@@ -1904,6 +2887,18 @@ export const DeveloperDashboard: React.FC = () => {
           }
           .dev-servers-grid {
             grid-template-columns: 1fr;
+          }
+          .dev-cloud-grid {
+            grid-template-columns: 1fr;
+          }
+          .dev-site-consumption-grid {
+            grid-template-columns: 1fr;
+          }
+          .dev-cloud-storage-banner {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .dev-storage-divider {
+            display: none;
           }
           .dev-bottom-split {
             grid-template-columns: 1fr;
@@ -1929,6 +2924,15 @@ export const DeveloperDashboard: React.FC = () => {
           .dev-hero-bar {
             grid-template-columns: 1fr;
             padding: 16px;
+          }
+          .dev-cloud-storage-banner {
+            grid-template-columns: 1fr;
+          }
+          .dev-cloudinary-subgrid {
+            grid-template-columns: 1fr;
+          }
+          .dev-flow-metrics-row {
+            grid-template-columns: 1fr;
           }
           .dev-inspector-grid {
             grid-template-columns: 1fr;

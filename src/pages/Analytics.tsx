@@ -225,12 +225,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   const eventChartData = useMemo(() => {
     if (!data || data.eventWise.length === 0) {
       return [
-        { name: 'Robo Wars', count: 2, fill: '#22d3ee' },
-        { name: 'Web Wizard', count: 1, fill: '#fbbf24' },
-        { name: 'Code Buster', count: 1, fill: '#64748b' }
+        { name: 'Robo Wars', count: 2, fill: '#2563eb' },
+        { name: 'Web Wizard', count: 1, fill: '#f59e0b' },
+        { name: 'Code Buster', count: 1, fill: '#10b981' }
       ];
     }
-    const colors = ['#22d3ee', '#fbbf24', '#64748b', '#38bdf8', '#a855f7', '#ec4899', '#10b981'];
+    const colors = ['#2563eb', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#0284c7', '#8b5cf6'];
     return data.eventWise.map((e, idx) => ({
       name: e.eventName,
       count: e.count,
@@ -242,13 +242,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   const genderChartData = useMemo(() => {
     const arr = [];
     if (maleCount > 0 || totalRegistrations === 0) {
-      arr.push({ name: 'Male', value: maleCount > 0 ? maleCount : 2, fill: '#22d3ee' });
+      arr.push({ name: 'Male', value: maleCount > 0 ? maleCount : 2, fill: '#2563eb' });
     }
     if (femaleCount > 0 || totalRegistrations === 0) {
-      arr.push({ name: 'Female', value: femaleCount > 0 ? femaleCount : 0.001, fill: '#fbbf24' });
+      arr.push({ name: 'Female', value: femaleCount > 0 ? femaleCount : 0.001, fill: '#f59e0b' });
     }
     if (otherCount > 0) {
-      arr.push({ name: 'Other', value: otherCount, fill: '#a855f7' });
+      arr.push({ name: 'Other', value: otherCount, fill: '#8b5cf6' });
     }
     return arr;
   }, [maleCount, femaleCount, otherCount, totalRegistrations]);
@@ -325,15 +325,21 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   return (
     <div className="clay-dashboard-root">
+      {/* ── Background Floating Orbs (Same as /admin/users) ── */}
+      <div className="clay-bg-orb clay-bg-orb-1" />
+      <div className="clay-bg-orb clay-bg-orb-2" />
+      <div className="clay-bg-orb clay-bg-orb-3" />
+
       {/* ── Top Navigation Bar ── */}
       <header className="clay-nav">
         <div className="clay-nav-left">
-          {/* Mortarboard icon */}
-          <div className="clay-nav-cap-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-            </svg>
+          {/* AJU Official Logo */}
+          <div className="clay-nav-logo-badge" title="Arka Jain University">
+            <img 
+              src="/logo.png" 
+              alt="ARKA JAIN UNIVERSITY" 
+              className="clay-nav-logo-img" 
+            />
           </div>
           <div className="clay-nav-titles">
             <div className="clay-nav-uni-title">ARKA JAIN UNIVERSITY</div>
@@ -342,67 +348,32 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
           <div className="clay-nav-divider" />
 
-          <div className="clay-nav-brand">
-            Technika <span className="clay-brand-cyan">6.0</span>
+          {/* Technika 6.0 Official Logo */}
+          <div className="clay-nav-tech-badge" title="Technika 6.0">
+            <img 
+              src="/technika_logo.jpg" 
+              alt="Technika 6.0" 
+              className="clay-nav-tech-img" 
+            />
+            <div className="clay-nav-brand">
+              Technika <span className="clay-brand-cyan">6.0</span>
+            </div>
           </div>
         </div>
 
-        <div className="clay-nav-center" style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{
-            display: 'flex',
-            background: 'rgba(30, 41, 59, 0.75)',
-            border: '1.5px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '16px',
-            padding: '4px',
-            gap: '4px',
-            boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.3)'
-          }}>
-            <button
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 14px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: 800,
-                color: '#ffffff',
-                background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.25) 0%, rgba(14, 165, 233, 0.2) 100%)',
-                border: '1px solid rgba(34, 211, 238, 0.4)',
-                cursor: 'pointer',
-                boxShadow: '0 4px 10px rgba(34, 211, 238, 0.15)'
-              }}
-            >
+        <div className="clay-nav-center">
+          <div className="clay-nav-tab-group">
+            <button className="clay-nav-tab active">
               <span>Registration Analytics</span>
             </button>
             <button
               onClick={() => navigate('/developer')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 14px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#94a3b8',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#94a3b8';
-                e.currentTarget.style.background = 'transparent';
-              }}
+              className="clay-nav-tab inactive"
+              title="Open Developer & Infrastructure Dashboard"
             >
-              <Terminal size={14} style={{ color: '#22d3ee' }} />
+              <Terminal size={14} className="clay-tab-icon" />
               <span>Developer Dashboard</span>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 6px #22d3ee' }} />
+              <span className="clay-tab-dot" />
             </button>
           </div>
         </div>
@@ -771,26 +742,27 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 <BarChart data={eventChartData} margin={{ top: 32, right: 24, left: -20, bottom: 20 }}>
                   <XAxis 
                     dataKey="name" 
-                    tick={{ fill: '#94a3b8', fontSize: 11 }} 
+                    tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} 
                     axisLine={false} 
                     tickLine={false}
                   />
                   <YAxis 
-                    tick={{ fill: '#64748b', fontSize: 11 }} 
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} 
                     axisLine={false} 
                     tickLine={false} 
                     allowDecimals={false}
                     domain={[0, (dataMax: number) => Math.max(3, dataMax + 1)]}
                   />
                   <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                    cursor={{ fill: 'rgba(59, 130, 246, 0.06)' }}
                     contentStyle={{ 
-                      backgroundColor: '#161f33', 
+                      backgroundColor: '#ffffff', 
                       borderRadius: 14, 
-                      border: '1px solid rgba(255,255,255,0.1)', 
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                      color: '#f8fafc',
-                      fontSize: 12
+                      border: '1.5px solid rgba(162, 178, 201, 0.4)', 
+                      boxShadow: '0 8px 24px rgba(162, 178, 201, 0.35)',
+                      color: '#0f172a',
+                      fontSize: 12,
+                      fontWeight: 600
                     }} 
                   />
                   <Bar 
@@ -799,9 +771,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                     barSize={48}
                     label={{ 
                       position: 'top', 
-                      fill: '#f8fafc', 
+                      fill: '#0f172a', 
                       fontSize: 13, 
-                      fontWeight: 600,
+                      fontWeight: 800,
                       dy: -8
                     }}
                   >
@@ -1174,18 +1146,18 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 <AreaChart data={trendData} margin={{ top: 20, right: 20, left: -25, bottom: 10 }}>
                   <defs>
                     <linearGradient id="clayCyanGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
                   <XAxis 
                     dataKey="date" 
-                    tick={{ fill: '#94a3b8', fontSize: 11 }} 
+                    tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} 
                     axisLine={false} 
                     tickLine={false} 
                   />
                   <YAxis 
-                    tick={{ fill: '#64748b', fontSize: 11 }} 
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} 
                     axisLine={false} 
                     tickLine={false} 
                     allowDecimals={false}
@@ -1193,22 +1165,23 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                   />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#161f33', 
+                      backgroundColor: '#ffffff', 
                       borderRadius: 14, 
-                      border: '1px solid rgba(255,255,255,0.1)', 
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                      color: '#f8fafc',
-                      fontSize: 12
+                      border: '1.5px solid rgba(162, 178, 201, 0.4)', 
+                      boxShadow: '0 8px 24px rgba(162, 178, 201, 0.35)',
+                      color: '#0f172a',
+                      fontSize: 12,
+                      fontWeight: 600
                     }} 
                   />
                   <Area 
                     type="monotone" 
                     dataKey="count" 
-                    stroke="#22d3ee" 
+                    stroke="#2563eb" 
                     strokeWidth={2.5}
                     fill="url(#clayCyanGlow)" 
-                    dot={{ fill: '#22d3ee', stroke: '#0e1726', strokeWidth: 3, r: 5 }}
-                    activeDot={{ fill: '#38bdf8', stroke: '#fff', strokeWidth: 2, r: 7 }}
+                    dot={{ fill: '#2563eb', stroke: '#ffffff', strokeWidth: 3, r: 5 }}
+                    activeDot={{ fill: '#1d4ed8', stroke: '#ffffff', strokeWidth: 2, r: 7 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -1231,24 +1204,75 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             Arka Jain University &nbsp;/&nbsp; Technika 6.0
           </div>
           <div className="clay-foot-right">
-            Technika 6.0 &nbsp;·&nbsp; Official Registration Dashboard
+            Technika 6.0 · Arka Jain University
           </div>
         </footer>
-
       </main>
 
-      {/* ── EMBEDDED CLAYMORPHISM CSS STYLES ── */}
+      {/* ── EMBEDDED CLAYMORPHISM CSS STYLES (Light Theme matching /admin/users) ── */}
       <style>{`
         /* Reset and Root Variables */
         .clay-dashboard-root {
           min-height: 100vh;
-          background-color: #0b0f19;
-          background-image: 
-            radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.04) 0%, transparent 40%),
-            radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 40%);
-          color: #f8fafc;
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+          background-color: #e6ecf5;
+          color: #0f172a;
+          font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
           padding-bottom: 40px;
+          position: relative;
+          overflow-x: hidden;
+        }
+
+        /* ── Background Floating Orbs (Same as /admin/users & AdminLayout) ── */
+        .clay-bg-orb {
+          position: fixed;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 0;
+          filter: drop-shadow(0 15px 25px rgba(0,0,0,0.06));
+        }
+
+        .clay-bg-orb-1 {
+          width: 320px;
+          height: 320px;
+          top: -4%;
+          right: 4%;
+          background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+          box-shadow: 
+            inset -12px -12px 24px rgba(99, 102, 241, 0.4),
+            inset 12px 12px 24px rgba(255, 255, 255, 0.65);
+          animation: floatOrb 10s ease-in-out infinite alternate;
+          opacity: 0.5;
+        }
+
+        .clay-bg-orb-2 {
+          width: 240px;
+          height: 240px;
+          bottom: 8%;
+          right: 18%;
+          background: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%);
+          box-shadow: 
+            inset -10px -10px 20px rgba(16, 185, 129, 0.4),
+            inset 10px 10px 20px rgba(255, 255, 255, 0.65);
+          animation: floatOrb 12s ease-in-out 1s infinite alternate-reverse;
+          opacity: 0.4;
+        }
+
+        .clay-bg-orb-3 {
+          width: 180px;
+          height: 180px;
+          bottom: 25%;
+          left: 5%;
+          background: linear-gradient(135deg, #fde047 0%, #eab308 100%);
+          box-shadow: 
+            inset -8px -8px 16px rgba(202, 138, 4, 0.4),
+            inset 8px 8px 16px rgba(255, 255, 255, 0.65);
+          animation: floatOrb 8s ease-in-out 2s infinite alternate;
+          opacity: 0.35;
+        }
+
+        @keyframes floatOrb {
+          0% { transform: translateY(0px) rotate(0deg); }
+          100% { transform: translateY(-20px) rotate(5deg); }
         }
 
         /* ── Top Navigation Bar ── */
@@ -1256,10 +1280,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 48px;
-          background: #0e1322;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+          padding: 14px 44px;
+          background: rgba(255, 255, 255, 0.88);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-bottom: 1.5px solid rgba(255, 255, 255, 0.95);
+          box-shadow: 0 4px 20px rgba(162, 178, 201, 0.35);
           position: sticky;
           top: 0;
           z-index: 50;
@@ -1268,22 +1294,52 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-nav-left {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 14px;
         }
 
-        .clay-nav-cap-icon {
+        .clay-nav-logo-badge {
           display: flex;
           align-items: center;
           justify-content: center;
           width: 44px;
           height: 44px;
           border-radius: 14px;
-          background: #141c2e;
+          background: #ffffff;
+          padding: 4px;
+          border: 2px solid rgba(255, 255, 255, 0.9);
           box-shadow: 
-            5px 5px 12px rgba(0, 0, 0, 0.5),
-            -3px -3px 8px rgba(255, 255, 255, 0.04),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.1),
-            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+            5px 6px 14px rgba(162, 178, 201, 0.3),
+            -3px -3px 8px rgba(255, 255, 255, 0.9),
+            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.8);
+          flex-shrink: 0;
+        }
+
+        .clay-nav-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .clay-nav-tech-badge {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          background: #f4f8fd;
+          border: 2px solid rgba(255, 255, 255, 0.95);
+          padding: 4px 12px 4px 5px;
+          border-radius: 14px;
+          box-shadow: 
+            5px 6px 14px rgba(162, 178, 201, 0.25),
+            -3px -3px 8px rgba(255, 255, 255, 0.9),
+            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .clay-nav-tech-img {
+          width: 32px;
+          height: 32px;
+          border-radius: 9px;
+          object-fit: cover;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .clay-nav-titles {
@@ -1293,40 +1349,96 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-nav-uni-title {
           font-weight: 800;
-          font-size: 15px;
-          letter-spacing: 0.08em;
-          color: #ffffff;
+          font-size: 14px;
+          letter-spacing: 0.06em;
+          color: #0f172a;
         }
 
         .clay-nav-uni-subtitle {
           font-size: 11px;
-          color: #94a3b8;
-          font-weight: 500;
+          color: #64748b;
+          font-weight: 600;
           letter-spacing: 0.02em;
         }
 
         .clay-nav-divider {
-          width: 1px;
+          width: 1.5px;
           height: 28px;
-          background: rgba(255, 255, 255, 0.12);
-          margin: 0 6px;
+          background: rgba(162, 178, 201, 0.4);
+          margin: 0 4px;
         }
 
         .clay-nav-brand {
-          font-size: 16px;
-          font-weight: 700;
-          color: #f8fafc;
+          font-size: 15px;
+          font-weight: 800;
+          color: #0f172a;
           letter-spacing: -0.01em;
         }
 
         .clay-brand-cyan {
-          color: #22d3ee;
+          color: #2563eb;
+        }
+
+        .clay-nav-center {
+          display: flex;
+          align-items: center;
+        }
+
+        .clay-nav-tab-group {
+          display: flex;
+          background: #e2eaf4;
+          padding: 4px;
+          border-radius: 16px;
+          border: 1.5px solid rgba(255, 255, 255, 0.9);
+          box-shadow: 
+            inset 2px 2px 4px rgba(162, 178, 201, 0.35),
+            inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+          gap: 4px;
+        }
+
+        .clay-nav-tab {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          padding: 7px 16px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 700;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .clay-nav-tab.active {
+          background: #2563eb;
+          color: #ffffff;
+          box-shadow: 
+            0 4px 12px rgba(37, 99, 235, 0.35),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.5);
+        }
+
+        .clay-nav-tab.inactive {
+          background: transparent;
+          color: #64748b;
+        }
+
+        .clay-nav-tab.inactive:hover {
+          color: #0f172a;
+          background: rgba(255, 255, 255, 0.6);
+        }
+
+        .clay-tab-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #2563eb;
+          box-shadow: 0 0 6px #2563eb;
         }
 
         .clay-nav-right {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 14px;
         }
 
         .clay-status-pill {
@@ -1335,21 +1447,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 8px;
           padding: 7px 16px;
           border-radius: 9999px;
-          background: #13192b;
-          border: 1px solid rgba(34, 211, 238, 0.15);
+          background: #ffffff;
+          border: 1.5px solid rgba(255, 255, 255, 0.9);
           box-shadow: 
-            4px 4px 10px rgba(0, 0, 0, 0.4),
-            -2px -2px 6px rgba(255, 255, 255, 0.03),
-            inset 1px 1px 2px rgba(255, 255, 255, 0.08),
-            inset -1px -1px 3px rgba(0, 0, 0, 0.4);
+            5px 6px 14px rgba(162, 178, 201, 0.25),
+            -3px -3px 8px rgba(255, 255, 255, 0.9),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.8);
         }
 
         .clay-pulse-dot {
           width: 7px;
           height: 7px;
           border-radius: 50%;
-          background: #22d3ee;
-          box-shadow: 0 0 10px #22d3ee;
+          background: #2563eb;
+          box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
           animation: pulseGlow 2s infinite ease-in-out;
         }
 
@@ -1360,8 +1471,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-status-text {
           font-size: 12px;
-          font-weight: 500;
-          color: #94a3b8;
+          font-weight: 700;
+          color: #475569;
         }
 
         /* ── Login Portal & Auth Group ── */
@@ -1377,30 +1488,22 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 9px;
           padding: 6px 14px 6px 8px;
           border-radius: 9999px;
-          background: linear-gradient(135deg, #1e293b 0%, #111827 100%);
-          border: 1px solid rgba(251, 191, 36, 0.35);
-          color: #f1f5f9;
+          background: #ffffff;
+          border: 1.5px solid rgba(255, 255, 255, 0.95);
+          color: #0f172a;
           font-family: inherit;
           cursor: pointer;
           box-shadow: 
-            5px 5px 14px rgba(0, 0, 0, 0.45),
-            -2px -2px 6px rgba(255, 255, 255, 0.05),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.12),
-            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
-          transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+            5px 6px 16px rgba(162, 178, 201, 0.3),
+            -3px -3px 8px rgba(255, 255, 255, 0.9),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+          transition: all 0.2s ease;
         }
 
         .clay-login-portal-btn:hover {
-          transform: translateY(-2px);
-          border-color: rgba(251, 191, 36, 0.7);
-          box-shadow: 
-            0 8px 20px rgba(251, 191, 36, 0.22),
-            5px 5px 14px rgba(0, 0, 0, 0.45),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.18);
-        }
-
-        .clay-login-portal-btn:active {
-          transform: translateY(1px);
+          transform: translateY(-1px);
+          border-color: #3b82f6;
+          box-shadow: 0 6px 18px rgba(37, 99, 235, 0.2);
         }
 
         .clay-portal-icon-box {
@@ -1410,10 +1513,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-          color: #0f172a;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          color: #ffffff;
           box-shadow: 
-            2px 2px 6px rgba(0, 0, 0, 0.35),
+            2px 2px 6px rgba(37, 99, 235, 0.3),
             inset 1px 1px 2px rgba(255, 255, 255, 0.6);
           flex-shrink: 0;
         }
@@ -1421,8 +1524,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-login-portal-text {
           font-size: 12.5px;
           font-weight: 700;
-          letter-spacing: 0.02em;
-          color: #f8fafc;
+          color: #0f172a;
         }
 
         .clay-portal-badge {
@@ -1432,9 +1534,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           letter-spacing: 0.06em;
           padding: 2px 7px;
           border-radius: 6px;
-          background: rgba(251, 191, 36, 0.15);
-          color: #fbbf24;
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          background: rgba(37, 99, 235, 0.1);
+          color: #2563eb;
+          border: 1px solid rgba(37, 99, 235, 0.25);
         }
 
         .clay-portal-user-btn {
@@ -1443,24 +1545,21 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 10px;
           padding: 5px 12px 5px 6px;
           border-radius: 9999px;
-          background: #192238;
-          border: 1px solid rgba(59, 130, 246, 0.35);
-          color: #f8fafc;
+          background: #ffffff;
+          border: 1.5px solid rgba(255, 255, 255, 0.95);
+          color: #0f172a;
           font-family: inherit;
           cursor: pointer;
           box-shadow: 
-            4px 4px 12px rgba(0, 0, 0, 0.45),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.08),
-            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+            5px 6px 14px rgba(162, 178, 201, 0.25),
+            -3px -3px 8px rgba(255, 255, 255, 0.9);
           transition: all 0.2s ease;
         }
 
         .clay-portal-user-btn:hover {
           transform: translateY(-1px);
-          border-color: rgba(59, 130, 246, 0.65);
-          box-shadow: 
-            0 6px 18px rgba(59, 130, 246, 0.25),
-            4px 4px 12px rgba(0, 0, 0, 0.45);
+          border-color: #3b82f6;
+          box-shadow: 0 6px 18px rgba(37, 99, 235, 0.2);
         }
 
         .clay-portal-avatar {
@@ -1475,8 +1574,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           font-size: 11px;
           font-weight: 800;
           box-shadow: 
-            2px 2px 6px rgba(0,0,0,0.3),
-            inset 1px 1px 2px rgba(255,255,255,0.4);
+            2px 2px 6px rgba(37, 99, 235, 0.35),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.5);
         }
 
         .clay-portal-meta {
@@ -1490,7 +1589,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-portal-user-name {
           font-size: 12px;
           font-weight: 700;
-          color: #f8fafc;
+          color: #0f172a;
           max-width: 110px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -1499,8 +1598,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-portal-user-role {
           font-size: 10px;
-          font-weight: 600;
-          color: #60a5fa;
+          font-weight: 700;
+          color: #2563eb;
           max-width: 110px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -1510,10 +1609,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-portal-workspace-tag {
           font-size: 10px;
           font-weight: 700;
-          color: #93c5fd;
+          color: #2563eb;
           padding: 2px 6px;
           border-radius: 6px;
-          background: rgba(59, 130, 246, 0.15);
+          background: rgba(37, 99, 235, 0.1);
         }
 
         .clay-logout-btn {
@@ -1522,24 +1621,20 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 7px;
           padding: 8px 14px;
           border-radius: 12px;
-          background: #192238;
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #f87171;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
-          box-shadow: 
-            4px 4px 10px rgba(0, 0, 0, 0.4),
-            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.08),
-            inset -1.5px -1.5px 3px rgba(0, 0, 0, 0.4);
+          box-shadow: 3px 3px 8px rgba(239, 68, 68, 0.15);
           transition: all 0.2s ease;
         }
 
         .clay-logout-btn:hover {
           background: #ef4444;
           color: #ffffff;
-          box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
-          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
         }
 
         /* ── Main Container ── */
@@ -1550,6 +1645,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           display: flex;
           flex-direction: column;
           gap: 28px;
+          position: relative;
+          z-index: 1;
         }
 
         /* ── Hero Header ── */
@@ -1574,21 +1671,21 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-hero-heading {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 40px;
-          font-weight: 700;
-          color: #ffffff;
+          font-weight: 800;
+          color: #0f172a;
           letter-spacing: -0.01em;
           margin-bottom: 6px;
           line-height: 1.15;
         }
 
         .clay-period {
-          color: #22d3ee;
+          color: #2563eb;
         }
 
         .clay-hero-subtitle {
           font-size: 14px;
-          color: #94a3b8;
-          font-weight: 400;
+          color: #64748b;
+          font-weight: 500;
         }
 
         .clay-hero-actions {
@@ -1597,40 +1694,32 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 14px;
         }
 
-        /* Puffy Clay Refresh Button */
         .clay-btn-refresh {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 10px 22px;
           border-radius: 14px;
-          background: #141b2c;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          color: #f8fafc;
+          background: #ffffff;
+          border: 2px solid rgba(255, 255, 255, 0.9);
+          color: #0f172a;
           font-size: 13px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
           box-shadow: 
-            6px 6px 16px rgba(0, 0, 0, 0.5),
-            -4px -4px 10px rgba(255, 255, 255, 0.03),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.1),
-            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+            6px 8px 18px rgba(162, 178, 201, 0.28),
+            -5px -5px 12px rgba(255, 255, 255, 0.9),
+            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.8);
           transition: all 0.2s ease;
         }
 
         .clay-btn-refresh:hover:not(:disabled) {
           transform: translateY(-2px);
-          background: #182238;
-          box-shadow: 
-            8px 8px 20px rgba(0, 0, 0, 0.55),
-            -5px -5px 12px rgba(255, 255, 255, 0.05),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.15),
-            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+          box-shadow: 8px 12px 22px rgba(162, 178, 201, 0.35);
         }
 
         .clay-btn-refresh:active {
           transform: translateY(1px);
-          box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.6);
         }
 
         .clay-spin-anim {
@@ -1642,48 +1731,184 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           to { transform: rotate(360deg); }
         }
 
-        /* Puffy Clay Cyan Export Button */
         .clay-btn-export {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 10px 24px;
           border-radius: 14px;
-          background: linear-gradient(135deg, #38bdf8 0%, #22d3ee 50%, #06b6d4 100%);
-          border: 1px solid rgba(255, 255, 255, 0.35);
-          color: #03141f;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          border: 2px solid #ffffff;
+          color: #ffffff;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
           box-shadow: 
-            6px 6px 18px rgba(6, 182, 212, 0.38),
-            -3px -3px 8px rgba(255, 255, 255, 0.1),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.55),
-            inset -2px -2px 5px rgba(0, 0, 0, 0.3);
+            6px 8px 18px rgba(37, 99, 235, 0.32),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+            inset -2px -2px 4px rgba(15, 23, 42, 0.25);
           transition: all 0.2s ease;
         }
 
         .clay-btn-export:hover {
           transform: translateY(-2px);
-          box-shadow: 
-            8px 8px 24px rgba(6, 182, 212, 0.5),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.65),
-            inset -2px -2px 5px rgba(0, 0, 0, 0.25);
+          box-shadow: 8px 12px 24px rgba(37, 99, 235, 0.45);
         }
 
         .clay-btn-export:active {
           transform: translateY(1px);
-          box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.4);
         }
 
-        /* ── Categories & Age Demographics Grid ── */
+        /* ── Base Clay Card ── */
+        .clay-card {
+          background: #ffffff;
+          border-radius: 24px;
+          padding: 26px 28px;
+          border: 2px solid rgba(255, 255, 255, 0.95);
+          box-shadow: 
+            8px 10px 24px rgba(162, 178, 201, 0.28),
+            -6px -6px 18px rgba(255, 255, 255, 0.9),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+            inset -2px -2px 4px rgba(162, 178, 201, 0.18);
+          position: relative;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .clay-card:hover {
+          box-shadow: 
+            10px 14px 30px rgba(162, 178, 201, 0.35),
+            -6px -6px 18px rgba(255, 255, 255, 0.95);
+        }
+
+        /* ── ROW 1: 4 KPI Cards Grid ── */
+        .clay-kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+        }
+
+        .clay-kpi-card {
+          background: #ffffff;
+          border-radius: 22px;
+          padding: 22px 24px;
+          border: 2px solid rgba(255, 255, 255, 0.95);
+          box-shadow: 
+            8px 10px 22px rgba(162, 178, 201, 0.26),
+            -5px -5px 14px rgba(255, 255, 255, 0.9),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+            inset -2px -2px 4px rgba(162, 178, 201, 0.16);
+          display: flex;
+          flex-direction: column;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .clay-kpi-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 10px 14px 26px rgba(162, 178, 201, 0.35);
+        }
+
+        .clay-kpi-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+
+        .clay-kpi-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: #64748b;
+        }
+
+        .clay-kpi-icon-wrap {
+          width: 34px;
+          height: 34px;
+          border-radius: 11px;
+          background: #eef4fc;
+          color: #2563eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: inset 1px 1px 2px rgba(162, 178, 201, 0.35);
+        }
+
+        .clay-kpi-val-row {
+          display: flex;
+          align-items: baseline;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .clay-kpi-num {
+          font-size: 38px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1;
+          letter-spacing: -0.02em;
+        }
+
+        .clay-num-cyan {
+          color: #2563eb;
+        }
+
+        .clay-kpi-label {
+          font-size: 13px;
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .clay-kpi-percent {
+          font-size: 16px;
+          font-weight: 800;
+          color: #2563eb;
+        }
+
+        .clay-kpi-foot {
+          font-size: 12px;
+          color: #94a3b8;
+          font-weight: 500;
+          margin-top: auto;
+        }
+
+        /* ── ROW 2: Event Type Categories & Age Demographics ── */
         .clay-categories-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 24px;
         }
 
-        /* Category Stat Tiles */
+        .clay-card-header-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 18px;
+        }
+
+        .clay-card-serif-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 20px;
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 4px;
+        }
+
+        .clay-card-subtitle {
+          font-size: 12px;
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .clay-badge-pill {
+          padding: 4px 12px;
+          border-radius: 9999px;
+          background: #f1f5f9;
+          border: 1px solid rgba(162, 178, 201, 0.3);
+          font-size: 11px;
+          font-weight: 700;
+          color: #475569;
+          box-shadow: inset 1px 1px 2px rgba(162, 178, 201, 0.2);
+        }
+
         .clay-cat-tiles-row {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -1694,13 +1919,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-cat-tile {
           border-radius: 18px;
           padding: 14px 16px;
-          background: #0f1626;
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: #f8fafc;
+          border: 1.5px solid #ffffff;
           box-shadow: 
-            6px 6px 14px rgba(0, 0, 0, 0.45),
-            -3px -3px 8px rgba(255, 255, 255, 0.02),
-            inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.08),
-            inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+            5px 6px 14px rgba(162, 178, 201, 0.22),
+            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.9),
+            inset -1.5px -1.5px 3px rgba(162, 178, 201, 0.15);
           transition: transform 0.2s ease;
         }
 
@@ -1709,45 +1933,42 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .clay-cat-tile.tile-cyan {
-          border-color: rgba(34, 211, 238, 0.25);
+          border-color: rgba(37, 99, 235, 0.25);
         }
         .clay-cat-tile.tile-cyan .clay-cat-tile-icon {
-          background: rgba(34, 211, 238, 0.12);
-          color: #22d3ee;
-          box-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
+          background: rgba(37, 99, 235, 0.1);
+          color: #2563eb;
         }
         .clay-cat-tile.tile-cyan .clay-cat-tile-pill {
-          background: rgba(34, 211, 238, 0.15);
-          color: #38bdf8;
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgba(37, 99, 235, 0.12);
+          color: #2563eb;
+          border: 1px solid rgba(37, 99, 235, 0.25);
         }
 
         .clay-cat-tile.tile-amber {
-          border-color: rgba(251, 191, 36, 0.25);
+          border-color: rgba(245, 158, 11, 0.25);
         }
         .clay-cat-tile.tile-amber .clay-cat-tile-icon {
-          background: rgba(251, 191, 36, 0.12);
-          color: #fbbf24;
-          box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
+          background: rgba(245, 158, 11, 0.1);
+          color: #d97706;
         }
         .clay-cat-tile.tile-amber .clay-cat-tile-pill {
-          background: rgba(251, 191, 36, 0.15);
-          color: #fcd34d;
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          background: rgba(245, 158, 11, 0.12);
+          color: #d97706;
+          border: 1px solid rgba(245, 158, 11, 0.25);
         }
 
         .clay-cat-tile.tile-pink {
           border-color: rgba(236, 72, 153, 0.25);
         }
         .clay-cat-tile.tile-pink .clay-cat-tile-icon {
-          background: rgba(236, 72, 153, 0.12);
-          color: #ec4899;
-          box-shadow: 0 0 12px rgba(236, 72, 153, 0.25);
+          background: rgba(236, 72, 153, 0.1);
+          color: #db2777;
         }
         .clay-cat-tile.tile-pink .clay-cat-tile-pill {
-          background: rgba(236, 72, 153, 0.15);
-          color: #f472b6;
-          border: 1px solid rgba(236, 72, 153, 0.3);
+          background: rgba(236, 72, 153, 0.12);
+          color: #db2777;
+          border: 1px solid rgba(236, 72, 153, 0.25);
         }
 
         .clay-cat-tile-top {
@@ -1776,15 +1997,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-cat-tile-num {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 26px;
-          font-weight: 700;
-          color: #ffffff;
+          font-weight: 800;
+          color: #0f172a;
           line-height: 1.1;
         }
 
         .clay-cat-tile-label {
           font-size: 13px;
           font-weight: 700;
-          color: #e2e8f0;
+          color: #334155;
           margin-top: 2px;
         }
 
@@ -1794,7 +2015,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           margin-top: 2px;
         }
 
-        /* Segmented Proportional Track */
         .clay-cat-segmented-wrap {
           margin-top: 20px;
           display: flex;
@@ -1806,7 +2026,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           display: flex;
           justify-content: space-between;
           font-size: 11px;
-          font-weight: 600;
+          font-weight: 700;
           color: #64748b;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -1815,13 +2035,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-cat-segmented-track {
           display: flex;
           height: 12px;
-          background: #090e1a;
+          background: #e2eaf4;
           border-radius: 9999px;
           padding: 2px;
           gap: 3px;
           box-shadow: 
-            inset 2px 2px 4px rgba(0, 0, 0, 0.7),
-            inset -1px -1px 2px rgba(255, 255, 255, 0.05);
+            inset 2px 2px 4px rgba(162, 178, 201, 0.35),
+            inset -1px -1px 2px rgba(255, 255, 255, 0.9);
           overflow: hidden;
         }
 
@@ -1831,7 +2051,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Detailed Row Breakdown */
         .clay-cat-list {
           margin-top: 18px;
           display: flex;
@@ -1845,9 +2064,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           justify-content: space-between;
           gap: 16px;
           padding: 10px 14px;
-          background: rgba(255, 255, 255, 0.02);
+          background: #f8fafc;
           border-radius: 14px;
-          border: 1px solid rgba(255, 255, 255, 0.03);
+          border: 1px solid #e2eaf4;
         }
 
         .clay-cat-list-left {
@@ -1864,8 +2083,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-cat-name {
           font-size: 13px;
-          font-weight: 600;
-          color: #f1f5f9;
+          font-weight: 700;
+          color: #0f172a;
         }
 
         .clay-cat-list-right {
@@ -1880,16 +2099,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-cat-count-val {
           font-size: 13px;
-          font-weight: 700;
-          color: #ffffff;
+          font-weight: 800;
+          color: #0f172a;
           min-width: 24px;
           text-align: right;
         }
 
         .clay-cat-share-val {
           font-size: 12px;
-          font-weight: 600;
-          color: #94a3b8;
+          font-weight: 700;
+          color: #64748b;
           min-width: 44px;
           text-align: right;
         }
@@ -1904,13 +2123,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-age-cohort-card {
           padding: 11px 16px;
-          background: #0f1626;
+          background: #f8fafc;
           border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          border: 1.5px solid #ffffff;
           box-shadow: 
-            4px 4px 12px rgba(0, 0, 0, 0.35),
-            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.06),
-            inset -1.5px -1.5px 3px rgba(0, 0, 0, 0.35);
+            4px 5px 12px rgba(162, 178, 201, 0.2),
+            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.9),
+            inset -1.5px -1.5px 3px rgba(162, 178, 201, 0.12);
         }
 
         .clay-age-cohort-head {
@@ -1935,43 +2154,40 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .badge-emerald {
-          background: rgba(16, 185, 129, 0.15);
-          color: #34d399;
-          border: 1px solid rgba(16, 185, 129, 0.3);
+          background: rgba(16, 185, 129, 0.12);
+          color: #059669;
+          border: 1px solid rgba(16, 185, 129, 0.25);
         }
         .badge-cyan {
-          background: rgba(34, 211, 238, 0.15);
-          color: #22d3ee;
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgba(37, 99, 235, 0.1);
+          color: #2563eb;
+          border: 1px solid rgba(37, 99, 235, 0.25);
         }
         .badge-amber {
-          background: rgba(251, 191, 36, 0.15);
-          color: #fbbf24;
-          border: 1px solid rgba(251, 191, 36, 0.3);
+          background: rgba(245, 158, 11, 0.12);
+          color: #d97706;
+          border: 1px solid rgba(245, 158, 11, 0.25);
         }
         .badge-purple {
-          background: rgba(168, 85, 247, 0.15);
-          color: #c084fc;
-          border: 1px solid rgba(168, 85, 247, 0.3);
+          background: rgba(168, 85, 247, 0.12);
+          color: #7c3aed;
+          border: 1px solid rgba(168, 85, 247, 0.25);
         }
 
         .fill-emerald {
           background: linear-gradient(90deg, #059669 0%, #10b981 100%);
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
         }
         .fill-purple {
-          background: linear-gradient(90deg, #9333ea 0%, #a855f7 100%);
-          box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+          background: linear-gradient(90deg, #7c3aed 0%, #a855f7 100%);
         }
         .fill-pink {
           background: linear-gradient(90deg, #db2777 0%, #ec4899 100%);
-          box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
         }
 
         .clay-age-sublabel {
           font-size: 11px;
           color: #64748b;
-          font-weight: 500;
+          font-weight: 600;
         }
 
         .clay-age-cohort-nums {
@@ -1982,19 +2198,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-age-count {
           font-size: 15px;
-          font-weight: 700;
-          color: #ffffff;
+          font-weight: 800;
+          color: #0f172a;
         }
 
         .clay-age-slash {
           font-size: 12px;
-          color: #475569;
+          color: #94a3b8;
         }
 
         .clay-age-share {
           font-size: 12px;
-          font-weight: 600;
-          color: #94a3b8;
+          font-weight: 700;
+          color: #64748b;
         }
 
         .clay-age-trough {
@@ -2008,12 +2224,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 12px;
           padding: 12px 16px;
           border-radius: 14px;
-          background: rgba(34, 211, 238, 0.05);
-          border: 1px solid rgba(34, 211, 238, 0.15);
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
         }
 
         .clay-age-insight-icon {
-          color: #22d3ee;
+          color: #2563eb;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2022,185 +2238,32 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-age-insight-text {
           font-size: 12px;
-          color: #cbd5e1;
+          color: #1e3a8a;
           line-height: 1.4;
         }
 
         .clay-age-insight-title {
-          font-weight: 700;
-          color: #22d3ee;
+          font-weight: 800;
+          color: #2563eb;
           margin-right: 4px;
         }
 
         .clay-badge-cyan {
-          background: rgba(34, 211, 238, 0.12) !important;
-          color: #22d3ee !important;
-          border: 1px solid rgba(34, 211, 238, 0.3) !important;
+          background: rgba(37, 99, 235, 0.1) !important;
+          color: #2563eb !important;
+          border: 1px solid rgba(37, 99, 235, 0.25) !important;
         }
 
-        /* ── Base Clay Card ── */
-        .clay-card {
-          background: #131929;
-          border-radius: 24px;
-          padding: 26px 28px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow: 
-            12px 14px 28px rgba(0, 0, 0, 0.55),
-            -6px -6px 18px rgba(255, 255, 255, 0.025),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.08),
-            inset -3px -3px 6px rgba(0, 0, 0, 0.45);
-          position: relative;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .clay-card:hover {
-          box-shadow: 
-            14px 18px 34px rgba(0, 0, 0, 0.6),
-            -7px -7px 20px rgba(255, 255, 255, 0.035),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.1),
-            inset -3px -3px 6px rgba(0, 0, 0, 0.4);
-        }
-
-        /* ── ROW 1: 4 KPI Cards Grid ── */
-        .clay-kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
-        }
-
-        .clay-kpi-card {
-          background: #131929;
-          border-radius: 22px;
-          padding: 22px 24px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow: 
-            10px 12px 24px rgba(0, 0, 0, 0.5),
-            -5px -5px 14px rgba(255, 255, 255, 0.02),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.08),
-            inset -2px -2px 5px rgba(0, 0, 0, 0.4);
-          display: flex;
-          flex-direction: column;
-          transition: transform 0.2s ease;
-        }
-
-        .clay-kpi-card:hover {
-          transform: translateY(-2px);
-        }
-
-        .clay-kpi-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 16px;
-        }
-
-        .clay-kpi-title {
-          font-size: 13px;
-          font-weight: 500;
-          color: #94a3b8;
-        }
-
-        .clay-kpi-icon-wrap {
-          color: #64748b;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .clay-kpi-val-row {
-          display: flex;
-          align-items: baseline;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-
-        .clay-kpi-num {
-          font-size: 38px;
-          font-weight: 800;
-          color: #ffffff;
-          line-height: 1;
-          letter-spacing: -0.02em;
-        }
-
-        .clay-num-cyan {
-          color: #22d3ee;
-        }
-
-        .clay-kpi-label {
-          font-size: 13px;
-          color: #94a3b8;
-          font-weight: 500;
-        }
-
-        .clay-kpi-percent {
-          font-size: 16px;
-          font-weight: 700;
-          color: #94a3b8;
-        }
-
-        .clay-kpi-foot {
-          font-size: 12px;
-          color: #64748b;
-          margin-top: auto;
-        }
-
-        /* ── ROW 2: Event Registrations & Most Popular Event ── */
+        /* ── ROW 3: Event Registrations & Most Popular Event ── */
         .clay-mid-grid {
           display: grid;
           grid-template-columns: 1.5fr 1fr;
           gap: 22px;
         }
 
-        .clay-card-header-row {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          margin-bottom: 18px;
-        }
-
-        .clay-card-serif-title {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 20px;
-          font-weight: 600;
-          color: #ffffff;
-          margin-bottom: 4px;
-        }
-
-        .clay-card-subtitle {
-          font-size: 12px;
-          color: #94a3b8;
-        }
-
-        .clay-badge-pill {
-          padding: 4px 12px;
-          border-radius: 9999px;
-          background: #0d121f;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          font-size: 11px;
-          font-weight: 600;
-          color: #94a3b8;
-          box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
-        }
-
         .clay-barchart-container {
           width: 100%;
           min-height: 240px;
-        }
-
-        .clay-card-footer-info {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 12px;
-          color: #64748b;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
-          padding-top: 14px;
-          margin-top: 10px;
-        }
-
-        .clay-info-icon {
-          flex-shrink: 0;
-          color: #64748b;
         }
 
         /* Popular Event Card */
@@ -2216,10 +2279,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           height: 180px;
           border-radius: 18px;
           overflow: hidden;
-          background: #0d1220;
+          background: #e2eaf4;
+          border: 2px solid #ffffff;
           box-shadow: 
-            inset 2px 2px 5px rgba(0, 0, 0, 0.7),
-            inset -1px -1px 3px rgba(255, 255, 255, 0.05);
+            5px 6px 14px rgba(162, 178, 201, 0.25),
+            inset 2px 2px 4px rgba(162, 178, 201, 0.2);
           margin-bottom: 18px;
         }
 
@@ -2233,7 +2297,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-img-overlay-glow {
           position: absolute;
           inset: 0;
-          background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(13, 18, 32, 0.85) 100%);
+          background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(15, 23, 42, 0.4) 100%);
           pointer-events: none;
         }
 
@@ -2248,15 +2312,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           align-items: center;
           gap: 6px;
           font-size: 11px;
-          font-weight: 700;
+          font-weight: 800;
           letter-spacing: 0.08em;
-          color: #fbbf24;
+          color: #d97706;
           text-transform: uppercase;
           margin-bottom: 8px;
         }
 
         .clay-sparkle-icon {
-          color: #fbbf24;
+          color: #d97706;
         }
 
         .clay-popular-title-row {
@@ -2268,43 +2332,43 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-popular-name {
           font-size: 22px;
-          font-weight: 700;
-          color: #ffffff;
+          font-weight: 800;
+          color: #0f172a;
         }
 
         .clay-arrow-btn {
           width: 32px;
           height: 32px;
           border-radius: 10px;
-          background: #182236;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          color: #f8fafc;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          color: #2563eb;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           box-shadow: 
-            3px 3px 8px rgba(0, 0, 0, 0.4),
-            inset 1px 1px 2px rgba(255, 255, 255, 0.1),
-            inset -1px -1px 2px rgba(0, 0, 0, 0.4);
+            3px 3px 8px rgba(162, 178, 201, 0.3),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.9);
           transition: transform 0.2s ease;
         }
 
         .clay-arrow-btn:hover {
           transform: scale(1.08);
-          background: #202b44;
+          background: #e2eaf4;
         }
 
         .clay-popular-stats {
           font-size: 13px;
-          color: #94a3b8;
+          color: #64748b;
           margin-bottom: 16px;
+          font-weight: 600;
         }
 
         .clay-popular-divider {
           width: 100%;
           height: 1px;
-          background: rgba(255, 255, 255, 0.06);
+          background: #e2eaf4;
           margin-top: auto;
           margin-bottom: 12px;
         }
@@ -2317,12 +2381,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .clay-popular-foot-lbl {
-          color: #64748b;
+          color: #94a3b8;
+          font-weight: 600;
         }
 
         .clay-popular-foot-val {
-          color: #94a3b8;
-          font-weight: 600;
+          color: #0f172a;
+          font-weight: 800;
         }
 
         /* ── ROW 3: Tables Grid ── */
@@ -2349,13 +2414,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           color: #64748b;
           text-transform: uppercase;
           padding: 8px 12px 14px 12px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          border-bottom: 1.5px solid #e2e8f0;
           text-align: left;
         }
 
         .clay-data-table td {
           padding: 14px 12px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+          border-bottom: 1px solid #f1f5f9;
           vertical-align: middle;
         }
 
@@ -2372,18 +2437,18 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           width: 32px;
           height: 32px;
           border-radius: 9px;
-          background: #0d121f;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          color: #94a3b8;
+          background: #e2eaf4;
+          border: 1.5px solid #ffffff;
+          color: #2563eb;
           font-size: 11px;
-          font-weight: 700;
-          box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.5);
+          font-weight: 800;
+          box-shadow: 2px 2px 6px rgba(162, 178, 201, 0.25);
           flex-shrink: 0;
         }
 
         .clay-entity-name {
-          color: #f8fafc;
-          font-weight: 500;
+          color: #0f172a;
+          font-weight: 600;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -2391,8 +2456,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .clay-count-val {
-          font-weight: 600;
-          color: #f8fafc;
+          font-weight: 700;
+          color: #0f172a;
         }
 
         .clay-share-col {
@@ -2405,10 +2470,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-bar-trough {
           width: 64px;
           height: 6px;
-          background: #0d121f;
+          background: #e2eaf4;
           border-radius: 9999px;
           overflow: hidden;
-          box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.6);
+          box-shadow: inset 1px 1px 2px rgba(162, 178, 201, 0.3);
         }
 
         .clay-bar-fill {
@@ -2418,19 +2483,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .fill-cyan {
-          background: #22d3ee;
-          box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+          background: #2563eb;
+          box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
         }
 
         .fill-amber {
-          background: #fbbf24;
-          box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+          background: #f59e0b;
+          box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
         }
 
         .clay-share-text {
           font-size: 12px;
-          font-weight: 600;
-          color: #94a3b8;
+          font-weight: 700;
+          color: #64748b;
           min-width: 44px;
           text-align: right;
         }
@@ -2473,15 +2538,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         .clay-donut-percent {
           font-size: 26px;
           font-weight: 800;
-          color: #ffffff;
+          color: #0f172a;
           line-height: 1;
           letter-spacing: -0.02em;
         }
 
         .clay-donut-sub {
           font-size: 11px;
-          color: #94a3b8;
-          font-weight: 500;
+          color: #64748b;
+          font-weight: 600;
           margin-top: 4px;
         }
 
@@ -2512,28 +2577,28 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .dot-cyan {
-          background: #22d3ee;
-          box-shadow: 0 0 6px rgba(34, 211, 238, 0.6);
+          background: #2563eb;
+          box-shadow: 0 0 6px rgba(37, 99, 235, 0.4);
         }
 
         .dot-amber {
-          background: #fbbf24;
-          box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+          background: #f59e0b;
+          box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
         }
 
         .dot-purple {
-          background: #a855f7;
-          box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
+          background: #8b5cf6;
+          box-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
         }
 
         .clay-legend-label {
-          color: #94a3b8;
-          font-weight: 500;
+          color: #475569;
+          font-weight: 600;
         }
 
         .clay-legend-val {
-          font-weight: 600;
-          color: #f8fafc;
+          font-weight: 700;
+          color: #0f172a;
         }
 
         .clay-trend-chart-box {
@@ -2548,23 +2613,25 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           justify-content: space-between;
           padding: 18px 4px 6px;
           font-size: 12px;
-          color: #475569;
-          border-top: 1px solid rgba(255, 255, 255, 0.04);
+          color: #64748b;
+          border-top: 1.5px solid #cbd5e1;
           margin-top: 8px;
         }
 
         .clay-foot-left {
           color: #64748b;
+          font-weight: 600;
         }
 
         .clay-foot-right {
           color: #64748b;
+          font-weight: 600;
         }
 
         /* Loading Screen */
         .clay-loading-screen {
           min-height: 100vh;
-          background: #0b0f19;
+          background: #e6ecf5;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2577,26 +2644,25 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 16px;
           padding: 40px;
           border-radius: 28px;
-          background: #141c2e;
+          background: #ffffff;
           box-shadow: 
-            14px 14px 30px rgba(0, 0, 0, 0.5),
-            -6px -6px 16px rgba(255, 255, 255, 0.03),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.08);
+            10px 14px 28px rgba(162, 178, 201, 0.35),
+            -6px -6px 16px rgba(255, 255, 255, 0.9);
         }
 
         .clay-spinner {
           width: 44px;
           height: 44px;
           border-radius: 50%;
-          border: 4px solid #1a243c;
-          border-top-color: #22d3ee;
+          border: 4px solid #e2eaf4;
+          border-top-color: #2563eb;
           animation: spin 0.8s linear infinite;
         }
 
         .clay-loading-text {
           font-size: 14px;
-          font-weight: 600;
-          color: #94a3b8;
+          font-weight: 700;
+          color: #0f172a;
         }
 
         /* ── Responsiveness ── */

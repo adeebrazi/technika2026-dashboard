@@ -63,8 +63,12 @@ export const AdminLayout: React.FC = () => {
         {/* Brand Header */}
         <div className="clay-sidebar-brand">
           <div className="clay-brand-row">
-            <div className="clay-brand-logo">
-              <span className="clay-brand-t">T</span>
+            <div className="clay-brand-logo" style={{ padding: 0, overflow: 'hidden' }}>
+              <img 
+                src="/technika_logo.jpg" 
+                alt="Technika 6.0" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} 
+              />
             </div>
             {!sidebarCollapsed && (
               <div className="clay-brand-text">

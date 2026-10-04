@@ -12,8 +12,87 @@ export const UsersView: React.FC = () => {
   const [filterEvent, setFilterEvent] = useState('all');
   const [accessLevel, setAccessLevel] = useState<'full' | 'limited'>('limited');
   
-  // Modal State
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Modal State & Multi-Document Viewer
+  interface UserDocument {
+    id: string;
+    title: string;
+    subtitle: string;
+    url: string;
+    badge: string;
+    type: 'slip' | 'idcard' | 'payment' | 'other';
+    icon: string;
+  }
+
+  const [activeDocModal, setActiveDocModal] = useState<{
+    user: any;
+    docs: UserDocument[];
+    activeIdx: number;
+    viewMode: 'tabs' | 'side-by-side';
+  } | null>(null);
+
+  const getUserDocuments = (user: any): UserDocument[] => {
+    const docs: UserDocument[] = [];
+    const addedUrls = new Set<string>();
+
+    // 1. No-Dues Manual Payment Slip (AJU Exempt Students)
+    if (user.noDuesSlipUrl && typeof user.noDuesSlipUrl === 'string' && user.noDuesSlipUrl.trim()) {
+      docs.push({
+        id: 'nodues',
+        title: '₹600 No-Dues Manual Slip',
+        subtitle: 'Official Departmental Clearance Receipt',
+        url: user.noDuesSlipUrl.trim(),
+        badge: 'No-Dues Slip',
+        type: 'slip',
+        icon: '📄'
+      });
+      addedUrls.add(user.noDuesSlipUrl.trim());
+    }
+
+    // 2. College Student ID Card
+    if (user.collegeIdCardUrl && typeof user.collegeIdCardUrl === 'string' && user.collegeIdCardUrl.trim()) {
+      docs.push({
+        id: 'idcard',
+        title: 'College ID Card',
+        subtitle: `${user.institution || 'College'} · ${user.course || 'Student'} verification`,
+        url: user.collegeIdCardUrl.trim(),
+        badge: 'College ID',
+        type: 'idcard',
+        icon: '🪪'
+      });
+      addedUrls.add(user.collegeIdCardUrl.trim());
+    }
+
+    // 3. Online UPI Payment Screenshot (or fallback payment screenshot)
+    if (user.paymentScreenshotUrl && typeof user.paymentScreenshotUrl === 'string' && user.paymentScreenshotUrl.trim()) {
+      const trimmed = user.paymentScreenshotUrl.trim();
+      if (!addedUrls.has(trimmed)) {
+        const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
+        docs.push({
+          id: 'payment',
+          title: isExempt ? 'Fee Receipt / Verification Slip' : 'Online Payment UPI Screenshot',
+          subtitle: `UTR: ${user.utrEnteredManually || user.paymentUTR || 'N/A'}`,
+          url: trimmed,
+          badge: isExempt ? 'Receipt' : 'UPI SS',
+          type: 'payment',
+          icon: '📸'
+        });
+        addedUrls.add(trimmed);
+      }
+    }
+
+    return docs;
+  };
+
+  const openDocViewer = (user: any, initialIndex = 0) => {
+    const docs = getUserDocuments(user);
+    if (docs.length === 0) return;
+    setActiveDocModal({
+      user,
+      docs,
+      activeIdx: Math.min(initialIndex, docs.length - 1),
+      viewMode: 'tabs'
+    });
+  };
 
   const getFullImageUrl = (url?: string) => {
     if (!url) return '';
@@ -271,16 +350,71 @@ export const UsersView: React.FC = () => {
                     </td>
                     {fullAccess && (
                       <td>
-                        <button
-                          onClick={() => setSelectedImage(user.paymentScreenshotUrl)}
-                          className="clay-view-ss-btn"
-                        >
-                          📸 View SS
-                        </button>
-                        <div className="clay-utr-info">
-                          <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR}</div>
-                          <div><strong>Fetched:</strong> {user.utrFetchedFromScreenshot || 'PENDING'}</div>
-                        </div>
+                        {(() => {
+                          const docs = getUserDocuments(user);
+                          if (docs.length === 0) {
+                            return (
+                              <div>
+                                <span className="clay-no-events">No SS</span>
+                                <div className="clay-utr-info">
+                                  <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR || 'N/A'}</div>
+                                  <div><strong>Fetched:</strong> {user.utrFetchedFromScreenshot || 'PENDING'}</div>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (docs.length === 1) {
+                            return (
+                              <div className="clay-ss-cell-wrap">
+                                <button
+                                  onClick={() => openDocViewer(user, 0)}
+                                  className="clay-view-ss-btn"
+                                  title={`View ${docs[0].title}`}
+                                >
+                                  <span>{docs[0].icon} View SS</span>
+                                </button>
+                                <div className="clay-utr-info">
+                                  <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR}</div>
+                                  <div><strong>Fetched:</strong> {user.utrFetchedFromScreenshot || 'PENDING'}</div>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // 2 or more screenshots (e.g. No-Dues Slip + College ID)
+                          return (
+                            <div className="clay-multi-ss-cell">
+                              <button
+                                onClick={() => openDocViewer(user, 0)}
+                                className="clay-view-ss-btn clay-multi-ss-main-btn"
+                                title="Click to view both uploaded screenshots in side-by-side or tabbed modal"
+                              >
+                                <span>📸 View SS</span>
+                                <span className="clay-ss-count-chip">{docs.length} Files</span>
+                              </button>
+
+                              <div className="clay-ss-quick-tags">
+                                {docs.map((doc, dIdx) => (
+                                  <button
+                                    key={doc.id}
+                                    onClick={() => openDocViewer(user, dIdx)}
+                                    className={`clay-ss-mini-tag tag-${doc.type}`}
+                                    title={`Click to open ${doc.title}`}
+                                  >
+                                    <span>{doc.icon}</span>
+                                    <span>{doc.badge}</span>
+                                  </button>
+                                ))}
+                              </div>
+
+                              <div className="clay-utr-info">
+                                <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR}</div>
+                                <div><strong>Fetched:</strong> {user.utrFetchedFromScreenshot || 'PENDING'}</div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
                     )}
                     {canDelete && (
@@ -301,20 +435,198 @@ export const UsersView: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Payment Screenshot Modal ── */}
-      {selectedImage && (
-        <div className="clay-modal-overlay" onClick={() => setSelectedImage(null)}>
-          <div className="clay-modal-card" onClick={(e) => e.stopPropagation()}>
+      {/* ── Multi-Screenshot & Verification Documents Modal ── */}
+      {activeDocModal && (
+        <div className="clay-modal-overlay" onClick={() => setActiveDocModal(null)}>
+          <div className="clay-modal-card clay-doc-modal-card" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
             <div className="clay-modal-header">
-              <span className="clay-modal-title">📸 Payment Screenshot</span>
-              <button className="clay-modal-close" onClick={() => setSelectedImage(null)}>✕</button>
+              <div className="clay-modal-title-group">
+                <div className="clay-modal-title">
+                  📸 Verification Documents
+                  <span className="clay-modal-user-chip">{activeDocModal.user.name}</span>
+                </div>
+                <div className="clay-modal-sub">
+                  Reg ID: <strong style={{ color: '#2563eb' }}>{activeDocModal.user.registrationId}</strong>
+                  &nbsp;·&nbsp;
+                  {activeDocModal.user.institution}
+                  {activeDocModal.user.course && ` · ${activeDocModal.user.course}`}
+                </div>
+              </div>
+
+              <div className="clay-modal-actions-top">
+                {activeDocModal.docs.length > 1 && (
+                  <div className="clay-viewmode-toggle">
+                    <button
+                      className={`clay-viewmode-btn ${activeDocModal.viewMode === 'tabs' ? 'active' : ''}`}
+                      onClick={() => setActiveDocModal({ ...activeDocModal, viewMode: 'tabs' })}
+                      title="Single document focus view with tab selection"
+                    >
+                      Single View
+                    </button>
+                    <button
+                      className={`clay-viewmode-btn ${activeDocModal.viewMode === 'side-by-side' ? 'active' : ''}`}
+                      onClick={() => setActiveDocModal({ ...activeDocModal, viewMode: 'side-by-side' })}
+                      title="View both screenshots side-by-side simultaneously"
+                    >
+                      ⊞ Side-by-Side (Both)
+                    </button>
+                  </div>
+                )}
+                <button 
+                  className="clay-modal-close" 
+                  onClick={() => setActiveDocModal(null)}
+                  title="Close (Esc)"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-            <div className="clay-modal-body">
-              <img 
-                src={getFullImageUrl(selectedImage)} 
-                alt="Payment Screenshot" 
-                className="clay-modal-img"
-              />
+
+            {/* Document Tabs Bar (when multiple documents) */}
+            {activeDocModal.docs.length > 1 && (
+              <div className="clay-doc-tabs-bar">
+                {activeDocModal.docs.map((doc, idx) => (
+                  <button
+                    key={doc.id}
+                    className={`clay-doc-tab-btn ${activeDocModal.activeIdx === idx && activeDocModal.viewMode === 'tabs' ? 'active' : ''}`}
+                    onClick={() => setActiveDocModal({ ...activeDocModal, activeIdx: idx, viewMode: 'tabs' })}
+                  >
+                    <span className="clay-doc-tab-icon">{doc.icon}</span>
+                    <span className="clay-doc-tab-title">{doc.title}</span>
+                    <span className="clay-doc-tab-pill">{idx + 1} of {activeDocModal.docs.length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Modal Body */}
+            <div className="clay-modal-body clay-doc-modal-body">
+              {activeDocModal.viewMode === 'side-by-side' && activeDocModal.docs.length > 1 ? (
+                /* Side-by-Side Dual View */
+                <div className="clay-side-by-side-grid">
+                  {activeDocModal.docs.map((doc) => (
+                    <div key={doc.id} className="clay-side-card">
+                      <div className="clay-side-card-head">
+                        <div className="clay-side-head-left">
+                          <span className="clay-side-doc-icon">{doc.icon}</span>
+                          <div>
+                            <div className="clay-side-title">{doc.title}</div>
+                            <div className="clay-side-sub">{doc.subtitle}</div>
+                          </div>
+                        </div>
+                        <a
+                          href={getFullImageUrl(doc.url)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="clay-open-full-btn"
+                          title="Open original full resolution image in new tab"
+                        >
+                          Open Original ↗
+                        </a>
+                      </div>
+                      <div className="clay-side-img-box">
+                        <img
+                          src={getFullImageUrl(doc.url)}
+                          alt={doc.title}
+                          className="clay-modal-img"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Single Document Focus View */
+                (() => {
+                  const currentDoc = activeDocModal.docs[activeDocModal.activeIdx] || activeDocModal.docs[0];
+                  return (
+                    <div className="clay-single-doc-container">
+                      <div className="clay-single-doc-head">
+                        <div className="clay-single-head-info">
+                          <span className="clay-single-icon">{currentDoc.icon}</span>
+                          <div>
+                            <div className="clay-single-doc-title">{currentDoc.title}</div>
+                            <div className="clay-single-doc-sub">{currentDoc.subtitle}</div>
+                          </div>
+                        </div>
+
+                        <div className="clay-single-head-right">
+                          {activeDocModal.docs.length > 1 && (
+                            <div className="clay-nav-arrows">
+                              <button
+                                className="clay-nav-arrow-btn"
+                                disabled={activeDocModal.activeIdx === 0}
+                                onClick={() => setActiveDocModal({
+                                  ...activeDocModal,
+                                  activeIdx: Math.max(0, activeDocModal.activeIdx - 1)
+                                })}
+                                title="Previous document"
+                              >
+                                ← Prev
+                              </button>
+                              <span className="clay-nav-page-num">
+                                {activeDocModal.activeIdx + 1} / {activeDocModal.docs.length}
+                              </span>
+                              <button
+                                className="clay-nav-arrow-btn"
+                                disabled={activeDocModal.activeIdx === activeDocModal.docs.length - 1}
+                                onClick={() => setActiveDocModal({
+                                  ...activeDocModal,
+                                  activeIdx: Math.min(activeDocModal.docs.length - 1, activeDocModal.activeIdx + 1)
+                                })}
+                                title="Next document"
+                              >
+                                Next →
+                              </button>
+                            </div>
+                          )}
+                          <a
+                            href={getFullImageUrl(currentDoc.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="clay-open-full-btn"
+                            title="Open original high-res image in new tab"
+                          >
+                            Open Original ↗
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className="clay-single-img-wrap">
+                        <img
+                          src={getFullImageUrl(currentDoc.url)}
+                          alt={currentDoc.title}
+                          className="clay-modal-img"
+                        />
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+
+            {/* Modal Footer with Verification Metadata */}
+            <div className="clay-modal-footer">
+              <div className="clay-doc-meta-item">
+                <span className="meta-label">Entered UTR:</span>
+                <span className="meta-val">{activeDocModal.user.utrEnteredManually || activeDocModal.user.paymentUTR || 'N/A'}</span>
+              </div>
+              <div className="clay-doc-meta-item">
+                <span className="meta-label">Fetched UTR:</span>
+                <span className="meta-val">{activeDocModal.user.utrFetchedFromScreenshot || 'PENDING'}</span>
+              </div>
+              <div className="clay-doc-meta-item">
+                <span className="meta-label">Status:</span>
+                <span className={`meta-badge status-${(activeDocModal.user.verificationStatus || '').toLowerCase()}`}>
+                  {activeDocModal.user.verificationStatus || 'UNKNOWN'}
+                </span>
+              </div>
+              {activeDocModal.user.isAjuExempt && (
+                <div className="clay-doc-meta-item">
+                  <span className="meta-badge badge-exempt">⚡ AJU Exempt (No-Dues)</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -614,20 +926,20 @@ export const UsersView: React.FC = () => {
         .clay-view-ss-btn {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
-          padding: 5px 12px;
-          border-radius: 10px;
-          border: 2px solid rgba(255, 255, 255, 0.8);
+          gap: 6px;
+          padding: 6px 13px;
+          border-radius: 11px;
+          border: 2px solid rgba(255, 255, 255, 0.9);
           background: #dbeafe;
           color: #2563eb;
-          font-weight: 700;
+          font-weight: 800;
           font-size: 0.72rem;
           cursor: pointer;
           text-transform: uppercase;
-          margin-bottom: 6px;
+          margin-bottom: 5px;
           box-shadow:
-            3px 4px 10px rgba(37, 99, 235, 0.12),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+            3px 4px 10px rgba(37, 99, 235, 0.14),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.85),
             inset -2px -2px 4px rgba(37, 99, 235, 0.1);
           transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
@@ -635,9 +947,78 @@ export const UsersView: React.FC = () => {
         .clay-view-ss-btn:hover {
           transform: translateY(-1px);
           box-shadow:
-            4px 6px 14px rgba(37, 99, 235, 0.18),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.8),
-            inset -2px -2px 4px rgba(37, 99, 235, 0.12);
+            4px 6px 14px rgba(37, 99, 235, 0.2),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+            inset -2px -2px 4px rgba(37, 99, 235, 0.14);
+        }
+
+        .clay-multi-ss-cell {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+        }
+
+        .clay-multi-ss-main-btn {
+          background: linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%);
+          color: #1d4ed8;
+          border-color: rgba(255, 255, 255, 0.95);
+        }
+
+        .clay-ss-count-chip {
+          background: #2563eb;
+          color: #ffffff;
+          font-size: 0.62rem;
+          font-weight: 900;
+          padding: 1px 6px;
+          border-radius: 9999px;
+          letter-spacing: 0.02em;
+          box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+        }
+
+        .clay-ss-quick-tags {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin-bottom: 4px;
+        }
+
+        .clay-ss-mini-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 2px 7px;
+          font-size: 0.65rem;
+          font-weight: 800;
+          border-radius: 7px;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          cursor: pointer;
+          transition: all 0.15s ease;
+          box-shadow:
+            1.5px 2px 4px rgba(162, 178, 201, 0.25),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .clay-ss-mini-tag:hover {
+          transform: translateY(-1px);
+        }
+
+        .clay-ss-mini-tag.tag-slip {
+          background: #fef3c7;
+          color: #b45309;
+          border-color: #fde68a;
+        }
+
+        .clay-ss-mini-tag.tag-idcard {
+          background: #ecfdf5;
+          color: #047857;
+          border-color: #a7f3d0;
+        }
+
+        .clay-ss-mini-tag.tag-payment {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
         }
 
         .clay-utr-info {
@@ -677,13 +1058,13 @@ export const UsersView: React.FC = () => {
             inset -2px -2px 4px rgba(239, 68, 68, 0.12);
         }
 
-        /* ── Modal ── */
+        /* ── Multi-Screenshot Modal ── */
         .clay-modal-overlay {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(15, 23, 42, 0.6);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          background: rgba(15, 23, 42, 0.65);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -707,25 +1088,92 @@ export const UsersView: React.FC = () => {
           overflow: hidden;
         }
 
+        .clay-doc-modal-card {
+          width: 96vw;
+          max-width: 1040px;
+          max-height: 94vh;
+        }
+
         .clay-modal-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 1rem 1.25rem;
-          border-bottom: 2px solid rgba(255, 255, 255, 0.7);
+          padding: 1.1rem 1.4rem;
+          border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+          background: rgba(255, 255, 255, 0.4);
+          gap: 16px;
+        }
+
+        .clay-modal-title-group {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
         }
 
         .clay-modal-title {
           font-weight: 800;
-          font-size: 0.95rem;
+          font-size: 1.05rem;
           color: #0f172a;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .clay-modal-user-chip {
+          background: #dbeafe;
+          color: #1d4ed8;
+          padding: 2px 10px;
+          border-radius: 9999px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
+        .clay-modal-sub {
+          font-size: 0.78rem;
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .clay-modal-actions-top {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .clay-viewmode-toggle {
+          display: flex;
+          background: #e2eaf4;
+          padding: 3px;
+          border-radius: 12px;
+          border: 1.5px solid rgba(255, 255, 255, 0.9);
+          box-shadow: inset 1px 1px 3px rgba(162, 178, 201, 0.3);
+        }
+
+        .clay-viewmode-btn {
+          border: none;
+          background: transparent;
+          color: #64748b;
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 5px 12px;
+          border-radius: 9px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .clay-viewmode-btn.active {
+          background: #ffffff;
+          color: #0f172a;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         }
 
         .clay-modal-close {
-          width: 32px; height: 32px; border-radius: 50%;
+          width: 34px; height: 34px; border-radius: 50%;
           border: 2px solid rgba(255, 255, 255, 0.8);
           background: #e2eaf4;
-          color: #64748b; font-size: 0.8rem; font-weight: 900;
+          color: #64748b; font-size: 0.85rem; font-weight: 900;
           cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           box-shadow:
@@ -733,6 +1181,7 @@ export const UsersView: React.FC = () => {
             inset -2px -2px 4px rgba(162, 178, 201, 0.3),
             3px 3px 8px rgba(162, 178, 201, 0.2);
           transition: all 0.2s;
+          flex-shrink: 0;
         }
 
         .clay-modal-close:hover {
@@ -741,20 +1190,323 @@ export const UsersView: React.FC = () => {
           transform: scale(1.05);
         }
 
-        .clay-modal-body {
-          padding: 1rem;
-          overflow: auto;
+        /* Tabs Bar */
+        .clay-doc-tabs-bar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 1.4rem;
+          background: rgba(255, 255, 255, 0.6);
+          border-bottom: 1.5px solid rgba(255, 255, 255, 0.8);
+          overflow-x: auto;
+        }
+
+        .clay-doc-tab-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 14px;
+          border-radius: 12px;
+          border: 1.5px solid #e2e8f0;
+          background: #f8fafc;
+          color: #475569;
+          font-weight: 700;
+          font-size: 0.78rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .clay-doc-tab-btn:hover {
+          background: #ffffff;
+          color: #0f172a;
+        }
+
+        .clay-doc-tab-btn.active {
+          background: #ffffff;
+          border-color: #2563eb;
+          color: #2563eb;
+          box-shadow:
+            3px 4px 12px rgba(37, 99, 235, 0.12),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+        }
+
+        .clay-doc-tab-pill {
+          background: #e2e8f0;
+          color: #64748b;
+          font-size: 0.65rem;
+          padding: 1px 6px;
+          border-radius: 9999px;
+          font-weight: 800;
+        }
+
+        .clay-doc-tab-btn.active .clay-doc-tab-pill {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
+        /* Modal Body */
+        .clay-doc-modal-body {
+          padding: 1.25rem 1.4rem;
+          overflow-y: auto;
+          flex-grow: 1;
+        }
+
+        /* Side-by-Side Dual View */
+        .clay-side-by-side-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 20px;
+        }
+
+        .clay-side-card {
+          background: #ffffff;
+          border-radius: 18px;
+          border: 2px solid rgba(255, 255, 255, 0.9);
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          box-shadow:
+            6px 8px 20px rgba(162, 178, 201, 0.2),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.9);
+        }
+
+        .clay-side-card-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          gap: 10px;
+        }
+
+        .clay-side-head-left {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .clay-side-doc-icon {
+          font-size: 1.3rem;
+        }
+
+        .clay-side-title {
+          font-size: 0.85rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .clay-side-sub {
+          font-size: 0.72rem;
+          color: #64748b;
+        }
+
+        .clay-side-img-box {
+          width: 100%;
+          min-height: 280px;
+          max-height: 55vh;
+          background: #f1f5f9;
+          border-radius: 12px;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #e2e8f0;
+        }
+
+        .clay-side-img-box img {
+          width: 100%;
+          height: 100%;
+          max-height: 55vh;
+          object-fit: contain;
+        }
+
+        /* Single Document View */
+        .clay-single-doc-container {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .clay-single-doc-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #ffffff;
+          padding: 12px 16px;
+          border-radius: 16px;
+          border: 1.5px solid rgba(255, 255, 255, 0.9);
+          box-shadow: 2px 4px 10px rgba(162, 178, 201, 0.15);
+        }
+
+        .clay-single-head-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .clay-single-icon {
+          font-size: 1.5rem;
+        }
+
+        .clay-single-doc-title {
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .clay-single-doc-sub {
+          font-size: 0.75rem;
+          color: #64748b;
+        }
+
+        .clay-single-head-right {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .clay-nav-arrows {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: #f1f5f9;
+          padding: 3px 6px;
+          border-radius: 10px;
+        }
+
+        .clay-nav-arrow-btn {
+          border: none;
+          background: #ffffff;
+          padding: 4px 10px;
+          border-radius: 7px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #2563eb;
+          cursor: pointer;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+          transition: all 0.15s ease;
+        }
+
+        .clay-nav-arrow-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+          color: #94a3b8;
+        }
+
+        .clay-nav-page-num {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #475569;
+          padding: 0 4px;
+        }
+
+        .clay-open-full-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.74rem;
+          font-weight: 800;
+          color: #2563eb;
+          text-decoration: none;
+          padding: 5px 11px;
+          border-radius: 9px;
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
+          transition: all 0.15s ease;
+        }
+
+        .clay-open-full-btn:hover {
+          background: #dbeafe;
+          transform: translateY(-1px);
+        }
+
+        .clay-single-img-wrap {
+          width: 100%;
+          min-height: 380px;
+          max-height: 65vh;
+          background: #f8fafc;
+          border-radius: 16px;
+          border: 2px solid #ffffff;
+          box-shadow:
+            inset 2px 2px 6px rgba(162, 178, 201, 0.2),
+            5px 6px 16px rgba(162, 178, 201, 0.15);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          padding: 8px;
         }
 
         .clay-modal-img {
           max-width: 100%;
-          max-height: 75vh;
+          max-height: 65vh;
           object-fit: contain;
-          border-radius: 14px;
-          border: 2px solid rgba(255, 255, 255, 0.8);
-          box-shadow:
-            6px 8px 18px rgba(162, 178, 201, 0.25),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.6);
+          border-radius: 10px;
+        }
+
+        /* Modal Footer */
+        .clay-modal-footer {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 0.9rem 1.4rem;
+          background: rgba(255, 255, 255, 0.6);
+          border-top: 1.5px solid rgba(255, 255, 255, 0.8);
+          flex-wrap: wrap;
+        }
+
+        .clay-doc-meta-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.74rem;
+        }
+
+        .meta-label {
+          color: #64748b;
+          font-weight: 700;
+        }
+
+        .meta-val {
+          color: #0f172a;
+          font-weight: 800;
+          font-family: monospace;
+          background: #ffffff;
+          padding: 2px 6px;
+          border-radius: 5px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .meta-badge {
+          padding: 2px 8px;
+          border-radius: 9999px;
+          font-size: 0.68rem;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+
+        .meta-badge.status-success {
+          background: #dcfce7;
+          color: #15803d;
+          border: 1px solid #86efac;
+        }
+
+        .meta-badge.status-pending {
+          background: #fef9c3;
+          color: #a16207;
+          border: 1px solid #fde047;
+        }
+
+        .meta-badge.status-failed {
+          background: #fee2e2;
+          color: #b91c1c;
+          border: 1px solid #fca5a5;
+        }
+
+        .meta-badge.badge-exempt {
+          background: #fdf4ff;
+          color: #9333ea;
+          border: 1px solid #e9d5ff;
         }
 
         /* ── Responsive ── */
