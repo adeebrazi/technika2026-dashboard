@@ -74,9 +74,9 @@ export const DeveloperDashboard: React.FC = () => {
       status: 'ONLINE',
       pingMs: 78,
       lastCommit: {
-        hash: '727447a',
-        message: 'chore: remove Dashboard subfolder as it is now in a standalone repository',
-        date: 'Sun Oct 4 20:01:40 2026 +0530',
+        hash: 'b0b5b16',
+        message: 'feat(security): disable right-click context menu and inspection shortcuts',
+        date: 'Mon Oct 5 00:40:45 2026 +0530',
         author: 'adeebrazi'
       }
     },
@@ -110,9 +110,9 @@ export const DeveloperDashboard: React.FC = () => {
       status: 'ONLINE',
       pingMs: 1,
       lastCommit: {
-        hash: '8573cd8',
-        message: 'Remove tab strip, add Event Categories and Age Demographics analytics',
-        date: 'Sun Oct 4 20:41:28 2026 +0530',
+        hash: 'ef5edef',
+        message: 'fix(security): strictly require passcode 2207 on every page load, refresh or navigation',
+        date: 'Mon Oct 5 00:37:10 2026 +0530',
         author: 'adeebrazi'
       }
     }
