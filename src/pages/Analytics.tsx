@@ -389,7 +389,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           {adminAuth.token ? (
             <div className="clay-auth-group">
               <button 
-                onClick={() => navigate('/admin/users')}
+                onClick={() => navigate('/admin/participants')}
                 className="clay-portal-user-btn"
                 title="Go to Admin Workspace"
               >

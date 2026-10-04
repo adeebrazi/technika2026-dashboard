@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Navigate, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 
 export const AdminLayout: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const token = localStorage.getItem('adminToken');
@@ -14,14 +13,6 @@ export const AdminLayout: React.FC = () => {
   if (!token) {
     return <Navigate to="/admin/login" replace />;
   }
-
-  const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminRole');
-    localStorage.removeItem('adminName');
-    localStorage.removeItem('adminDesignation');
-    navigate('/');
-  };
 
   const getInitials = (fullName: string) => {
     return fullName
@@ -35,7 +26,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { name: 'Analytics', path: '/', icon: '📊', desc: 'Public dashboard & stats' },
-    { name: 'Participants', path: '/admin/users', icon: '👤', desc: 'View all registrations' },
+    { name: 'Participants', path: '/admin/participants', icon: '👤', desc: 'View all registrations' },
     { name: 'Teams', path: '/admin/teams', icon: '👥', desc: 'Team formations & rosters' },
     { name: 'Developer', path: '/developer', icon: '⚡', desc: 'Pipelines & health check' },
   ];
@@ -52,13 +43,13 @@ export const AdminLayout: React.FC = () => {
   const roleBadge = getRoleBadgeColor();
 
   return (
-    <div className="clay-admin-shell">
+    <div className={`clay-admin-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* ── Background Floating Orbs ── */}
       <div className="clay-bg-orb clay-bg-orb-1" />
       <div className="clay-bg-orb clay-bg-orb-2" />
       <div className="clay-bg-orb clay-bg-orb-3" />
 
-      {/* ── Sidebar ── */}
+      {/* ── Sidebar (Fixed & Locked) ── */}
       <aside className={`clay-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
         {/* Brand Header */}
         <div className="clay-sidebar-brand">
@@ -86,8 +77,12 @@ export const AdminLayout: React.FC = () => {
           </button>
         </div>
 
-        {/* Profile Card */}
-        <div className="clay-profile-card">
+        {/* Profile Card as Button to Complete Profile Section (/admin) */}
+        <Link 
+          to="/admin" 
+          className={`clay-profile-card ${location.pathname === '/admin' ? 'active' : ''}`}
+          title="View Complete Profile, Credentials & Settings"
+        >
           <div className="clay-avatar">
             <span className="clay-avatar-initials">{getInitials(name)}</span>
             <span className="clay-avatar-status" />
@@ -104,7 +99,10 @@ export const AdminLayout: React.FC = () => {
               </span>
             </div>
           )}
-        </div>
+          {!sidebarCollapsed && (
+            <span className="clay-profile-arrow" title="View Profile">→</span>
+          )}
+        </Link>
 
         {/* Navigation */}
         <nav className="clay-nav">
@@ -135,18 +133,6 @@ export const AdminLayout: React.FC = () => {
             })}
           </ul>
         </nav>
-
-        {/* Sidebar Footer Logout */}
-        <div className="clay-sidebar-footer">
-          <button 
-            onClick={handleLogout} 
-            className="clay-logout-btn"
-            title="Sign out of Admin Portal"
-          >
-            <span className="clay-logout-icon">🚪</span>
-            {!sidebarCollapsed && <span className="clay-logout-text">Log Out</span>}
-          </button>
-        </div>
       </aside>
 
       {/* ── Main Content Area ── */}
@@ -220,10 +206,15 @@ export const AdminLayout: React.FC = () => {
           100% { transform: translateY(-20px) rotate(5deg); }
         }
 
-        /* ── Sidebar ── */
+        /* ── Sidebar (Fixed & Locked) ── */
         .clay-sidebar {
           width: 270px;
           min-width: 270px;
+          height: 100vh;
+          position: fixed;
+          top: 0;
+          left: 0;
+          bottom: 0;
           background: #eef3f9;
           border-right: 2.5px solid rgba(255, 255, 255, 0.9);
           box-shadow:
@@ -232,9 +223,9 @@ export const AdminLayout: React.FC = () => {
             inset 4px 0 12px rgba(255, 255, 255, 0.6);
           display: flex;
           flex-direction: column;
-          position: relative;
-          z-index: 10;
-          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          z-index: 100;
+          overflow-y: auto;
+          transition: width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .clay-sidebar.collapsed {
@@ -334,9 +325,9 @@ export const AdminLayout: React.FC = () => {
           transform: scale(1.08);
         }
 
-        /* ── Profile Card ── */
+        /* ── Profile Card (Clickable Link to Complete Profile) ── */
         .clay-profile-card {
-          padding: 1rem;
+          padding: 0.9rem 1rem;
           margin: 0.8rem 0.75rem;
           background: #f4f8fd;
           border-radius: 18px;
@@ -349,6 +340,46 @@ export const AdminLayout: React.FC = () => {
           display: flex;
           align-items: center;
           gap: 10px;
+          text-decoration: none;
+          color: inherit;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-profile-card:hover {
+          background: #eaf1fb;
+          transform: translateY(-2px);
+          border-color: rgba(255, 255, 255, 1);
+          box-shadow:
+            8px 10px 22px rgba(162, 178, 201, 0.3),
+            -5px -5px 14px rgba(255, 255, 255, 0.9),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.9);
+        }
+
+        .clay-profile-card.active {
+          background: #e6f0fc;
+          border-color: #3b82f6;
+          box-shadow:
+            6px 8px 18px rgba(37, 99, 235, 0.18),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+            inset -2px -2px 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .clay-profile-arrow {
+          margin-left: auto;
+          font-size: 0.95rem;
+          font-weight: 900;
+          color: #94a3b8;
+          transition: transform 0.2s, color 0.2s;
+        }
+
+        .clay-profile-card:hover .clay-profile-arrow {
+          color: #2563eb;
+          transform: translateX(2px);
+        }
+
+        .clay-profile-card.active .clay-profile-arrow {
+          color: #2563eb;
         }
 
         .clay-avatar {
@@ -514,61 +545,22 @@ export const AdminLayout: React.FC = () => {
           box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
         }
 
-        /* ── Footer / Logout ── */
-        .clay-sidebar-footer {
-          padding: 0.75rem;
-          border-top: 2px solid rgba(255, 255, 255, 0.7);
-        }
-
-        .clay-logout-btn {
-          width: 100%;
-          padding: 0.65rem 0.85rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          border: 2px solid rgba(239, 68, 68, 0.15);
-          border-radius: 14px;
-          background: #fef2f2;
-          color: #dc2626;
-          font-weight: 800;
-          font-size: 0.78rem;
-          cursor: pointer;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          box-shadow:
-            4px 5px 12px rgba(239, 68, 68, 0.1),
-            -3px -3px 8px rgba(255, 255, 255, 0.7),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.8),
-            inset -2px -2px 4px rgba(239, 68, 68, 0.08);
-          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .clay-logout-btn:hover {
-          background: #fee2e2;
-          transform: translateY(-1px);
-          box-shadow:
-            6px 7px 16px rgba(239, 68, 68, 0.15),
-            -4px -4px 10px rgba(255, 255, 255, 0.8),
-            inset 2px 2px 4px rgba(255, 255, 255, 0.8),
-            inset -2px -2px 4px rgba(239, 68, 68, 0.12);
-        }
-
-        .clay-logout-icon {
-          font-size: 1rem;
-        }
-
-        .clay-logout-text {
-          font-size: 0.75rem;
-        }
-
-        /* ── Main Content ── */
+        /* ── Main Content (Offset by Fixed Sidebar) ── */
         .clay-main-content {
           flex: 1;
+          margin-left: 270px;
+          width: calc(100% - 270px);
+          min-width: 0;
+          min-height: 100vh;
           padding: 1.5rem 2rem;
-          overflow-y: auto;
           position: relative;
           z-index: 1;
+          transition: margin-left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-admin-shell.sidebar-collapsed .clay-main-content {
+          margin-left: 76px;
+          width: calc(100% - 76px);
         }
 
         /* ── Scrollbar Styles ── */
@@ -597,18 +589,20 @@ export const AdminLayout: React.FC = () => {
             min-width: 76px;
           }
 
+          .clay-main-content {
+            margin-left: 76px;
+            width: calc(100% - 76px);
+            padding: 1rem;
+          }
+
           .clay-brand-text,
           .clay-profile-info,
+          .clay-profile-arrow,
           .clay-nav-text,
           .clay-nav-active-dot,
           .clay-nav-label,
-          .clay-logout-text,
           .clay-sidebar-toggle {
             display: none !important;
-          }
-
-          .clay-main-content {
-            padding: 1rem;
           }
         }
       `}</style>

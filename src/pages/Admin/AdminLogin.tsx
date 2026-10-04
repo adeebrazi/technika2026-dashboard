@@ -62,7 +62,8 @@ export const AdminLogin: React.FC = () => {
         localStorage.setItem('adminRole', data.role);
         localStorage.setItem('adminName', data.name || 'Administrator');
         localStorage.setItem('adminDesignation', data.designation || selectedRole);
-        navigate('/admin/users');
+        localStorage.setItem('adminEmail', formData.email.trim().toLowerCase());
+        navigate('/admin/participants');
       } else {
         setError(data.message || 'Login failed. Please check your credentials.');
       }
