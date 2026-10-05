@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AnalyticsView } from './pages/Analytics';
 import { DeveloperDashboard } from './pages/DeveloperDashboard';
@@ -9,6 +10,54 @@ import { UsersView } from './pages/Admin/UsersView';
 import { TeamsView } from './pages/Admin/TeamsView';
 
 function App() {
+  // Global Anti-Inspect & Security Protection
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // F12 key
+      if (e.key === 'F12' || e.keyCode === 123) {
+        e.preventDefault();
+        return false;
+      }
+
+      const ctrlOrCmd = e.ctrlKey || e.metaKey;
+
+      // Ctrl + Shift + I (Inspect) / J (Console) / C (Inspect Element)
+      if (ctrlOrCmd && e.shiftKey && (
+        e.key === 'I' || e.key === 'i' ||
+        e.key === 'J' || e.key === 'j' ||
+        e.key === 'C' || e.key === 'c'
+      )) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Ctrl + U (View Source)
+      if (ctrlOrCmd && (e.key === 'u' || e.key === 'U')) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Ctrl + S (Save Page)
+      if (ctrlOrCmd && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu, { capture: true });
+    document.addEventListener('keydown', handleKeyDown, { capture: true });
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+      document.removeEventListener('keydown', handleKeyDown, { capture: true });
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
