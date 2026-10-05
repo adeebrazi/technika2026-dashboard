@@ -8,6 +8,7 @@ import { AdminLayout } from './pages/Admin/AdminLayout';
 import { ProfileView } from './pages/Admin/ProfileView';
 import { UsersView } from './pages/Admin/UsersView';
 import { TeamsView } from './pages/Admin/TeamsView';
+import { AccessControlView } from './pages/Admin/AccessControlView';
 
 function App() {
   // Global Anti-Inspect & Security Protection
@@ -72,6 +73,8 @@ function App() {
           <Route path="participants" element={<UsersView />} />
           <Route path="users" element={<Navigate to="/admin/participants" replace />} />
           <Route path="teams" element={<TeamsView />} />
+          <Route path="access" element={<AccessControlView />} />
+          <Route path="permissions" element={<Navigate to="/admin/access" replace />} />
           <Route path="analytics" element={<Navigate to="/" replace />} />
         </Route>
 

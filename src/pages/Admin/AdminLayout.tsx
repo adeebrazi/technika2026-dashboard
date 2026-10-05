@@ -29,6 +29,12 @@ export const AdminLayout: React.FC = () => {
     { name: 'Participants', path: '/admin/participants', icon: '👤', desc: 'View all registrations' },
     { name: 'Teams', path: '/admin/teams', icon: '👥', desc: 'Team formations & rosters' },
     { name: 'Developer', path: '/developer', icon: '⚡', desc: 'Pipelines & health check' },
+    ...(role === 'admin' ? [{ 
+      name: 'Access Control', 
+      path: '/admin/access', 
+      icon: '🛡️', 
+      desc: 'Faculty & coordinator permissions' 
+    }] : []),
   ];
 
   const getRoleBadgeColor = () => {
@@ -203,6 +209,17 @@ export const AdminLayout: React.FC = () => {
           <span className="clay-mob-icon">⚡</span>
           <span className="clay-mob-label">Dev</span>
         </Link>
+
+        {role === 'admin' && (
+          <Link 
+            to="/admin/access" 
+            className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/access') ? 'active' : ''}`}
+            title="Access Control"
+          >
+            <span className="clay-mob-icon">🛡️</span>
+            <span className="clay-mob-label">Access</span>
+          </Link>
+        )}
 
         <Link 
           to="/admin" 
