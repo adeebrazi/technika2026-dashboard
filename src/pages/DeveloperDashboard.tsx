@@ -538,31 +538,25 @@ export const DeveloperDashboard: React.FC = () => {
     <div className="dev-wrapper">
       {/* ── TOP CLAY NAVIGATION BAR ── */}
       <header className="dev-nav">
-        <div className="dev-nav-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="dev-nav-badge" title="Arka Jain University" style={{ background: '#ffffff', padding: '3px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img 
-              src="/logo.png" 
-              alt="Arka Jain University" 
-              style={{ width: '28px', height: '28px', objectFit: 'contain' }} 
-            />
-          </div>
-          <div className="dev-nav-tech-badge" title="Technika 6.0" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            padding: '4px 10px 4px 5px',
-            borderRadius: '12px'
-          }}>
-            <img 
-              src="/technika_logo.jpg" 
-              alt="Technika 6.0" 
-              style={{ width: '26px', height: '26px', borderRadius: '8px', objectFit: 'cover' }} 
-            />
-            <span style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>
-              Technika <span style={{ color: '#06b6d4' }}>6.0</span>
-            </span>
+        <div className="dev-nav-left">
+          <div className="dev-nav-logos-group">
+            <div className="dev-nav-badge" title="Arka Jain University">
+              <img 
+                src="/logo.png" 
+                alt="Arka Jain University" 
+                className="dev-logo-img"
+              />
+            </div>
+            <div className="dev-nav-tech-badge" title="Technika 6.0">
+              <img 
+                src="/technika_logo.jpg" 
+                alt="Technika 6.0" 
+                className="dev-tech-logo-img"
+              />
+              <span className="dev-tech-title">
+                Technika <span className="dev-tech-ver">6.0</span>
+              </span>
+            </div>
           </div>
           <div className="dev-nav-titles">
             <div className="dev-nav-uni">ARKA JAIN UNIVERSITY &nbsp;·&nbsp; JHARKHAND</div>
@@ -1403,16 +1397,58 @@ export const DeveloperDashboard: React.FC = () => {
           gap: 14px;
         }
 
+        .dev-nav-logos-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
         .dev-nav-badge {
-          width: 44px;
-          height: 44px;
-          border-radius: 14px;
-          background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(14, 165, 233, 0.1) 100%);
-          border: 1.5px solid rgba(34, 211, 238, 0.4);
-          box-shadow: 0 4px 15px rgba(34, 211, 238, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
+          background: #ffffff;
+          padding: 3px;
           display: flex;
           align-items: center;
           justify-content: center;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          flex-shrink: 0;
+        }
+
+        .dev-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .dev-nav-tech-badge {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 4px 10px 4px 5px;
+          border-radius: 12px;
+          flex-shrink: 0;
+        }
+
+        .dev-tech-logo-img {
+          width: 26px;
+          height: 26px;
+          border-radius: 8px;
+          object-fit: cover;
+        }
+
+        .dev-tech-title {
+          font-size: 13px;
+          font-weight: 800;
+          color: #f8fafc;
+        }
+
+        .dev-tech-ver {
+          color: #06b6d4;
         }
 
         .dev-cyan-glow {
@@ -2915,16 +2951,20 @@ export const DeveloperDashboard: React.FC = () => {
             align-items: stretch;
             padding: 12px 14px;
             gap: 12px;
+            overflow-x: hidden;
           }
           .dev-nav-left {
-            flex-wrap: wrap;
-            gap: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 10px;
           }
           .dev-nav-heading {
-            font-size: 15px;
+            font-size: 14px;
           }
           .dev-nav-uni {
-            font-size: 10px;
+            font-size: 9.5px;
           }
           .dev-nav-center {
             order: 3;
@@ -2941,21 +2981,31 @@ export const DeveloperDashboard: React.FC = () => {
             gap: 5px;
           }
           .dev-nav-right {
-            flex-wrap: wrap;
-            justify-content: space-between;
+            order: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
           }
           .dev-auto-refresh-pill {
-            padding: 4px 10px;
-            font-size: 10px;
+            grid-column: 1 / -1;
+            justify-content: center;
+            padding: 6px 12px;
+            font-size: 10.5px;
+            width: 100%;
+            box-sizing: border-box;
           }
           .dev-refresh-btn,
           .dev-lock-btn {
-            padding: 6px 12px;
+            width: 100%;
+            justify-content: center;
+            padding: 8px 10px;
             font-size: 11px;
+            box-sizing: border-box;
           }
           .dev-container {
-            padding: 12px 14px;
+            padding: 12px 14px 90px 14px;
             gap: 18px;
           }
           .dev-hero-bar {

@@ -59,11 +59,12 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
         {/* Brand header */}
         <div className="al-header">
           <div className="al-brand-row">
-            <div className="al-cap-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-              </svg>
+            <div className="al-logo-badge" title="Arka Jain University">
+              <img 
+                src="/logo.png" 
+                alt="ARKA JAIN UNIVERSITY" 
+                className="al-uni-logo-img" 
+              />
             </div>
             <div className="al-brand-text">
               <div className="al-uni-title">ARKA JAIN UNIVERSITY</div>
@@ -71,9 +72,16 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
             </div>
           </div>
 
-          <div className="al-fest-badge">
-            <span>Technika</span>
-            <span className="al-cyan-text">6.0</span>
+          <div className="al-fest-badge" title="Technika 6.0">
+            <img 
+              src="/technika_logo.jpg" 
+              alt="Technika 6.0" 
+              className="al-fest-logo-img" 
+            />
+            <div className="al-fest-brand">
+              <span>Technika</span>
+              <span className="al-cyan-text">6.0</span>
+            </div>
           </div>
         </div>
 
@@ -267,16 +275,24 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
           gap: 12px;
         }
 
-        .al-cap-badge {
-          width: 42px;
-          height: 42px;
+        .al-logo-badge {
+          width: 44px;
+          height: 44px;
           border-radius: 12px;
-          background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%);
-          border: 1px solid rgba(245, 158, 11, 0.35);
+          background: #ffffff;
+          padding: 3px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+          flex-shrink: 0;
+        }
+
+        .al-uni-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          border-radius: 8px;
         }
 
         .al-uni-title {
@@ -294,13 +310,27 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
         }
 
         .al-fest-badge {
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 800;
           color: #ffffff;
-          background: rgba(34, 211, 238, 0.1);
-          border: 1px solid rgba(34, 211, 238, 0.3);
-          padding: 6px 12px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(34, 211, 238, 0.35);
+          padding: 4px 10px 4px 5px;
           border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          flex-shrink: 0;
+        }
+
+        .al-fest-logo-img {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          object-fit: cover;
+        }
+
+        .al-fest-brand {
           display: flex;
           align-items: center;
           gap: 4px;
@@ -608,6 +638,61 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
 
         .text-red {
           color: #ef4444;
+        }
+
+        /* ── Mobile Responsiveness ── */
+        @media (max-width: 580px) {
+          .analytics-loader-root {
+            padding: 14px;
+          }
+          .al-card {
+            padding: 24px 16px;
+            border-radius: 22px;
+            gap: 20px;
+            width: 100%;
+          }
+          .al-header {
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 16px;
+            text-align: center;
+          }
+          .al-brand-row {
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+          }
+          .al-uni-title {
+            font-size: 12px;
+          }
+          .al-uni-subtitle {
+            font-size: 10px;
+          }
+          .al-took-long-box {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            text-align: center;
+            padding: 12px 14px;
+          }
+          .al-took-long-actions {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+          }
+          .al-mini-btn {
+            flex: 1;
+            justify-content: center;
+            padding: 8px 10px;
+            font-size: 11px;
+          }
+          .al-footer {
+            gap: 8px;
+          }
+          .al-pill {
+            font-size: 9px;
+          }
         }
       `}</style>
     </div>

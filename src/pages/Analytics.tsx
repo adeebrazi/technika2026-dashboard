@@ -2686,20 +2686,89 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         @media (max-width: 768px) {
           .clay-nav {
-            padding: 14px 20px;
+            padding: 12px 14px;
             flex-direction: column;
-            gap: 14px;
-            align-items: flex-start;
+            gap: 12px;
+            align-items: stretch;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .clay-nav-left {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 8px;
+          }
+          .clay-nav-divider {
+            display: none;
+          }
+          .clay-nav-uni-title {
+            font-size: 11px;
+            letter-spacing: 0.04em;
+          }
+          .clay-nav-uni-subtitle {
+            font-size: 9px;
+          }
+          .clay-nav-tech-badge {
+            padding: 3px 8px 3px 4px;
+          }
+          .clay-nav-tech-img {
+            width: 24px;
+            height: 24px;
+          }
+          .clay-nav-brand {
+            font-size: 12px;
+          }
+          .clay-nav-center {
+            width: 100%;
+          }
+          .clay-nav-tab-group {
+            width: 100%;
+            display: flex;
+          }
+          .clay-nav-tab {
+            flex: 1;
+            justify-content: center;
+            font-size: 11px;
+            padding: 8px 10px;
           }
           .clay-nav-right {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+          }
+          .clay-status-pill {
+            display: none; /* Hide redundant Registration analytics pill on mobile */
+          }
+          .clay-login-portal-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 9px 16px;
+          }
+          .clay-auth-group {
             width: 100%;
             justify-content: space-between;
           }
           .clay-main-container {
-            padding: 20px 16px;
+            padding: 16px 14px 100px 14px;
+            box-sizing: border-box;
           }
           .clay-hero-heading {
-            font-size: 30px;
+            font-size: 26px;
+            line-height: 1.15;
+          }
+          .clay-hero-actions {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+          }
+          .clay-btn-refresh,
+          .clay-btn-export {
+            flex: 1;
+            justify-content: center;
+            font-size: 12px;
+            padding: 10px 12px;
           }
           .clay-kpi-grid {
             grid-template-columns: 1fr;
