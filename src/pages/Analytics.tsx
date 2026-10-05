@@ -9,7 +9,7 @@ import {
   ClipboardList, Building2, Users, GraduationCap,
   ArrowUpRight, RefreshCw, Download, Sparkles,
   Info, LogOut, Cpu, Palette, Calendar, Terminal,
-  Lock
+  Lock, BarChart3
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
 
@@ -1209,6 +1209,84 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         </footer>
       </main>
 
+      {/* ── Mobile Bottom Navigation Bar (Docked at Bottom) ── */}
+      <nav className="clay-mobile-bottom-bar" aria-label="Mobile Navigation">
+        <div className="clay-mob-nav-inner">
+          {/* Tab 1: Registration Analytics (Active) */}
+          <button 
+            className="clay-mob-nav-item is-active"
+            title="Registration Analytics"
+            type="button"
+          >
+            <div className="clay-mob-icon-wrap">
+              <BarChart3 size={18} />
+            </div>
+            <span className="clay-mob-label">Analytics</span>
+          </button>
+
+          {/* Tab 2: Developer Dashboard */}
+          <button 
+            onClick={() => navigate('/developer')}
+            className="clay-mob-nav-item"
+            title="Developer Dashboard"
+            type="button"
+          >
+            <div className="clay-mob-icon-wrap">
+              <Terminal size={18} />
+              <span className="clay-mob-dot" />
+            </div>
+            <span className="clay-mob-label">Developer</span>
+          </button>
+
+          {/* Tab 3: Admin / User Profile or Login */}
+          {adminAuth.token ? (
+            <>
+              <button 
+                onClick={() => navigate('/admin/participants')}
+                className="clay-mob-nav-item"
+                title={`Admin Portal (${adminAuth.name})`}
+                type="button"
+              >
+                <div className="clay-mob-avatar">
+                  {adminAuth.name
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((n: string) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase() || 'AD'}
+                </div>
+                <span className="clay-mob-label">Portal</span>
+              </button>
+
+              <button 
+                onClick={handleAdminLogout} 
+                className="clay-mob-nav-item is-logout"
+                title="Log out of Admin Portal"
+                type="button"
+              >
+                <div className="clay-mob-icon-wrap text-red">
+                  <LogOut size={18} />
+                </div>
+                <span className="clay-mob-label text-red">Logout</span>
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => navigate('/admin/login')}
+              className="clay-mob-nav-item"
+              title="Access Admin & Organizer Portal"
+              type="button"
+            >
+              <div className="clay-mob-icon-wrap">
+                <Lock size={18} />
+              </div>
+              <span className="clay-mob-label">Login</span>
+            </button>
+          )}
+        </div>
+      </nav>
+
       {/* ── EMBEDDED CLAYMORPHISM CSS STYLES (Light Theme matching /admin/users) ── */}
       <style>{`
         /* Reset and Root Variables */
@@ -1289,6 +1367,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           position: sticky;
           top: 0;
           z-index: 50;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        /* ── Mobile Bottom Navigation Bar (Hidden on Desktop) ── */
+        .clay-mobile-bottom-bar {
+          display: none;
         }
 
         .clay-nav-left {
@@ -2686,10 +2772,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         @media (max-width: 768px) {
           .clay-nav {
-            padding: 12px 14px;
-            flex-direction: column;
-            gap: 12px;
-            align-items: stretch;
+            padding: 10px 14px;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
             box-sizing: border-box;
           }
@@ -2720,38 +2806,127 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           .clay-nav-brand {
             font-size: 12px;
           }
+          /* Hide center tabs and right actions from top nav on mobile (they are now in the bottom bar) */
           .clay-nav-center {
-            width: 100%;
-          }
-          .clay-nav-tab-group {
-            width: 100%;
-            display: flex;
-          }
-          .clay-nav-tab {
-            flex: 1;
-            justify-content: center;
-            font-size: 11px;
-            padding: 8px 10px;
+            display: none !important;
           }
           .clay-nav-right {
-            width: 100%;
+            display: none !important;
+          }
+
+          /* Docked Mobile Bottom Navigation Bar */
+          .clay-mobile-bottom-bar {
+            display: block;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1.5px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 
+              0 -8px 25px rgba(15, 23, 42, 0.08),
+              0 -1px 3px rgba(162, 178, 201, 0.2);
+            padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 8px)) 12px;
+            box-sizing: border-box;
+          }
+
+          .clay-mob-nav-inner {
             display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 4px;
+            max-width: 440px;
+            margin: 0 auto;
+          }
+
+          .clay-mob-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
+            gap: 3px;
+            padding: 6px 4px;
+            border-radius: 12px;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
           }
-          .clay-status-pill {
-            display: none; /* Hide redundant Registration analytics pill on mobile */
+
+          .clay-mob-nav-item:active {
+            transform: scale(0.94);
           }
-          .clay-login-portal-btn {
-            width: 100%;
+
+          .clay-mob-nav-item.is-active {
+            color: #2563eb;
+          }
+
+          .clay-mob-nav-item.is-active .clay-mob-icon-wrap {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+          }
+
+          .clay-mob-icon-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            padding: 9px 16px;
+            width: 36px;
+            height: 30px;
+            border-radius: 14px;
+            transition: all 0.2s ease;
           }
-          .clay-auth-group {
-            width: 100%;
-            justify-content: space-between;
+
+          .clay-mob-dot {
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #2563eb;
+            box-shadow: 0 0 6px #2563eb;
           }
+
+          .clay-mob-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+          }
+
+          .clay-mob-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+          }
+
+          .clay-mob-nav-item.is-logout {
+            color: #dc2626;
+          }
+
+          .clay-mob-nav-item.is-logout .text-red {
+            color: #dc2626;
+          }
+
           .clay-main-container {
-            padding: 16px 14px 100px 14px;
+            padding: 16px 14px calc(90px + env(safe-area-inset-bottom, 12px)) 14px;
             box-sizing: border-box;
           }
           .clay-hero-heading {

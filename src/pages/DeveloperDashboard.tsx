@@ -1371,6 +1371,67 @@ export const DeveloperDashboard: React.FC = () => {
 
       </main>
 
+      {/* ── Mobile Bottom Navigation Bar (Docked at Bottom) ── */}
+      <nav className="dev-mobile-bottom-bar" aria-label="Mobile Navigation">
+        <div className="dev-mob-nav-inner">
+          {/* Tab 1: Registration Analytics */}
+          <button 
+            onClick={() => navigate('/')}
+            className="dev-mob-nav-item"
+            title="Return to Registration Analytics"
+            type="button"
+          >
+            <div className="dev-mob-icon-wrap">
+              <BarChart3 size={18} />
+            </div>
+            <span className="dev-mob-label">Analytics</span>
+          </button>
+
+          {/* Tab 2: Developer Dashboard (Active) */}
+          <button 
+            className="dev-mob-nav-item is-active"
+            title="Developer Dashboard (Current)"
+            type="button"
+          >
+            <div className="dev-mob-icon-wrap">
+              <Terminal size={18} />
+              <span className="dev-mob-pulse" />
+            </div>
+            <span className="dev-mob-label">Developer</span>
+          </button>
+
+          {/* Action 1: Probe Systems */}
+          <button 
+            onClick={() => probeSystem(true)}
+            className="dev-mob-nav-item"
+            title="Probe Systems"
+            disabled={isRefreshing}
+            type="button"
+          >
+            <div className="dev-mob-icon-wrap">
+              <RefreshCw size={18} className={isRefreshing ? 'dev-spin' : ''} />
+            </div>
+            <span className="dev-mob-label">Probe</span>
+          </button>
+
+          {/* Action 2: Lock Console */}
+          <button 
+            onClick={() => {
+              setIsUnlocked(false);
+              sessionStorage.removeItem('technika_dev_unlocked');
+            }}
+            className="dev-mob-nav-item is-lock"
+            title="Lock Console"
+            type="button"
+          >
+            <div className="dev-mob-icon-wrap text-red">
+              <Lock size={18} />
+            </div>
+            <span className="dev-mob-label text-red">Lock</span>
+          </button>
+        </div>
+      </nav>
+
       {/* ── EMBEDDED CLAY STYLES ── */}
       <style>{`
         /* ── Base Wrapper ── */
@@ -1405,6 +1466,11 @@ export const DeveloperDashboard: React.FC = () => {
           width: 100%;
           max-width: 100%;
           box-sizing: border-box;
+        }
+
+        /* ── Mobile Bottom Navigation Bar (Hidden on Desktop) ── */
+        .dev-mobile-bottom-bar {
+          display: none;
         }
 
         .dev-nav-left {
@@ -3064,10 +3130,11 @@ export const DeveloperDashboard: React.FC = () => {
             overflow-x: hidden;
           }
           .dev-nav {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 12px 14px;
-            gap: 12px;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            gap: 10px;
             overflow-x: hidden;
             width: 100%;
             max-width: 100%;
@@ -3076,56 +3143,139 @@ export const DeveloperDashboard: React.FC = () => {
           .dev-nav-left {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            gap: 10px;
+            gap: 8px;
+            min-width: 0;
           }
           .dev-nav-heading {
-            font-size: 13.5px;
+            font-size: 13px;
           }
           .dev-nav-uni {
-            font-size: 9px;
+            font-size: 8.5px;
           }
+          /* Hide tabs and probe/lock buttons from top nav on mobile (they are now in the bottom bar) */
           .dev-nav-center {
-            order: 3;
-            width: 100%;
-          }
-          .dev-segmented-tabs {
-            width: 100%;
-          }
-          .dev-seg-btn {
-            flex: 1;
-            justify-content: center;
-            padding: 7px 8px;
-            font-size: 11px;
-            gap: 5px;
+            display: none !important;
           }
           .dev-nav-right {
-            order: 2;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            width: 100%;
-            box-sizing: border-box;
-          }
-          .dev-auto-refresh-pill {
-            grid-column: 1 / -1;
-            justify-content: center;
-            padding: 6px 12px;
-            font-size: 10.5px;
-            width: 100%;
-            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: auto;
           }
           .dev-refresh-btn,
           .dev-lock-btn {
-            width: 100%;
-            justify-content: center;
-            padding: 8px 10px;
-            font-size: 11px;
+            display: none !important;
+          }
+          .dev-auto-refresh-pill {
+            padding: 5px 10px;
+            font-size: 10px;
+            white-space: nowrap;
+          }
+
+          /* Docked Mobile Bottom Navigation Bar */
+          .dev-mobile-bottom-bar {
+            display: block;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+              0 -8px 25px rgba(0, 0, 0, 0.5),
+              inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 8px)) 12px;
             box-sizing: border-box;
           }
+
+          .dev-mob-nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 4px;
+            max-width: 440px;
+            margin: 0 auto;
+          }
+
+          .dev-mob-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 6px 4px;
+            border-radius: 12px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+          }
+
+          .dev-mob-nav-item:active {
+            transform: scale(0.94);
+          }
+
+          .dev-mob-nav-item.is-active {
+            color: #22d3ee;
+          }
+
+          .dev-mob-nav-item.is-active .dev-mob-icon-wrap {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.25) 0%, rgba(14, 165, 233, 0.2) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.4);
+            color: #22d3ee;
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.25);
+          }
+
+          .dev-mob-icon-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 30px;
+            border-radius: 14px;
+            transition: all 0.2s ease;
+          }
+
+          .dev-mob-pulse {
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22d3ee;
+            box-shadow: 0 0 6px #22d3ee;
+          }
+
+          .dev-mob-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+          }
+
+          .dev-mob-nav-item.is-lock {
+            color: #f87171;
+          }
+
+          .dev-mob-nav-item.is-lock .text-red {
+            color: #f87171;
+          }
+
+          .dev-mob-nav-item.is-lock:active {
+            background: rgba(239, 68, 68, 0.15);
+          }
+
           .dev-container {
-            padding: 12px 14px 90px 14px;
+            padding: 12px 14px calc(90px + env(safe-area-inset-bottom, 12px)) 14px;
             gap: 18px;
             width: 100%;
             max-width: 100%;
