@@ -135,10 +135,83 @@ export const AdminLayout: React.FC = () => {
         </nav>
       </aside>
 
+      {/* ── Mobile Top Header Bar (Mobile Only) ── */}
+      <header className="clay-mobile-topbar">
+        <div className="clay-mobile-brand">
+          <div className="clay-mobile-logo">
+            <img 
+              src="/technika_logo.jpg" 
+              alt="Technika 6.0" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} 
+            />
+          </div>
+          <div className="clay-mobile-title">
+            <span className="clay-mobile-name">TECHNIKA</span>
+            <span className="clay-mobile-ver">6.0</span>
+          </div>
+        </div>
+
+        <Link to="/admin" className="clay-mobile-profile-btn" title="View Profile">
+          <div className="clay-mobile-avatar">
+            <span>{getInitials(name)}</span>
+            <span className="clay-mobile-dot" />
+          </div>
+          <div className="clay-mobile-user-meta">
+            <span className="clay-mobile-user-name">{name.split(' ')[0]}</span>
+            <span className="clay-mobile-role" style={{ background: roleBadge.bg, color: roleBadge.color }}>
+              {role === 'admin' ? 'Admin' : 'Faculty'}
+            </span>
+          </div>
+        </Link>
+      </header>
+
       {/* ── Main Content Area ── */}
       <main className="clay-main-content">
         <Outlet />
       </main>
+
+      {/* ── Mobile Bottom Navigation Bar (Mobile Only) ── */}
+      <nav className="clay-mobile-bottom-nav">
+        <Link 
+          to="/" 
+          className={`clay-mob-nav-btn ${location.pathname === '/' ? 'active' : ''}`}
+        >
+          <span className="clay-mob-icon">📊</span>
+          <span className="clay-mob-label">Analytics</span>
+        </Link>
+
+        <Link 
+          to="/admin/participants" 
+          className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/participants') ? 'active' : ''}`}
+        >
+          <span className="clay-mob-icon">👤</span>
+          <span className="clay-mob-label">Users</span>
+        </Link>
+
+        <Link 
+          to="/admin/teams" 
+          className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/teams') ? 'active' : ''}`}
+        >
+          <span className="clay-mob-icon">👥</span>
+          <span className="clay-mob-label">Teams</span>
+        </Link>
+
+        <Link 
+          to="/developer" 
+          className={`clay-mob-nav-btn ${location.pathname.startsWith('/developer') ? 'active' : ''}`}
+        >
+          <span className="clay-mob-icon">⚡</span>
+          <span className="clay-mob-label">Dev</span>
+        </Link>
+
+        <Link 
+          to="/admin" 
+          className={`clay-mob-nav-btn ${location.pathname === '/admin' ? 'active' : ''}`}
+        >
+          <span className="clay-mob-icon">⚙️</span>
+          <span className="clay-mob-label">Profile</span>
+        </Link>
+      </nav>
 
       {/* ── Claymorphism Admin Shell Styles ── */}
       <style>{`
@@ -582,27 +655,201 @@ export const AdminLayout: React.FC = () => {
           background: #a2b5c8;
         }
 
-        /* ── Responsive ── */
+        /* ── Mobile Topbar & Bottom Nav (Hidden on Desktop) ── */
+        .clay-mobile-topbar,
+        .clay-mobile-bottom-nav {
+          display: none;
+        }
+
+        /* ── Responsive Mobile Overhaul ── */
         @media (max-width: 768px) {
+          .clay-admin-shell {
+            flex-direction: column;
+            overflow-x: hidden;
+          }
+
+          /* Hide Desktop Sidebar on Mobile */
           .clay-sidebar {
-            width: 76px;
-            min-width: 76px;
-          }
-
-          .clay-main-content {
-            margin-left: 76px;
-            width: calc(100% - 76px);
-            padding: 1rem;
-          }
-
-          .clay-brand-text,
-          .clay-profile-info,
-          .clay-profile-arrow,
-          .clay-nav-text,
-          .clay-nav-active-dot,
-          .clay-nav-label,
-          .clay-sidebar-toggle {
             display: none !important;
+          }
+
+          /* Mobile Topbar */
+          .clay-mobile-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 1rem;
+            background: #eef3f9;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 15px rgba(162, 178, 201, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 150;
+            backdrop-filter: blur(12px);
+            width: 100%;
+          }
+
+          .clay-mobile-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .clay-mobile-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #ffffff;
+            box-shadow: 2px 3px 8px rgba(37, 99, 235, 0.25);
+            flex-shrink: 0;
+          }
+
+          .clay-mobile-title {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+          }
+
+          .clay-mobile-name {
+            font-weight: 900;
+            font-size: 0.95rem;
+            color: #0f172a;
+            letter-spacing: -0.01em;
+          }
+
+          .clay-mobile-ver {
+            font-weight: 900;
+            font-size: 0.65rem;
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 1px 5px;
+            border-radius: 6px;
+          }
+
+          .clay-mobile-profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            background: #ffffff;
+            padding: 4px 10px 4px 5px;
+            border-radius: 20px;
+            border: 1.5px solid rgba(255, 255, 255, 0.9);
+            box-shadow:
+              3px 4px 10px rgba(162, 178, 201, 0.18),
+              inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+          }
+
+          .clay-mobile-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 900;
+            color: #ffffff;
+            position: relative;
+          }
+
+          .clay-mobile-dot {
+            position: absolute;
+            bottom: -1px;
+            right: -1px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            border: 1.5px solid #ffffff;
+          }
+
+          .clay-mobile-user-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+          }
+
+          .clay-mobile-user-name {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+          }
+
+          .clay-mobile-role {
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 1px 5px;
+            border-radius: 5px;
+            width: fit-content;
+          }
+
+          /* Main Content occupies 100% full width */
+          .clay-main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            padding: 0.85rem 0.85rem 85px 0.85rem !important;
+            box-sizing: border-box;
+          }
+
+          /* Mobile Bottom Navigation Bar */
+          .clay-mobile-bottom-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(238, 243, 249, 0.96);
+            backdrop-filter: blur(16px);
+            border-top: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow:
+              0 -6px 20px rgba(162, 178, 201, 0.25),
+              inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            z-index: 200;
+            padding: 0 0.4rem;
+          }
+
+          .clay-mob-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            text-decoration: none;
+            color: #64748b;
+            padding: 5px 8px;
+            border-radius: 12px;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            flex: 1;
+          }
+
+          .clay-mob-icon {
+            font-size: 1.25rem;
+            line-height: 1.2;
+          }
+
+          .clay-mob-label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+          }
+
+          .clay-mob-nav-btn.active {
+            color: #2563eb;
+            background: #ffffff;
+            box-shadow:
+              3px 4px 10px rgba(162, 178, 201, 0.2),
+              -2px -2px 6px rgba(255, 255, 255, 0.9),
+              inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
           }
         }
       `}</style>

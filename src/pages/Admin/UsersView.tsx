@@ -291,6 +291,9 @@ export const UsersView: React.FC = () => {
 
       {/* ── Data Table ── */}
       <div className="clay-table-card">
+        <div className="clay-mobile-swipe-hint">
+          <span>👉 Swipe table sideways to inspect documents & verification actions</span>
+        </div>
         <div className="clay-table-wrapper">
           <table className="clay-table">
             <thead>
@@ -818,12 +821,20 @@ export const UsersView: React.FC = () => {
           overflow: hidden;
         }
 
+        /* ── Mobile Swipe Hint ── */
+        .clay-mobile-swipe-hint {
+          display: none;
+        }
+
         .clay-table-wrapper {
           overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          width: 100%;
         }
 
         .clay-table {
           width: 100%;
+          min-width: 860px;
           border-collapse: collapse;
           text-align: left;
         }
@@ -1511,9 +1522,53 @@ export const UsersView: React.FC = () => {
 
         /* ── Responsive ── */
         @media (max-width: 768px) {
-          .clay-page-header { flex-direction: column; align-items: flex-start; }
-          .clay-toolbar { flex-direction: column; }
-          .clay-search-box { min-width: unset; }
+          .clay-mobile-swipe-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 0.72rem;
+            font-weight: 800;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.9);
+            text-align: center;
+          }
+
+          .clay-page-header { 
+            flex-direction: column; 
+            align-items: flex-start;
+            gap: 10px;
+          }
+
+          .clay-header-left {
+            gap: 10px;
+          }
+
+          .clay-page-title {
+            font-size: 1.25rem;
+          }
+
+          .clay-toolbar { 
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+          }
+
+          .clay-search-box { 
+            width: 100%; 
+            min-width: unset; 
+            box-sizing: border-box;
+          }
+
+          .clay-filter-box {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .clay-filter-select {
+            width: 100%;
+          }
         }
       `}</style>
     </div>

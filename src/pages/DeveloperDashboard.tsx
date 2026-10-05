@@ -2382,7 +2382,8 @@ export const DeveloperDashboard: React.FC = () => {
 
         .dev-log-msg {
           color: #e2e8f0;
-          word-break: break-all;
+          word-break: normal;
+          overflow-wrap: anywhere;
         }
 
         .dev-log-empty {
@@ -2912,18 +2913,66 @@ export const DeveloperDashboard: React.FC = () => {
           .dev-nav {
             flex-direction: column;
             align-items: stretch;
-            padding: 14px 18px;
+            padding: 12px 14px;
             gap: 12px;
+          }
+          .dev-nav-left {
+            flex-wrap: wrap;
+            gap: 8px;
+          }
+          .dev-nav-heading {
+            font-size: 15px;
+          }
+          .dev-nav-uni {
+            font-size: 10px;
           }
           .dev-nav-center {
             order: 3;
+            width: 100%;
+          }
+          .dev-segmented-tabs {
+            width: 100%;
+          }
+          .dev-seg-btn {
+            flex: 1;
+            justify-content: center;
+            padding: 7px 10px;
+            font-size: 11px;
+            gap: 5px;
+          }
+          .dev-nav-right {
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+          }
+          .dev-auto-refresh-pill {
+            padding: 4px 10px;
+            font-size: 10px;
+          }
+          .dev-refresh-btn,
+          .dev-lock-btn {
+            padding: 6px 12px;
+            font-size: 11px;
           }
           .dev-container {
-            padding: 16px;
+            padding: 12px 14px;
+            gap: 18px;
           }
           .dev-hero-bar {
             grid-template-columns: 1fr;
+            padding: 14px;
+            gap: 14px;
+          }
+          .dev-cloud-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .dev-cloud-card {
             padding: 16px;
+          }
+          .dev-servers-grid {
+            grid-template-columns: 1fr;
+            gap: 14px;
           }
           .dev-cloud-storage-banner {
             grid-template-columns: 1fr;
@@ -2936,6 +2985,28 @@ export const DeveloperDashboard: React.FC = () => {
           }
           .dev-inspector-grid {
             grid-template-columns: 1fr;
+          }
+          .dev-bottom-split {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .dev-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+          }
+          .dev-table {
+            min-width: 580px;
+          }
+          .dev-terminal-console {
+            font-size: 10.5px;
+            padding: 10px;
+            height: 250px;
+          }
+          .dev-flow-chain {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
           }
         }
       `}</style>

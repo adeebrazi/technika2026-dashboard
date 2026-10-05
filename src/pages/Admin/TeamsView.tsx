@@ -509,12 +509,42 @@ export const TeamsView: React.FC = () => {
 
         /* ── Responsive ── */
         @media (max-width: 768px) {
-          .clay-teams-grid {
-            grid-template-columns: 1fr;
-          }
           .clay-page-header {
             flex-direction: column;
             align-items: flex-start;
+            gap: 10px;
+          }
+
+          .clay-page-title {
+            font-size: 1.25rem;
+          }
+
+          .clay-event-header {
+            padding: 0.75rem 0.85rem;
+            flex-wrap: wrap;
+            gap: 8px;
+          }
+
+          .clay-event-name {
+            white-space: normal;
+            font-size: 0.95rem;
+            word-break: break-word;
+            line-height: 1.3;
+          }
+
+          .clay-teams-grid {
+            grid-template-columns: 1fr;
+            padding: 0.75rem 0.85rem;
+            gap: 0.75rem;
+          }
+
+          .clay-team-card {
+            padding: 0.75rem;
+          }
+
+          .clay-team-title {
+            flex-wrap: wrap;
+            gap: 6px;
           }
         }
       `}</style>
