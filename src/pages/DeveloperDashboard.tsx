@@ -503,6 +503,14 @@ export const DeveloperDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    const prevBg = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#090d16';
+    return () => {
+      document.body.style.backgroundColor = prevBg;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isUnlocked) return;
     probeSystem();
     addLog('INFO', 'Developer Dashboard initialized. 3 servers & 5 pipelines connected.');
@@ -1367,11 +1375,16 @@ export const DeveloperDashboard: React.FC = () => {
       <style>{`
         /* ── Base Wrapper ── */
         .dev-wrapper {
+          width: 100%;
+          max-width: 100%;
           min-height: 100vh;
+          overflow-x: hidden;
           background: #090d16;
           color: #e2e8f0;
           font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           padding-bottom: 60px;
+          box-sizing: border-box;
+          position: relative;
         }
 
         /* ── Navigation Bar ── */
@@ -1389,6 +1402,9 @@ export const DeveloperDashboard: React.FC = () => {
           justify-content: space-between;
           gap: 20px;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .dev-nav-left {
@@ -1608,12 +1624,16 @@ export const DeveloperDashboard: React.FC = () => {
 
         /* ── Main Container ── */
         .dev-container {
+          width: 100%;
           max-width: 1440px;
+          min-width: 0;
           margin: 0 auto;
           padding: 24px 32px;
           display: flex;
           flex-direction: column;
           gap: 28px;
+          box-sizing: border-box;
+          overflow-x: hidden;
         }
 
         /* ── Top Hero Telemetry Bar ── */
@@ -1623,16 +1643,21 @@ export const DeveloperDashboard: React.FC = () => {
           border-radius: 24px;
           padding: 20px 28px;
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 20px;
           align-items: center;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.1);
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-hero-item {
           display: flex;
           align-items: center;
           gap: 16px;
+          min-width: 0;
         }
 
         .dev-hero-icon-box {
@@ -1705,9 +1730,13 @@ export const DeveloperDashboard: React.FC = () => {
 
         /* ── Generic Section Styling ── */
         .dev-section {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
           display: flex;
           flex-direction: column;
           gap: 16px;
+          box-sizing: border-box;
         }
 
         .dev-section-head {
@@ -1739,8 +1768,12 @@ export const DeveloperDashboard: React.FC = () => {
         /* ── The 3 Ecosystem Servers Grid ── */
         .dev-servers-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 20px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-server-card {
@@ -1753,6 +1786,11 @@ export const DeveloperDashboard: React.FC = () => {
           gap: 16px;
           box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.08);
           transition: all 0.25s ease;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .dev-server-card:hover {
@@ -1890,6 +1928,11 @@ export const DeveloperDashboard: React.FC = () => {
           display: flex;
           flex-direction: column;
           gap: 8px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .dev-commit-top {
@@ -1940,6 +1983,8 @@ export const DeveloperDashboard: React.FC = () => {
           color: #e2e8f0;
           font-style: italic;
           line-height: 1.4;
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
 
         .dev-commit-footer {
@@ -1983,15 +2028,25 @@ export const DeveloperDashboard: React.FC = () => {
           flex-direction: column;
           gap: 24px;
           box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.08);
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          overflow: hidden;
+          box-sizing: border-box;
         }
 
         .dev-flow-chain {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-start;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
           overflow-x: auto;
-          padding-bottom: 10px;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 12px;
           gap: 12px;
+          box-sizing: border-box;
         }
 
         .dev-flow-node {
@@ -1999,7 +2054,9 @@ export const DeveloperDashboard: React.FC = () => {
           border: 1.5px solid rgba(255, 255, 255, 0.1);
           border-radius: 18px;
           padding: 16px 18px;
-          min-width: 170px;
+          min-width: 160px;
+          flex-shrink: 0;
+          box-sizing: border-box;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -2104,6 +2161,11 @@ export const DeveloperDashboard: React.FC = () => {
           display: flex;
           flex-direction: column;
           gap: 16px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .dev-inspector-top {
@@ -2151,12 +2213,16 @@ export const DeveloperDashboard: React.FC = () => {
 
         .dev-inspector-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 16px;
           background: rgba(15, 23, 42, 0.6);
           border: 1px solid rgba(255, 255, 255, 0.06);
           border-radius: 14px;
           padding: 14px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-ins-lbl {
@@ -2228,8 +2294,12 @@ export const DeveloperDashboard: React.FC = () => {
         /* ── Bottom Split: Matrix & Terminal ── */
         .dev-bottom-split {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 20px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-card {
@@ -2241,6 +2311,11 @@ export const DeveloperDashboard: React.FC = () => {
           flex-direction: column;
           gap: 16px;
           box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .dev-card-head {
@@ -2275,6 +2350,11 @@ export const DeveloperDashboard: React.FC = () => {
         /* ── Table Matrix ── */
         .dev-table-wrap {
           overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-table {
@@ -2620,18 +2700,23 @@ export const DeveloperDashboard: React.FC = () => {
 
         .dev-flow-metrics-row {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 12px;
           background: rgba(15, 23, 42, 0.5);
           padding: 14px;
           border-radius: 14px;
           border: 1px solid rgba(255, 255, 255, 0.04);
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-flow-stat-box {
           display: flex;
           flex-direction: column;
           gap: 4px;
+          min-width: 0;
         }
 
         .dev-flow-label {
@@ -2663,13 +2748,22 @@ export const DeveloperDashboard: React.FC = () => {
           border-radius: 20px;
           padding: 24px;
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .dev-site-consumption-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 16px;
           margin-top: 18px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-site-cons-item {
@@ -2771,6 +2865,11 @@ export const DeveloperDashboard: React.FC = () => {
           flex-direction: column;
           gap: 20px;
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .dev-cloudinary-top {
@@ -2803,12 +2902,17 @@ export const DeveloperDashboard: React.FC = () => {
           padding: 16px 20px;
           align-items: center;
           gap: 16px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-storage-metric {
           display: flex;
           flex-direction: column;
           gap: 4px;
+          min-width: 0;
         }
 
         .dev-smet-lbl {
@@ -2845,6 +2949,10 @@ export const DeveloperDashboard: React.FC = () => {
           display: flex;
           flex-direction: column;
           gap: 10px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-gauge-header {
@@ -2875,8 +2983,12 @@ export const DeveloperDashboard: React.FC = () => {
 
         .dev-cloudinary-subgrid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 16px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .dev-csub-box {
@@ -2920,38 +3032,46 @@ export const DeveloperDashboard: React.FC = () => {
         /* ── Responsiveness ── */
         @media (max-width: 1180px) {
           .dev-hero-bar {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .dev-servers-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
           }
           .dev-cloud-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
           }
           .dev-site-consumption-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
           }
           .dev-cloud-storage-banner {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .dev-storage-divider {
-            display: none;
+            display: none !important;
           }
           .dev-bottom-split {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
           }
           .dev-inspector-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
 
         @media (max-width: 768px) {
+          .dev-wrapper {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+          }
           .dev-nav {
             flex-direction: column;
             align-items: stretch;
             padding: 12px 14px;
             gap: 12px;
             overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
           }
           .dev-nav-left {
             display: flex;
@@ -2961,10 +3081,10 @@ export const DeveloperDashboard: React.FC = () => {
             gap: 10px;
           }
           .dev-nav-heading {
-            font-size: 14px;
+            font-size: 13.5px;
           }
           .dev-nav-uni {
-            font-size: 9.5px;
+            font-size: 9px;
           }
           .dev-nav-center {
             order: 3;
@@ -2976,7 +3096,7 @@ export const DeveloperDashboard: React.FC = () => {
           .dev-seg-btn {
             flex: 1;
             justify-content: center;
-            padding: 7px 10px;
+            padding: 7px 8px;
             font-size: 11px;
             gap: 5px;
           }
@@ -3007,56 +3127,113 @@ export const DeveloperDashboard: React.FC = () => {
           .dev-container {
             padding: 12px 14px 90px 14px;
             gap: 18px;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            box-sizing: border-box;
           }
           .dev-hero-bar {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
             padding: 14px;
             gap: 14px;
           }
           .dev-cloud-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
             gap: 16px;
           }
           .dev-cloud-card {
             padding: 16px;
           }
           .dev-servers-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
             gap: 14px;
           }
           .dev-cloud-storage-banner {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+          }
+          .dev-storage-divider {
+            display: none !important;
           }
           .dev-cloudinary-subgrid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
           }
           .dev-flow-metrics-row {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .dev-site-consumption-grid {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .dev-flow-canvas {
+            padding: 16px 12px;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+          }
+          .dev-flow-chain {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
+            box-sizing: border-box;
+          }
+          .dev-flow-node {
+            min-width: 135px;
+            padding: 12px 10px;
+            flex-shrink: 0;
+          }
+          .dev-pipe-inspector {
+            padding: 16px 12px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow: hidden;
           }
           .dev-inspector-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .dev-steps-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+          }
+          .dev-step-item {
+            width: 100%;
+            box-sizing: border-box;
           }
           .dev-bottom-split {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
             gap: 16px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
           }
           .dev-table-wrap {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
           }
           .dev-table {
-            min-width: 580px;
+            min-width: 480px;
           }
           .dev-terminal-console {
             font-size: 10.5px;
             padding: 10px;
             height: 250px;
-          }
-          .dev-flow-chain {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 8px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
           }
         }
       `}</style>
