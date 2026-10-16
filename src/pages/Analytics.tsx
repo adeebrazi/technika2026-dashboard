@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
   AreaChart, Area
 } from 'recharts';
@@ -9,7 +9,7 @@ import {
   ClipboardList, Building2, Users, GraduationCap,
   ArrowUpRight, RefreshCw, Download, Sparkles,
   Info, LogOut, Cpu, Palette, Calendar, Terminal,
-  Lock, BarChart3
+  Lock, BarChart3, Activity
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
 
@@ -221,22 +221,56 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   const leastEventName = leastEvent?.eventName || 'Code Buster';
   const leastEventCount = leastEvent?.count || 1;
 
-  // Chart data for Event registrations
+  // Event Registrations Interactive Filter & View Modes
+  const [eventCategoryFilter, setEventCategoryFilter] = useState<'TOP10' | 'ALL' | 'Technical' | 'Cultural' | 'Creative'>('TOP10');
+  const [eventChartMode, setEventChartMode] = useState<'BARS' | 'AREA'>('BARS');
+
+  // Helper to categorize events by ID or prefix
+  const getEventCategory = (eventId: string = ''): 'Technical' | 'Cultural' | 'Creative' => {
+    if (eventId.startsWith('TECH_')) return 'Technical';
+    if (eventId.startsWith('CUL_')) return 'Cultural';
+    if (eventId.startsWith('CRE_')) return 'Creative';
+    return 'Technical';
+  };
+
+  // Chart data for Event registrations with category tagging
   const eventChartData = useMemo(() => {
-    if (!data || data.eventWise.length === 0) {
+    if (!data || !data.eventWise || data.eventWise.length === 0) {
       return [
-        { name: 'Robo Wars', count: 2, fill: '#2563eb' },
-        { name: 'Web Wizard', count: 1, fill: '#f59e0b' },
-        { name: 'Code Buster', count: 1, fill: '#10b981' }
+        { name: 'Data Dash', count: 11, fill: '#2563eb', eventId: 'TECH_DD', category: 'Technical' as const },
+        { name: 'IntelliQuest', count: 8, fill: '#2563eb', eventId: 'TECH_IQ', category: 'Technical' as const },
+        { name: 'Need For Speed', count: 7, fill: '#ec4899', eventId: 'CRE_NF', category: 'Creative' as const },
+        { name: 'Group Ramp Walk', count: 6, fill: '#f59e0b', eventId: 'CUL_GW', category: 'Cultural' as const }
       ];
     }
-    const colors = ['#2563eb', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#0284c7', '#8b5cf6'];
-    return data.eventWise.map((e, idx) => ({
-      name: e.eventName,
-      count: e.count,
-      fill: colors[idx % colors.length]
-    }));
+    const categoryColors: Record<string, string> = {
+      Technical: '#2563eb',
+      Cultural: '#f59e0b',
+      Creative: '#ec4899'
+    };
+    return data.eventWise.map((e) => {
+      const cat = getEventCategory(e.eventId);
+      return {
+        name: e.eventName,
+        count: e.count,
+        eventId: e.eventId,
+        category: cat,
+        fill: categoryColors[cat] || '#2563eb'
+      };
+    });
   }, [data]);
+
+  // Filtered dataset according to user selection
+  const filteredEventData = useMemo(() => {
+    if (!eventChartData || eventChartData.length === 0) return [];
+    if (eventCategoryFilter === 'TOP10') {
+      return eventChartData.slice(0, 10);
+    }
+    if (eventCategoryFilter === 'ALL') {
+      return eventChartData;
+    }
+    return eventChartData.filter(e => e.category === eventCategoryFilter);
+  }, [eventChartData, eventCategoryFilter]);
 
   // Gender chart data
   const genderChartData = useMemo(() => {
@@ -308,7 +342,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   const averageAge = data?.averageAge || '20.4';
 
-  if (loading) {
+  const showLoader = loading || window.location.search.includes('loader');
+  if (showLoader) {
     return (
       <AnalyticsLoader
         error={error}
@@ -363,7 +398,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         <div className="clay-nav-center">
           <div className="clay-nav-tab-group">
-            <button className="clay-nav-tab active">
+            <button className="clay-nav-tab active" title="Currently viewing Registration Analytics">
+              <span className="clay-pulse-dot" />
               <span>Registration Analytics</span>
             </button>
             <button
@@ -379,11 +415,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         </div>
 
         <div className="clay-nav-right">
-          {/* Registration analytics status badge */}
-          <div className="clay-status-pill">
-            <span className="clay-pulse-dot" />
-            <span className="clay-status-text">Registration analytics</span>
-          </div>
 
           {/* Admin / Login Portal (Replaces old AJ avatar bubble) */}
           {adminAuth.token ? (
@@ -724,66 +755,178 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         {/* ── ROW 3: Event Registrations & Most Popular Event ── */}
         <section className="clay-mid-grid">
-          {/* Left: Event registrations Bar Chart */}
+          {/* Left: Event registrations Interactive Visualizer */}
           <div className="clay-card clay-event-chart-card">
             <div className="clay-card-header-row">
               <div>
                 <h2 className="clay-card-serif-title">Event registrations</h2>
                 <p className="clay-card-subtitle">Participation across the Technika lineup</p>
               </div>
-              <div className="clay-badge-pill">
-                {data?.eventWise?.length || 3} events
+              <div className="clay-event-header-controls">
+                {/* Visualizer Mode Toggle */}
+                <div className="clay-mini-switcher">
+                  <button
+                    type="button"
+                    className={`clay-mini-btn ${eventChartMode === 'BARS' ? 'is-active' : ''}`}
+                    onClick={() => setEventChartMode('BARS')}
+                    title="Ranked Horizontal Bars"
+                  >
+                    <BarChart3 size={13} />
+                    <span>Ranked</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`clay-mini-btn ${eventChartMode === 'AREA' ? 'is-active' : ''}`}
+                    onClick={() => setEventChartMode('AREA')}
+                    title="Distribution Area Curve"
+                  >
+                    <Activity size={13} />
+                    <span>Curve</span>
+                  </button>
+                </div>
+
+                <div className="clay-badge-pill">
+                  {filteredEventData.length} of {data?.eventWise?.length || 45} events
+                </div>
               </div>
             </div>
 
-            {/* Custom Styled Clay Bar Chart */}
-            <div className="clay-barchart-container">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={eventChartData} margin={{ top: 32, right: 24, left: -20, bottom: 20 }}>
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} 
-                    axisLine={false} 
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    allowDecimals={false}
-                    domain={[0, (dataMax: number) => Math.max(3, dataMax + 1)]}
-                  />
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(59, 130, 246, 0.06)' }}
-                    contentStyle={{ 
-                      backgroundColor: '#ffffff', 
-                      borderRadius: 14, 
-                      border: '1.5px solid rgba(162, 178, 201, 0.4)', 
-                      boxShadow: '0 8px 24px rgba(162, 178, 201, 0.35)',
-                      color: '#0f172a',
-                      fontSize: 12,
-                      fontWeight: 600
-                    }} 
-                  />
-                  <Bar 
-                    dataKey="count" 
-                    radius={[8, 8, 4, 4]} 
-                    barSize={48}
-                    label={{ 
-                      position: 'top', 
-                      fill: '#0f172a', 
-                      fontSize: 13, 
-                      fontWeight: 800,
-                      dy: -8
-                    }}
-                  >
-                    {eventChartData.map((entry, index) => (
-                      <Cell key={`bar-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            {/* Category / Scope Filter Tabs */}
+            <div className="clay-event-filter-bar">
+              <button
+                type="button"
+                className={`clay-filter-chip ${eventCategoryFilter === 'TOP10' ? 'active' : ''}`}
+                onClick={() => setEventCategoryFilter('TOP10')}
+              >
+                <span>🏆 Top 10</span>
+              </button>
+              <button
+                type="button"
+                className={`clay-filter-chip ${eventCategoryFilter === 'Technical' ? 'active tech' : ''}`}
+                onClick={() => setEventCategoryFilter('Technical')}
+              >
+                <Cpu size={12} />
+                <span>Technical (20)</span>
+              </button>
+              <button
+                type="button"
+                className={`clay-filter-chip ${eventCategoryFilter === 'Cultural' ? 'active cult' : ''}`}
+                onClick={() => setEventCategoryFilter('Cultural')}
+              >
+                <Calendar size={12} />
+                <span>Cultural (15)</span>
+              </button>
+              <button
+                type="button"
+                className={`clay-filter-chip ${eventCategoryFilter === 'Creative' ? 'active creat' : ''}`}
+                onClick={() => setEventCategoryFilter('Creative')}
+              >
+                <Palette size={12} />
+                <span>Creative (10)</span>
+              </button>
+              <button
+                type="button"
+                className={`clay-filter-chip ${eventCategoryFilter === 'ALL' ? 'active' : ''}`}
+                onClick={() => setEventCategoryFilter('ALL')}
+              >
+                <span>All 45</span>
+              </button>
             </div>
+
+            {/* Visualizer Content: Ranked Bars or Spline Area Curve */}
+            {eventChartMode === 'BARS' ? (
+              <div className="clay-ranked-bars-list">
+                {filteredEventData.map((ev, idx) => {
+                  const maxCount = topEventCount > 0 ? topEventCount : 11;
+                  const pct = Math.max(8, Math.round((ev.count / maxCount) * 100));
+                  const shareOfParticipants = totalRegistrations > 0 ? ((ev.count / totalRegistrations) * 100).toFixed(0) : '0';
+                  const rankNumber = eventChartData.findIndex(e => e.eventId === ev.eventId) + 1;
+                  const isTop3 = rankNumber <= 3;
+                  const medal = rankNumber === 1 ? '🥇' : rankNumber === 2 ? '🥈' : rankNumber === 3 ? '🥉' : `#${rankNumber}`;
+
+                  return (
+                    <div key={ev.eventId || idx} className="clay-ranked-bar-row">
+                      <div className="clay-ranked-meta">
+                        <span className={`clay-rank-badge ${isTop3 ? `rank-${rankNumber}` : ''}`}>
+                          {medal}
+                        </span>
+                        <span className="clay-ranked-name" title={ev.name}>{ev.name}</span>
+                        <span className={`clay-cat-tag cat-${ev.category.toLowerCase()}`}>
+                          {ev.category}
+                        </span>
+                      </div>
+
+                      <div className="clay-ranked-bar-track">
+                        <div 
+                          className={`clay-ranked-bar-fill fill-${ev.category.toLowerCase()}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+
+                      <div className="clay-ranked-counts">
+                        <span className="clay-count-val">{ev.count}</span>
+                        <span className="clay-count-pct">{shareOfParticipants}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Smooth Distribution Area Curve */
+              <div className="clay-barchart-container">
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={filteredEventData} margin={{ top: 20, right: 20, left: -20, bottom: 20 }}>
+                    <defs>
+                      <linearGradient id="eventCurveGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} 
+                      axisLine={false} 
+                      tickLine={false}
+                      interval={filteredEventData.length > 15 ? 1 : 0}
+                    />
+                    <YAxis 
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      allowDecimals={false}
+                      domain={[0, (dataMax: number) => Math.max(3, dataMax + 1)]}
+                    />
+                    <Tooltip 
+                      cursor={{ stroke: '#2563eb', strokeWidth: 1.5, strokeDasharray: '3 3' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const item = payload[0].payload;
+                          return (
+                            <div className="clay-chart-tooltip">
+                              <div className="clay-tt-name">{item.name}</div>
+                              <div className="clay-tt-row">
+                                <span className={`clay-cat-tag cat-${item.category?.toLowerCase()}`}>{item.category}</span>
+                                <span className="clay-tt-count">{item.count} registrations</span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke="#2563eb" 
+                      strokeWidth={3} 
+                      fill="url(#eventCurveGradient)" 
+                      dot={{ fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#1d4ed8', stroke: '#ffffff', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
             <div className="clay-card-footer-info">
               <Info size={14} className="clay-info-icon" />
@@ -1496,11 +1639,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .clay-nav-tab.active {
-          background: #2563eb;
-          color: #ffffff;
+          background: #ffffff;
+          color: #1e293b;
           box-shadow: 
-            0 4px 12px rgba(37, 99, 235, 0.35),
-            inset 1px 1px 2px rgba(255, 255, 255, 0.5);
+            2px 3px 8px rgba(162, 178, 201, 0.35),
+            -1px -1px 4px rgba(255, 255, 255, 0.9),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.9);
         }
 
         .clay-nav-tab.inactive {
@@ -2347,9 +2492,262 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           gap: 22px;
         }
 
+        .clay-event-header-controls {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .clay-mini-switcher {
+          display: flex;
+          background: #e2eaf4;
+          padding: 3px;
+          border-radius: 12px;
+          gap: 3px;
+          box-shadow: inset 1px 1px 3px rgba(162, 178, 201, 0.4);
+        }
+
+        .clay-mini-btn {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 10px;
+          border-radius: 9px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .clay-mini-btn.is-active {
+          background: #ffffff;
+          color: #2563eb;
+          box-shadow: 2px 2px 6px rgba(162, 178, 201, 0.35);
+        }
+
+        .clay-event-filter-bar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 16px;
+          flex-wrap: wrap;
+        }
+
+        .clay-filter-chip {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .clay-filter-chip:hover {
+          background: #e2e8f0;
+          color: #1e293b;
+        }
+
+        .clay-filter-chip.active {
+          background: #2563eb;
+          color: #ffffff;
+          border-color: #2563eb;
+          box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+        }
+
+        .clay-filter-chip.active.tech {
+          background: #2563eb;
+          border-color: #2563eb;
+        }
+
+        .clay-filter-chip.active.cult {
+          background: #f59e0b;
+          border-color: #f59e0b;
+          box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
+        }
+
+        .clay-filter-chip.active.creat {
+          background: #ec4899;
+          border-color: #ec4899;
+          box-shadow: 0 4px 10px rgba(236, 72, 153, 0.25);
+        }
+
+        .clay-ranked-bars-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          max-height: 380px;
+          overflow-y: auto;
+          padding-right: 6px;
+        }
+
+        .clay-ranked-bars-list::-webkit-scrollbar {
+          width: 5px;
+        }
+
+        .clay-ranked-bars-list::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+
+        .clay-ranked-bar-row {
+          display: grid;
+          grid-template-columns: 200px 1fr 65px;
+          align-items: center;
+          gap: 14px;
+          padding: 8px 12px;
+          background: #f8fafc;
+          border-radius: 12px;
+          border: 1px solid #ffffff;
+          box-shadow: 2px 3px 8px rgba(162, 178, 201, 0.15);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .clay-ranked-bar-row:hover {
+          transform: translateX(2px);
+          box-shadow: 3px 4px 12px rgba(162, 178, 201, 0.25);
+          background: #ffffff;
+        }
+
+        .clay-ranked-meta {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .clay-rank-badge {
+          font-size: 11px;
+          font-weight: 800;
+          color: #64748b;
+          min-width: 24px;
+          text-align: center;
+        }
+
+        .clay-rank-badge.rank-1,
+        .clay-rank-badge.rank-2,
+        .clay-rank-badge.rank-3 {
+          font-size: 13px;
+        }
+
+        .clay-ranked-name {
+          font-size: 12px;
+          font-weight: 700;
+          color: #1e293b;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;
+        }
+
+        .clay-cat-tag {
+          font-size: 9px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 6px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          flex-shrink: 0;
+        }
+
+        .cat-technical {
+          background: rgba(37, 99, 235, 0.12);
+          color: #2563eb;
+        }
+
+        .cat-cultural {
+          background: rgba(245, 158, 11, 0.12);
+          color: #d97706;
+        }
+
+        .cat-creative {
+          background: rgba(236, 72, 153, 0.12);
+          color: #db2777;
+        }
+
+        .clay-ranked-bar-track {
+          height: 9px;
+          background: #e2eaf4;
+          border-radius: 9999px;
+          overflow: hidden;
+          box-shadow: inset 1px 1px 2px rgba(162, 178, 201, 0.35);
+        }
+
+        .clay-ranked-bar-fill {
+          height: 100%;
+          border-radius: 9999px;
+          transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .clay-ranked-bar-fill.fill-technical {
+          background: linear-gradient(90deg, #2563eb, #3b82f6);
+        }
+
+        .clay-ranked-bar-fill.fill-cultural {
+          background: linear-gradient(90deg, #d97706, #f59e0b);
+        }
+
+        .clay-ranked-bar-fill.fill-creative {
+          background: linear-gradient(90deg, #db2777, #ec4899);
+        }
+
+        .clay-ranked-counts {
+          display: flex;
+          align-items: baseline;
+          justify-content: flex-end;
+          gap: 6px;
+        }
+
+        .clay-count-val {
+          font-size: 13px;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .clay-count-pct {
+          font-size: 11px;
+          font-weight: 600;
+          color: #94a3b8;
+        }
+
+        .clay-chart-tooltip {
+          background: #ffffff;
+          padding: 10px 14px;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .clay-tt-name {
+          font-size: 12px;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 4px;
+        }
+
+        .clay-tt-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .clay-tt-count {
+          font-size: 11px;
+          font-weight: 700;
+          color: #2563eb;
+        }
+
         .clay-barchart-container {
           width: 100%;
-          min-height: 240px;
+          min-height: 260px;
         }
 
         /* Popular Event Card */

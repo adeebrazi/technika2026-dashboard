@@ -89,21 +89,21 @@ export const DeveloperPinGuard: React.FC<DeveloperPinGuardProps> = ({ onSuccess 
 
   return (
     <div className={`dev-pin-wrapper ${success ? 'is-success' : ''}`}>
-      {/* Background ambient orbs */}
+      {/* Soft Ambient Light Glow Orbs */}
       <div className="dev-pin-orb dev-pin-orb-1" />
       <div className="dev-pin-orb dev-pin-orb-2" />
       <div className="dev-pin-orb dev-pin-orb-3" />
 
-      {/* Security Passcode Modal Card */}
+      {/* Security Passcode Claymorphic Card */}
       <div className={`dev-pin-card ${shake ? 'is-shaking' : ''}`}>
         
         {/* Card Header */}
         <div className="dev-pin-header">
           <div className="dev-pin-icon-wrap">
             {success ? (
-              <CheckCircle2 size={28} className="text-green dev-pulse-icon" />
+              <CheckCircle2 size={30} className="text-emerald dev-pulse-icon" />
             ) : (
-              <Lock size={28} className="text-cyan dev-pulse-icon" />
+              <Lock size={30} className="text-blue dev-pulse-icon" />
             )}
           </div>
           
@@ -168,10 +168,12 @@ export const DeveloperPinGuard: React.FC<DeveloperPinGuardProps> = ({ onSuccess 
 
       </div>
 
+      {/* Component Styles - Light Theme Claymorphism */}
       <style>{`
         .dev-pin-wrapper {
           min-height: 100vh;
-          background: #070b14;
+          width: 100vw;
+          background: #f0f4f9;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -179,57 +181,69 @@ export const DeveloperPinGuard: React.FC<DeveloperPinGuardProps> = ({ onSuccess 
           position: relative;
           overflow: hidden;
           font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+          color: #0f172a;
         }
 
+        /* ── Soft Ambient Glow Orbs ── */
         .dev-pin-orb {
           position: absolute;
           border-radius: 50%;
           filter: blur(100px);
           pointer-events: none;
-          opacity: 0.35;
+          opacity: 0.55;
         }
 
         .dev-pin-orb-1 {
-          width: 450px;
-          height: 450px;
-          background: radial-gradient(circle, #22d3ee 0%, transparent 70%);
+          width: 500px;
+          height: 500px;
+          background: radial-gradient(circle, rgba(191, 219, 254, 0.8) 0%, transparent 70%);
           top: -100px;
           left: -100px;
+          animation: devFloat 9s ease-in-out infinite alternate;
         }
 
         .dev-pin-orb-2 {
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
-          bottom: -150px;
-          right: -100px;
+          width: 480px;
+          height: 480px;
+          background: radial-gradient(circle, rgba(254, 215, 170, 0.7) 0%, transparent 70%);
+          bottom: -100px;
+          right: -80px;
+          animation: devFloat 11s ease-in-out infinite alternate-reverse;
         }
 
         .dev-pin-orb-3 {
-          width: 300px;
-          height: 300px;
-          background: radial-gradient(circle, #a855f7 0%, transparent 70%);
-          top: 40%;
+          width: 360px;
+          height: 360px;
+          background: radial-gradient(circle, rgba(233, 213, 255, 0.6) 0%, transparent 70%);
+          top: 45%;
           left: 50%;
           transform: translate(-50%, -50%);
-          opacity: 0.15;
+          opacity: 0.35;
         }
 
+        @keyframes devFloat {
+          0% { transform: translateY(0px) scale(1); }
+          100% { transform: translateY(22px) scale(1.05); }
+        }
+
+        /* ── Main Light Claymorphism Security Card ── */
         .dev-pin-card {
           width: 100%;
-          max-width: 460px;
-          background: linear-gradient(145deg, rgba(19, 29, 49, 0.9) 0%, rgba(13, 21, 39, 0.95) 100%);
-          border: 1.5px solid rgba(255, 255, 255, 0.1);
-          border-radius: 28px;
-          padding: 40px 36px;
+          max-width: 470px;
+          background: #ffffff;
+          border-radius: 30px;
+          border: 2px solid #ffffff;
+          padding: 42px 36px;
           display: flex;
           flex-direction: column;
           align-items: center;
           text-align: center;
           gap: 24px;
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+          box-shadow: 
+            16px 22px 48px rgba(162, 178, 201, 0.38),
+            -10px -10px 30px rgba(255, 255, 255, 0.9),
+            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.95),
+            inset -1.5px -1.5px 3px rgba(162, 178, 201, 0.12);
           position: relative;
           z-index: 10;
           transition: all 0.3s ease;
@@ -246,101 +260,116 @@ export const DeveloperPinGuard: React.FC<DeveloperPinGuardProps> = ({ onSuccess 
           40%, 60% { transform: translate3d(6px, 0, 0); }
         }
 
+        /* ── Header & 3D Clay Icon ── */
         .dev-pin-header {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
         }
 
         .dev-pin-icon-wrap {
-          width: 68px;
-          height: 68px;
-          border-radius: 22px;
-          background: linear-gradient(135deg, rgba(34, 211, 238, 0.15) 0%, rgba(14, 165, 233, 0.08) 100%);
-          border: 1.5px solid rgba(34, 211, 238, 0.4);
+          width: 72px;
+          height: 72px;
+          border-radius: 24px;
+          background: linear-gradient(135deg, #ffffff 0%, #f0f5fc 100%);
+          border: 2px solid #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 6px;
-          box-shadow: 0 8px 25px rgba(34, 211, 238, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+          margin-bottom: 4px;
+          box-shadow: 
+            6px 8px 20px rgba(162, 178, 201, 0.35),
+            -4px -4px 12px rgba(255, 255, 255, 0.95),
+            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.9),
+            inset -1.5px -1.5px 3px rgba(162, 178, 201, 0.15);
         }
 
         .dev-pin-badge {
           display: flex;
           align-items: center;
           gap: 6px;
-          padding: 4px 12px;
-          background: rgba(245, 158, 11, 0.15);
-          border: 1px solid rgba(245, 158, 11, 0.35);
+          padding: 4px 13px;
+          background: rgba(245, 158, 11, 0.12);
+          border: 1px solid rgba(245, 158, 11, 0.28);
           border-radius: 20px;
           font-size: 10px;
           font-weight: 800;
-          color: #fbbf24;
+          color: #d97706;
           letter-spacing: 0.06em;
+          box-shadow: 1px 1px 3px rgba(245, 158, 11, 0.1);
         }
 
         .dev-pin-title {
           font-size: 22px;
           font-weight: 800;
-          color: #ffffff;
+          color: #0f172a;
           margin: 0;
+          letter-spacing: -0.02em;
         }
 
         .dev-pin-subtitle {
           font-size: 13px;
-          color: #94a3b8;
+          color: #64748b;
           line-height: 1.5;
           margin: 0;
-          max-width: 340px;
+          max-width: 330px;
+          font-weight: 500;
         }
 
-        /* ── Digit Inputs ── */
+        /* ── 4-Digit Input Boxes ── */
         .dev-pin-inputs-row {
           display: flex;
           gap: 14px;
           justify-content: center;
-          margin: 6px 0;
+          margin: 4px 0;
         }
 
         .dev-pin-input {
-          width: 62px;
-          height: 72px;
-          background: #0f172a;
-          border: 2px solid rgba(255, 255, 255, 0.1);
-          border-radius: 18px;
+          width: 64px;
+          height: 74px;
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          border-radius: 20px;
           font-size: 30px;
           font-weight: 800;
-          color: #22d3ee;
+          color: #2563eb;
           text-align: center;
           outline: none;
-          box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.5);
-          transition: all 0.2s ease;
+          box-shadow: 
+            inset 2px 2px 4px rgba(162, 178, 201, 0.28),
+            inset -1px -1px 2px rgba(255, 255, 255, 0.9);
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           font-family: monospace;
         }
 
         .dev-pin-input:focus {
-          border-color: #22d3ee;
-          background: #131d35;
-          box-shadow: 0 0 20px rgba(34, 211, 238, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+          border-color: #2563eb;
+          background: #ffffff;
+          box-shadow: 
+            0 0 0 3px rgba(37, 99, 235, 0.15),
+            4px 6px 14px rgba(162, 178, 201, 0.25);
           transform: translateY(-2px);
         }
 
         .dev-pin-input.has-val {
-          border-color: rgba(34, 211, 238, 0.6);
-          background: #111b30;
+          border-color: #93c5fd;
+          background: #ffffff;
+          color: #2563eb;
         }
 
         .dev-pin-input.has-error {
           border-color: #ef4444;
-          color: #ef4444;
-          box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+          color: #dc2626;
+          background: #fef2f2;
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
         }
 
         .dev-pin-input.is-valid {
           border-color: #10b981;
-          color: #10b981;
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+          color: #059669;
+          background: #f0fdf4;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
         }
 
         /* ── Error Notification ── */
@@ -348,13 +377,14 @@ export const DeveloperPinGuard: React.FC<DeveloperPinGuardProps> = ({ onSuccess 
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 16px;
-          background: rgba(239, 68, 68, 0.15);
-          border: 1px solid rgba(239, 68, 68, 0.35);
-          border-radius: 12px;
+          padding: 9px 16px;
+          background: #fef2f2;
+          border: 1.5px solid #fecaca;
+          border-radius: 14px;
           font-size: 12px;
           font-weight: 700;
-          color: #f87171;
+          color: #dc2626;
+          box-shadow: 1px 2px 5px rgba(239, 68, 68, 0.1);
         }
 
         .dev-pin-hint {
@@ -366,30 +396,36 @@ export const DeveloperPinGuard: React.FC<DeveloperPinGuardProps> = ({ onSuccess 
           font-weight: 600;
         }
 
+        /* ── Return Button ── */
         .dev-pin-back-btn {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 10px 18px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: #f8fafc;
+          border: 1.5px solid #ffffff;
           border-radius: 14px;
-          color: #cbd5e1;
+          color: #475569;
           font-size: 12px;
           font-weight: 700;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 
+            3px 4px 10px rgba(162, 178, 201, 0.2),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.9);
         }
 
         .dev-pin-back-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #ffffff;
-          border-color: rgba(255, 255, 255, 0.2);
+          background: #ffffff;
+          color: #0f172a;
+          box-shadow: 
+            4px 6px 14px rgba(162, 178, 201, 0.28),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.95);
           transform: translateY(-1px);
         }
 
         .dev-pulse-icon {
-          animation: devIconPulse 2s infinite;
+          animation: devIconPulse 2s infinite ease-in-out;
         }
 
         @keyframes devIconPulse {
@@ -397,17 +433,22 @@ export const DeveloperPinGuard: React.FC<DeveloperPinGuardProps> = ({ onSuccess 
           50% { transform: scale(1.08); }
         }
 
-        .text-cyan { color: #22d3ee; }
-        .text-green { color: #10b981; }
+        .text-blue { color: #2563eb; }
+        .text-emerald { color: #059669; }
 
         @media (max-width: 480px) {
           .dev-pin-card {
             padding: 30px 20px;
+            border-radius: 24px;
           }
           .dev-pin-input {
-            width: 50px;
-            height: 60px;
+            width: 52px;
+            height: 62px;
             font-size: 24px;
+            border-radius: 16px;
+          }
+          .dev-pin-inputs-row {
+            gap: 10px;
           }
         }
       `}</style>
