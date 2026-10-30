@@ -134,10 +134,49 @@ interface VercelData {
 
 export const DeveloperDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { canAccessDeveloper } = getAdminIdentity();
+  const identity = getAdminIdentity();
+  const [hasDevAccess, setHasDevAccess] = useState<boolean>(
+    identity.isAdeeb || identity.isSanchit || identity.canAccessDeveloper
+  );
+  const [authChecked, setAuthChecked] = useState<boolean>(identity.isAdeeb || identity.isSanchit);
 
-  // Strictly restrict access to Adeeb Razi and Sanchit Agarwal
-  if (!canAccessDeveloper) {
+  // Live verification with backend permissions
+  useEffect(() => {
+    if (identity.isAdeeb || identity.isSanchit) {
+      setHasDevAccess(true);
+      setAuthChecked(true);
+      return;
+    }
+
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      setHasDevAccess(false);
+      setAuthChecked(true);
+      return;
+    }
+
+    fetch(`${API}/api/admin/my-permissions`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.permissions) {
+          localStorage.setItem('adminPermissions', JSON.stringify(d.permissions));
+          setHasDevAccess(Boolean(d.permissions.canViewDeveloperHub));
+        } else {
+          setHasDevAccess(false);
+        }
+      })
+      .catch(() => {
+        setHasDevAccess(identity.canAccessDeveloper);
+      })
+      .finally(() => {
+        setAuthChecked(true);
+      });
+  }, [identity.isAdeeb, identity.isSanchit, identity.canAccessDeveloper]);
+
+  // Restrict access if not authorized
+  if (authChecked && !hasDevAccess) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -176,7 +215,7 @@ export const DeveloperDashboard: React.FC = () => {
             Developer Access Restricted
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '0.92rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-            This technical command center and pipeline monitor is restricted exclusively to <strong>Adeeb Razi</strong> and <strong>Sanchit Agarwal</strong>.
+            This technical command center and pipeline monitor is restricted to authorized administrators and assigned technical coordinators.
           </p>
           <button
             onClick={() => navigate('/admin/participants')}

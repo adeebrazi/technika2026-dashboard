@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { BarChart3, Users, Terminal, ShieldCheck, User } from 'lucide-react';
 import { getAdminIdentity } from '../../utils/adminAuth';
@@ -14,9 +14,33 @@ export const AdminLayout: React.FC = () => {
     name,
     designation,
     photoUrl,
+    isAdeeb,
+    isSanchit,
     canAccessDeveloper,
     canAccessAccessControl,
   } = getAdminIdentity();
+
+  const [liveDevAccess, setLiveDevAccess] = useState(canAccessDeveloper);
+
+  useEffect(() => {
+    if (!token) return;
+    const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
+    fetch(`${API}/api/admin/my-permissions`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.permissions) {
+          localStorage.setItem('adminPermissions', JSON.stringify(d.permissions));
+          if (isAdeeb || isSanchit) {
+            setLiveDevAccess(true);
+          } else {
+            setLiveDevAccess(Boolean(d.permissions.canViewDeveloperHub));
+          }
+        }
+      })
+      .catch(() => {});
+  }, [token, isAdeeb, isSanchit]);
 
   const isTokenExpired = (tokenStr: string | null) => {
     if (!tokenStr) return true;
@@ -55,7 +79,7 @@ export const AdminLayout: React.FC = () => {
   const navItems = [
     { name: 'Analytics', path: '/', icon: <BarChart3 size={19} strokeWidth={2.2} />, desc: 'Public dashboard & stats' },
     { name: 'Participants', path: '/admin/participants', icon: <Users size={19} strokeWidth={2.2} />, desc: 'View all registrations' },
-    ...(canAccessDeveloper ? [{ 
+    ...(liveDevAccess ? [{ 
       name: 'Developer', 
       path: '/developer', 
       icon: <Terminal size={19} strokeWidth={2.2} />, 

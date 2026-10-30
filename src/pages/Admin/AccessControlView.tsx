@@ -221,7 +221,7 @@ export const AccessControlView: React.FC = () => {
   };
 
   const handleRevertIndividual = async (email: string, name: string) => {
-    if (!window.confirm(`Revert ${name} back to default ${activeTab === 'faculty' ? 'Faculty' : 'Coordinator'} permissions? Any custom overrides will be removed.`)) {
+    if (!window.confirm(`Revoke custom sole access for ${name} and revert to default ${activeTab === 'faculty' ? 'Faculty' : 'Coordinator'} permissions?`)) {
       return;
     }
     setSaving(true);
@@ -240,10 +240,11 @@ export const AccessControlView: React.FC = () => {
           targetKey: email.toLowerCase(),
           title: name
         });
-        setSaveToast({ message: `${name} reverted to default role permissions.`, type: 'success' });
+        setSaveToast({ message: `✓ Sole access revoked for ${name}. Reverted to default role permissions.`, type: 'success' });
         setTimeout(() => setSaveToast(null), 3500);
       } else {
-        setSaveToast({ message: 'Failed to revert individual permissions.', type: 'error' });
+        const errJson = await res.json().catch(() => ({}));
+        setSaveToast({ message: errJson.message || 'Failed to revert individual permissions.', type: 'error' });
       }
     } catch {
       setSaveToast({ message: 'Network error while reverting permissions.', type: 'error' });
@@ -634,6 +635,18 @@ export const AccessControlView: React.FC = () => {
 
         {/* Action Bar */}
         <div className="clay-action-strip">
+          {isEditingIndividual && getStaffOverride(selectedStaff.email) && (
+            <button
+              type="button"
+              onClick={() => handleRevertIndividual(selectedStaff.email, selectedStaff.name)}
+              className="clay-revoke-btn"
+              disabled={saving}
+              title="Revoke custom sole access and restore default permissions"
+            >
+              🗑️ Revoke Sole Access & Revert to Base Role
+            </button>
+          )}
+
           <button
             onClick={handleResetDefaults}
             className="clay-reset-btn"
@@ -1360,6 +1373,30 @@ export const AccessControlView: React.FC = () => {
           gap: 12px;
           flex-wrap: wrap;
           padding-top: 6px;
+        }
+
+        .clay-revoke-btn {
+          background: #fee2e2;
+          color: #dc2626;
+          border: 2px solid #f87171;
+          font-weight: 800;
+          font-size: 0.82rem;
+          padding: 0.85rem 1.4rem;
+          border-radius: 14px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 2px 4px 10px rgba(239, 68, 68, 0.15);
+        }
+
+        .clay-revoke-btn:hover:not(:disabled) {
+          background: #fecaca;
+          transform: translateY(-1px);
+          box-shadow: 2px 6px 14px rgba(239, 68, 68, 0.25);
+        }
+
+        .clay-revoke-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .clay-reset-btn {
