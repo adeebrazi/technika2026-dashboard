@@ -89,6 +89,14 @@ export const AccessControlView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'faculty' | 'coordinator'>('faculty');
   const [facultyPerms, setFacultyPerms] = useState<PermissionConfig>(DEFAULT_PERMS.faculty);
   const [coordinatorPerms, setCoordinatorPerms] = useState<PermissionConfig>(DEFAULT_PERMS.coordinator);
+  const [customOverrides, setCustomOverrides] = useState<PermissionConfig[]>([]);
+  const [selectedStaff, setSelectedStaff] = useState<{
+    name: string;
+    email: string;
+    role: 'faculty' | 'coordinator';
+  } | null>(null);
+  const [individualPerms, setIndividualPerms] = useState<PermissionConfig | null>(null);
+  const [staffSearchQuery, setStaffSearchQuery] = useState<string>('');
   const [staffList, setStaffList] = useState<{ faculty: any[]; coordinators: any[] }>({ faculty: [], coordinators: [] });
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
@@ -107,6 +115,7 @@ export const AccessControlView: React.FC = () => {
           const data = await res.json();
           if (data.faculty) setFacultyPerms(data.faculty);
           if (data.coordinator) setCoordinatorPerms(data.coordinator);
+          if (data.customOverrides) setCustomOverrides(data.customOverrides);
           if (data.staffList) setStaffList(data.staffList);
         }
       } catch (err) {
@@ -119,17 +128,61 @@ export const AccessControlView: React.FC = () => {
     fetchPermissions();
   }, []);
 
-  const activePerms = activeTab === 'faculty' ? facultyPerms : coordinatorPerms;
-  const setActivePerms = activeTab === 'faculty' ? setFacultyPerms : setCoordinatorPerms;
+  const currentStaffList = activeTab === 'faculty' ? staffList.faculty : staffList.coordinators;
+  const filteredStaffList = currentStaffList.filter(s => {
+    if (!staffSearchQuery.trim()) return true;
+    const q = staffSearchQuery.toLowerCase();
+    return s.name?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q);
+  });
+
+  const getStaffOverride = (email: string) => {
+    return customOverrides.find(o => o.targetKey?.toLowerCase() === email?.toLowerCase());
+  };
+
+  const handleTabChange = (tab: 'faculty' | 'coordinator') => {
+    setActiveTab(tab);
+    setSelectedStaff(null);
+    setIndividualPerms(null);
+    setStaffSearchQuery('');
+  };
+
+  const handleSelectStaff = (staff: { name: string; email: string }) => {
+    setSelectedStaff({ ...staff, role: activeTab });
+    const existing = getStaffOverride(staff.email);
+    if (existing) {
+      setIndividualPerms({ ...existing });
+    } else {
+      const base = activeTab === 'faculty' ? facultyPerms : coordinatorPerms;
+      setIndividualPerms({
+        ...base,
+        targetKey: staff.email.toLowerCase(),
+        title: staff.name
+      });
+    }
+  };
+
+  const handleClearSelectedStaff = () => {
+    setSelectedStaff(null);
+    setIndividualPerms(null);
+  };
+
+  const isEditingIndividual = selectedStaff !== null && individualPerms !== null;
+  const activePerms = isEditingIndividual 
+    ? individualPerms 
+    : (activeTab === 'faculty' ? facultyPerms : coordinatorPerms);
 
   const handleToggle = (key: keyof PermissionConfig) => {
-    setActivePerms((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    if (isEditingIndividual) {
+      setIndividualPerms(prev => prev ? { ...prev, [key]: !prev[key] } : null);
+    } else if (activeTab === 'faculty') {
+      setFacultyPerms(prev => ({ ...prev, [key]: !prev[key] }));
+    } else {
+      setCoordinatorPerms(prev => ({ ...prev, [key]: !prev[key] }));
+    }
   };
 
   const handleSave = async () => {
+    if (!activePerms) return;
     setSaving(true);
     try {
       const token = localStorage.getItem('adminToken');
@@ -144,21 +197,73 @@ export const AccessControlView: React.FC = () => {
 
       const data = await res.json();
       if (res.ok) {
-        setSaveToast({ message: data.message || `Permissions saved for ${activePerms.title}`, type: 'success' });
-        setTimeout(() => setSaveToast(null), 3000);
+        setSaveToast({ 
+          message: data.message || `Permissions saved successfully for ${activePerms.title}`, 
+          type: 'success' 
+        });
+        if (isEditingIndividual && data.permission) {
+          setCustomOverrides(prev => {
+            const filtered = prev.filter(p => p.targetKey?.toLowerCase() !== activePerms.targetKey?.toLowerCase());
+            return [...filtered, data.permission];
+          });
+        }
+        setTimeout(() => setSaveToast(null), 3500);
       } else {
         setSaveToast({ message: data.message || 'Failed to save permissions', type: 'error' });
       }
-    } catch (err) {
+    } catch {
       setSaveToast({ message: 'Network error while updating access controls', type: 'error' });
     } finally {
       setSaving(false);
     }
   };
 
+  const handleRevertIndividual = async (email: string, name: string) => {
+    if (!window.confirm(`Revert ${name} back to default ${activeTab === 'faculty' ? 'Faculty' : 'Coordinator'} permissions? Any custom overrides will be removed.`)) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API}/api/admin/permissions/${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setCustomOverrides(prev => prev.filter(p => p.targetKey?.toLowerCase() !== email.toLowerCase()));
+        const base = activeTab === 'faculty' ? facultyPerms : coordinatorPerms;
+        setIndividualPerms({
+          ...base,
+          targetKey: email.toLowerCase(),
+          title: name
+        });
+        setSaveToast({ message: `${name} reverted to default role permissions.`, type: 'success' });
+        setTimeout(() => setSaveToast(null), 3500);
+      } else {
+        setSaveToast({ message: 'Failed to revert individual permissions.', type: 'error' });
+      }
+    } catch {
+      setSaveToast({ message: 'Network error while reverting permissions.', type: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleResetDefaults = () => {
-    if (window.confirm(`Reset ${activePerms.title} permissions back to standard recommended defaults?`)) {
-      setActivePerms(DEFAULT_PERMS[activeTab]);
+    if (isEditingIndividual) {
+      if (window.confirm(`Reset ${activePerms.title}'s custom settings to match the base role permissions?`)) {
+        const base = activeTab === 'faculty' ? facultyPerms : coordinatorPerms;
+        setIndividualPerms({
+          ...base,
+          targetKey: selectedStaff!.email.toLowerCase(),
+          title: selectedStaff!.name
+        });
+      }
+    } else {
+      if (window.confirm(`Reset ${activePerms.title} permissions back to standard recommended defaults?`)) {
+        if (activeTab === 'faculty') setFacultyPerms(DEFAULT_PERMS.faculty);
+        else setCoordinatorPerms(DEFAULT_PERMS.coordinator);
+      }
     }
   };
 
@@ -193,7 +298,7 @@ export const AccessControlView: React.FC = () => {
       <div className="clay-role-tabs-bar">
         <button
           className={`clay-role-tab ${activeTab === 'faculty' ? 'active faculty' : ''}`}
-          onClick={() => setActiveTab('faculty')}
+          onClick={() => handleTabChange('faculty')}
         >
           <span className="tab-icon">🎓</span>
           <div className="tab-text">
@@ -204,7 +309,7 @@ export const AccessControlView: React.FC = () => {
 
         <button
           className={`clay-role-tab ${activeTab === 'coordinator' ? 'active coordinator' : ''}`}
-          onClick={() => setActiveTab('coordinator')}
+          onClick={() => handleTabChange('coordinator')}
         >
           <span className="tab-icon">⚡</span>
           <div className="tab-text">
@@ -216,6 +321,138 @@ export const AccessControlView: React.FC = () => {
 
       {/* ── Main Permissions Panel ── */}
       <div className="clay-permissions-container">
+
+        {/* ── Staff Directory & Sole Access Management Section ── */}
+        <div className="clay-panel-card clay-staff-management-card">
+          <div className="clay-panel-head">
+            <div className="head-icon staff-purple">👥</div>
+            <div style={{ flex: 1 }}>
+              <div className="clay-staff-head-row">
+                <h2 className="clay-panel-title">
+                  {activeTab === 'faculty' ? 'FACULTY COORDINATOR DIRECTORY' : 'STUDENT COORDINATOR DIRECTORY'} ({currentStaffList.length} STAFF)
+                </h2>
+                <div className="clay-staff-filter-wrap">
+                  <span className="search-icon">🔍</span>
+                  <input
+                    type="text"
+                    value={staffSearchQuery}
+                    onChange={(e) => setStaffSearchQuery(e.target.value)}
+                    placeholder="Search staff by name or email..."
+                    className="clay-staff-search-input"
+                  />
+                  {staffSearchQuery && (
+                    <button className="clay-staff-search-clear" onClick={() => setStaffSearchQuery('')}>✕</button>
+                  )}
+                </div>
+              </div>
+              <p className="clay-panel-desc">
+                Sare coordinators ko basic permissions to default milengi hi, but if you need to grant/restrict permissions for any individual solely, click their card below.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Scope Switcher: Base Role vs Individual */}
+          <div className="clay-scope-selector-strip">
+            <button
+              type="button"
+              className={`clay-scope-chip ${!selectedStaff ? 'is-active' : ''}`}
+              onClick={handleClearSelectedStaff}
+            >
+              <span>{activeTab === 'faculty' ? '🎓' : '⚡'}</span>
+              <span>Base {activeTab === 'faculty' ? 'Faculty' : 'Coordinator'} Group Privileges</span>
+              <span className="scope-count-badge">Default for all {currentStaffList.length}</span>
+            </button>
+            <div className="clay-scope-or-lbl">OR CLICK A COORDINATOR TO MANAGE SOLE PRIVILEGES:</div>
+          </div>
+
+          {/* Interactive Staff Cards Grid */}
+          <div className="clay-staff-chips-grid">
+            {filteredStaffList.map((staff, idx) => {
+              const override = getStaffOverride(staff.email);
+              const isSelected = selectedStaff?.email?.toLowerCase() === staff.email?.toLowerCase();
+              return (
+                <div 
+                  key={idx} 
+                  className={`clay-staff-chip-card ${isSelected ? 'is-selected' : ''} ${override ? 'has-override' : ''}`}
+                  onClick={() => handleSelectStaff(staff)}
+                  title={`Click to manage sole permissions for ${staff.name}`}
+                >
+                  <div className="chip-avatar-orb">
+                    {staff.name?.charAt(0) || 'S'}
+                  </div>
+                  <div className="chip-info">
+                    <div className="chip-name-row">
+                      <span className="chip-name">{staff.name}</span>
+                      {override ? (
+                        <span className="chip-pill-custom" title="Custom sole permissions configured for this person">
+                          ✨ Sole Access
+                        </span>
+                      ) : (
+                        <span className="chip-pill-default">Base Role</span>
+                      )}
+                    </div>
+                    <span className="chip-email">{staff.email}</span>
+                  </div>
+                  <div className="chip-action-arrow">
+                    {isSelected ? '✓ Editing' : 'Configure →'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Active Target Banner: Explains what is currently being edited ── */}
+        <div className={`clay-active-target-banner ${isEditingIndividual ? 'individual-mode' : 'group-mode'}`}>
+          <div className="target-banner-icon">
+            {isEditingIndividual ? '👤' : (activeTab === 'faculty' ? '🎓' : '⚡')}
+          </div>
+          <div className="target-banner-content">
+            <div className="target-banner-title">
+              {isEditingIndividual ? (
+                <>
+                  <span>SOLE PERMISSIONS FOR: <strong>{selectedStaff.name}</strong></span>
+                  {getStaffOverride(selectedStaff.email) ? (
+                    <span className="target-tag custom">✨ Custom Overrides Active</span>
+                  ) : (
+                    <span className="target-tag inheriting">Inheriting Base Defaults (Unsaved)</span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span>BASE {activeTab === 'faculty' ? 'FACULTY' : 'COORDINATOR'} ROLE PRIVILEGES</span>
+                  <span className="target-tag default">Applies to all {currentStaffList.length} staff</span>
+                </>
+              )}
+            </div>
+            <p className="target-banner-desc">
+              {isEditingIndividual 
+                ? `You are configuring custom access exclusively for ${selectedStaff.name} (${selectedStaff.email}). Any switches changed here apply solely to this person upon login.`
+                : `These baseline permissions are inherited by every ${activeTab === 'faculty' ? 'faculty coordinator' : 'student coordinator'} unless individual custom access has been granted.`}
+            </p>
+          </div>
+          <div className="target-banner-actions">
+            {isEditingIndividual && getStaffOverride(selectedStaff.email) && (
+              <button
+                type="button"
+                onClick={() => handleRevertIndividual(selectedStaff.email, selectedStaff.name)}
+                className="clay-revert-action-btn"
+                title="Delete custom overrides and revert back to standard group privileges"
+              >
+                ↺ Revert to Base Role
+              </button>
+            )}
+            {isEditingIndividual && (
+              <button
+                type="button"
+                onClick={handleClearSelectedStaff}
+                className="clay-back-group-action-btn"
+              >
+                ← Back to Base Role
+              </button>
+            )}
+          </div>
+        </div>
         
         {/* Section 1: WHAT THEY CAN SEE (View Access) */}
         <div className="clay-panel-card">
@@ -405,29 +642,6 @@ export const AccessControlView: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 3: Staff Members Covered */}
-        <div className="clay-panel-card">
-          <div className="clay-panel-head">
-            <div className="head-icon staff-purple">👥</div>
-            <div>
-              <h2 className="clay-panel-title">ACTIVE STAFF ASSIGNED TO THIS ROLE ({activeTab === 'faculty' ? staffList.faculty.length : staffList.coordinators.length})</h2>
-              <p className="clay-panel-desc">All accounts in this category inherit these configured permissions upon login.</p>
-            </div>
-          </div>
-
-          <div className="clay-staff-chips-row">
-            {(activeTab === 'faculty' ? staffList.faculty : staffList.coordinators).map((staff, idx) => (
-              <div key={idx} className="clay-staff-chip">
-                <span className="chip-avatar">{staff.name?.charAt(0) || 'S'}</span>
-                <div className="chip-meta">
-                  <span className="chip-name">{staff.name}</span>
-                  <span className="chip-email">{staff.email}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Action Bar */}
         <div className="clay-action-strip">
           <button
@@ -435,15 +649,21 @@ export const AccessControlView: React.FC = () => {
             className="clay-reset-btn"
             disabled={saving}
           >
-            ↺ Reset to Recommended Defaults
+            {isEditingIndividual 
+              ? '↺ Match Base Role Defaults' 
+              : '↺ Reset Role to Recommended Defaults'}
           </button>
 
           <button
             onClick={handleSave}
-            className="clay-save-btn"
+            className={`clay-save-btn ${isEditingIndividual ? 'individual-save' : ''}`}
             disabled={saving}
           >
-            {saving ? 'Saving Privileges...' : `✓ Save Access Privileges for ${activePerms.title}`}
+            {saving 
+              ? 'Saving Privileges...' 
+              : isEditingIndividual 
+                ? `✓ Save Sole Privileges for ${selectedStaff.name}` 
+                : `✓ Save Base Privileges for All ${activeTab === 'faculty' ? 'Faculty' : 'Student Coordinators'}`}
           </button>
         </div>
 
@@ -792,52 +1012,354 @@ export const AccessControlView: React.FC = () => {
           transform: translateX(22px);
         }
 
-        /* ── Staff Chips ── */
-        .clay-staff-chips-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
+        /* ── Staff Management Directory Card ── */
+        .clay-staff-management-card {
+          border-left: 4px solid #8b5cf6;
         }
 
-        .clay-staff-chip {
+        .clay-staff-head-row {
           display: flex;
           align-items: center;
-          gap: 8px;
-          background: #ffffff;
-          padding: 6px 12px;
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          box-shadow: 2px 3px 6px rgba(162, 178, 201, 0.12);
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 4px;
         }
 
-        .chip-avatar {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #ede9fe;
-          color: #6d28d9;
-          font-size: 0.72rem;
+        .clay-staff-filter-wrap {
+          display: flex;
+          align-items: center;
+          background: #ffffff;
+          padding: 6px 14px;
+          border-radius: 12px;
+          border: 1.5px solid #e2e8f0;
+          box-shadow: inset 1px 1px 3px rgba(162, 178, 201, 0.2);
+          gap: 8px;
+          min-width: 260px;
+        }
+
+        .clay-staff-filter-wrap .search-icon {
+          font-size: 0.85rem;
+          color: #94a3b8;
+        }
+
+        .clay-staff-search-input {
+          border: none;
+          outline: none;
+          background: transparent;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #1e293b;
+          width: 100%;
+          font-family: inherit;
+        }
+
+        .clay-staff-search-clear {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+          font-size: 0.75rem;
+          padding: 0 2px;
+        }
+
+        /* ── Scope Switcher ── */
+        .clay-scope-selector-strip {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          padding-bottom: 6px;
+        }
+
+        .clay-scope-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: 14px;
+          border: 2px solid rgba(255, 255, 255, 0.9);
+          background: #ffffff;
+          color: #334155;
           font-weight: 800;
+          font-size: 0.8rem;
+          cursor: pointer;
+          box-shadow: 2px 4px 10px rgba(162, 178, 201, 0.18);
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-scope-chip:hover {
+          transform: translateY(-1px);
+          box-shadow: 4px 6px 14px rgba(162, 178, 201, 0.25);
+        }
+
+        .clay-scope-chip.is-active {
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+          border-color: #3b82f6;
+          color: #1d4ed8;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .scope-count-badge {
+          background: #ffffff;
+          padding: 2px 7px;
+          border-radius: 20px;
+          font-size: 0.68rem;
+          font-weight: 800;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .clay-scope-or-lbl {
+          font-size: 0.68rem;
+          font-weight: 800;
+          color: #94a3b8;
+          letter-spacing: 0.5px;
+        }
+
+        /* ── Staff Cards Grid ── */
+        .clay-staff-chips-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 10px;
+        }
+
+        .clay-staff-chip-card {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: #ffffff;
+          padding: 10px 14px;
+          border-radius: 14px;
+          border: 2px solid rgba(255, 255, 255, 0.9);
+          box-shadow: 2px 4px 10px rgba(162, 178, 201, 0.15);
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-staff-chip-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 4px 8px 18px rgba(162, 178, 201, 0.25);
+          border-color: #cbd5e1;
+        }
+
+        .clay-staff-chip-card.is-selected {
+          border-color: #2563eb;
+          background: #f8faff;
+          box-shadow: 0 4px 16px rgba(37, 99, 235, 0.22), inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+        }
+
+        .clay-staff-chip-card.has-override {
+          border-left: 3.5px solid #d97706;
+        }
+
+        .clay-staff-chip-card.is-selected.has-override {
+          border-color: #d97706;
+          background: #fffdfa;
+        }
+
+        .chip-avatar-orb {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: #eff6ff;
+          color: #2563eb;
+          font-size: 0.82rem;
+          font-weight: 900;
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
+          border: 1.5px solid #dbeafe;
+          box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.9);
         }
 
-        .chip-meta {
+        .clay-staff-chip-card.has-override .chip-avatar-orb {
+          background: #fef3c7;
+          color: #b45309;
+          border-color: #fde68a;
+        }
+
+        .chip-info {
           display: flex;
           flex-direction: column;
-          gap: 1px;
+          gap: 2px;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .chip-name-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
         }
 
         .chip-name {
-          font-size: 0.76rem;
+          font-size: 0.8rem;
           font-weight: 800;
           color: #0f172a;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .chip-email {
-          font-size: 0.65rem;
+          font-size: 0.68rem;
           color: #64748b;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .chip-pill-custom {
+          background: #fef3c7;
+          color: #b45309;
+          font-size: 0.62rem;
+          font-weight: 800;
+          padding: 1px 6px;
+          border-radius: 6px;
+          border: 1px solid #fde68a;
+        }
+
+        .chip-pill-default {
+          background: #f1f5f9;
+          color: #64748b;
+          font-size: 0.62rem;
+          font-weight: 700;
+          padding: 1px 6px;
+          border-radius: 6px;
+        }
+
+        .chip-action-arrow {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #2563eb;
+          flex-shrink: 0;
+        }
+
+        /* ── Active Target Banner ── */
+        .clay-active-target-banner {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 1rem 1.4rem;
+          border-radius: 18px;
+          border: 2px solid rgba(255, 255, 255, 0.9);
+          box-shadow: 4px 6px 16px rgba(162, 178, 201, 0.2);
+          transition: all 0.25s;
+        }
+
+        .clay-active-target-banner.group-mode {
+          background: linear-gradient(135deg, #f0f7ff 0%, #e0effe 100%);
+          border-color: #93c5fd;
+        }
+
+        .clay-active-target-banner.individual-mode {
+          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+          border-color: #fcd34d;
+        }
+
+        .target-banner-icon {
+          font-size: 1.8rem;
+          flex-shrink: 0;
+        }
+
+        .target-banner-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .target-banner-title {
+          font-size: 0.92rem;
+          font-weight: 800;
+          color: #0f172a;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .target-banner-desc {
+          font-size: 0.75rem;
+          color: #475569;
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .target-tag {
+          font-size: 0.68rem;
+          font-weight: 800;
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+
+        .target-tag.default {
+          background: #dbeafe;
+          color: #1e40af;
+          border: 1px solid #bfdbfe;
+        }
+
+        .target-tag.custom {
+          background: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fde68a;
+        }
+
+        .target-tag.inheriting {
+          background: #f1f5f9;
+          color: #475569;
+          border: 1px solid #e2e8f0;
+        }
+
+        .target-banner-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .clay-revert-action-btn {
+          background: #ffffff;
+          border: 1.5px solid #f87171;
+          color: #dc2626;
+          font-weight: 800;
+          font-size: 0.75rem;
+          padding: 6px 12px;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .clay-revert-action-btn:hover {
+          background: #fee2e2;
+        }
+
+        .clay-back-group-action-btn {
+          background: #ffffff;
+          border: 1.5px solid #cbd5e1;
+          color: #334155;
+          font-weight: 800;
+          font-size: 0.75rem;
+          padding: 6px 12px;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .clay-back-group-action-btn:hover {
+          background: #f8fafc;
+          border-color: #94a3b8;
+        }
+
+        .clay-save-btn.individual-save {
+          background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+          box-shadow: 4px 6px 16px rgba(217, 119, 6, 0.35);
+        }
+
+        .clay-save-btn.individual-save:hover:not(:disabled) {
+          box-shadow: 6px 9px 20px rgba(217, 119, 6, 0.45);
         }
 
         /* ── Action Bar ── */

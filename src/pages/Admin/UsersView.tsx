@@ -313,8 +313,21 @@ export const UsersView: React.FC = () => {
     const matchesSource = filterSource === 'all' || userSrc === filterSource;
 
     const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
+    const isGForm = user.source === 'google_form';
+    const hasSS = isScreenshotUploaded(user);
+
     let matchesPayment = true;
-    if (filterPayment === 'aju_exempt') {
+    if (filterPayment === 'portal_image') {
+      matchesPayment = !isGForm && hasSS;
+    } else if (filterPayment === 'form_image') {
+      matchesPayment = isGForm && hasSS;
+    } else if (filterPayment === 'form_no_image') {
+      matchesPayment = isGForm && !hasSS;
+    } else if (filterPayment === 'has_screenshot') {
+      matchesPayment = hasSS;
+    } else if (filterPayment === 'no_screenshot') {
+      matchesPayment = !hasSS;
+    } else if (filterPayment === 'aju_exempt') {
       matchesPayment = isExempt;
     } else if (filterPayment === 'online_paid') {
       matchesPayment = !isExempt;
@@ -507,6 +520,9 @@ export const UsersView: React.FC = () => {
             title="Filter by clearance and screenshot submission type"
           >
             <option value="all">All Clearances</option>
+            <option value="portal_image">📸 Uploaded Screenshot (Website)</option>
+            <option value="form_image">📁 Uploaded Screenshot (Form)</option>
+            <option value="form_no_image">⚠️ Missing Screenshot (Form)</option>
             <option value="aju_exempt">🎓 AJU Exempt (No-Dues Slip)</option>
             <option value="online_paid">💳 Online Paid (UPI/UTR)</option>
           </select>

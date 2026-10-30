@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   ClipboardList, Building2, GraduationCap,
-  ArrowUpRight, RefreshCw, Download, Sparkles,
+  ArrowUpRight, RefreshCw, Sparkles,
   Info, LogOut, Cpu, Palette, Calendar, Terminal,
   Lock, BarChart3, Globe, FileText
 } from 'lucide-react';
@@ -134,54 +134,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   // Format with leading zero if single digit, e.g. "02"
   const formatZeroPad = (n: number) => {
     return n < 10 ? `0${n}` : `${n}`;
-  };
-
-  // Export report to CSV
-  const handleExportReport = () => {
-    if (!data) return;
-
-    let csvContent = 'data:text/csv;charset=utf-8,';
-    csvContent += 'TECHNIKA 6.0 - REGISTRATION ANALYTICS REPORT\n';
-    csvContent += `Generated At,${new Date().toLocaleString()}\n`;
-    csvContent += `Total Registrations,${data.totalRegistrations}\n`;
-    csvContent += `Participating Institutes,${data.totalInstitutes}\n\n`;
-
-    csvContent += '--- EVENT TYPE CATEGORIES ---\n';
-    csvContent += 'Category,Registrations,Share (%)\n';
-    eventTypeBreakdown.forEach(item => {
-      csvContent += `"${item.category}",${item.count},${item.share}%\n`;
-    });
-    csvContent += '\n';
-
-    csvContent += '--- INSTITUTE PARTICIPATION ---\n';
-    csvContent += 'Institute,Participants,Share (%)\n';
-    data.instituteWise.forEach(item => {
-      const share = data.totalRegistrations > 0 ? ((item.count / data.totalRegistrations) * 100).toFixed(1) : '0';
-      csvContent += `"${item.institute.replace(/"/g, '""')}",${item.count},${share}%\n`;
-    });
-    csvContent += '\n';
-
-    csvContent += '--- COURSE PARTICIPATION ---\n';
-    csvContent += 'Course,Participants,Share (%)\n';
-    data.courseDistribution.forEach(item => {
-      const share = data.totalRegistrations > 0 ? ((item.count / data.totalRegistrations) * 100).toFixed(1) : '0';
-      csvContent += `"${item.course.replace(/"/g, '""')}",${item.count},${share}%\n`;
-    });
-    csvContent += '\n';
-
-    csvContent += '--- EVENT REGISTRATIONS ---\n';
-    csvContent += 'Event ID,Event Name,Registrations\n';
-    data.eventWise.forEach(ev => {
-      csvContent += `"${ev.eventId}","${ev.eventName.replace(/"/g, '""')}",${ev.count}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `technika_analytics_report_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // Helper to extract clean initials (e.g. "Arka Jain University" -> "AJ")
@@ -505,14 +457,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             >
               <RefreshCw size={17} className={isRefreshing ? 'clay-spin-anim' : ''} />
               <span>Refresh</span>
-            </button>
-
-            <button 
-              className="clay-btn-export"
-              onClick={handleExportReport}
-            >
-              <Download size={17} strokeWidth={2.4} />
-              <span>Export report</span>
             </button>
           </div>
         </section>
