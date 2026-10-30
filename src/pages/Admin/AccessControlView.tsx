@@ -351,19 +351,6 @@ export const AccessControlView: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Scope Switcher: Base Role vs Individual */}
-          <div className="clay-scope-selector-strip">
-            <button
-              type="button"
-              className={`clay-scope-chip ${!selectedStaff ? 'is-active' : ''}`}
-              onClick={handleClearSelectedStaff}
-            >
-              <span>{activeTab === 'faculty' ? '🎓' : '⚡'}</span>
-              <span>Base {activeTab === 'faculty' ? 'Faculty' : 'Coordinator'} Group Privileges</span>
-              <span className="scope-count-badge">Default for all {currentStaffList.length}</span>
-            </button>
-            <div className="clay-scope-or-lbl">OR CLICK A COORDINATOR TO MANAGE SOLE PRIVILEGES:</div>
-          </div>
 
           {/* Interactive Staff Cards Grid */}
           <div className="clay-staff-chips-grid">
