@@ -96,9 +96,17 @@ export const getAdminIdentity = (): AdminIdentity => {
   // Prof. Mamatha Vayelapelli: 'mamatha' in email or name
   const isMamatha = n.includes('mamatha') || e.includes('mamatha');
 
-  // Strict permission scopes as requested:
-  // Developer: ONLY Adeeb Razi and Sanchit Agarwal
-  const canAccessDeveloper = isAdeeb || isSanchit;
+  // Developer Access: Adeeb Razi, Sanchit Agarwal, or any student/staff explicitly assigned canViewDeveloperHub by Admin
+  let hasAssignedDevPerm = false;
+  try {
+    const raw = localStorage.getItem('adminPermissions');
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p.canViewDeveloperHub) hasAssignedDevPerm = true;
+    }
+  } catch {}
+
+  const canAccessDeveloper = isAdeeb || isSanchit || hasAssignedDevPerm;
 
   // Access Control: ONLY Adeeb Razi and Mamatha Mam
   const canAccessAccessControl = isAdeeb || isMamatha;

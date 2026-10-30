@@ -7,7 +7,7 @@ import {
 import {
   ClipboardList, Building2, GraduationCap,
   ArrowUpRight, RefreshCw, Sparkles,
-  Info, LogOut, Cpu, Palette, Calendar, Terminal,
+  Info, LogOut, Cpu, Palette, Calendar,
   Lock, BarChart3, Globe, FileText
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
@@ -351,19 +351,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         <div className="clay-nav-center">
           <div className="clay-nav-tab-group">
-            <button className="clay-nav-tab active" title="Currently viewing Registration Analytics">
+            <div className="clay-nav-tab active" title="Currently viewing Registration Analytics">
               <span className="clay-pulse-dot" />
               <span>Registration Analytics</span>
-            </button>
-            <button
-              onClick={() => navigate('/developer')}
-              className="clay-nav-tab inactive"
-              title="Open Developer & Infrastructure Dashboard"
-            >
-              <Terminal size={14} className="clay-tab-icon" />
-              <span>Developer Dashboard</span>
-              <span className="clay-tab-dot" />
-            </button>
+            </div>
           </div>
         </div>
 
@@ -1220,19 +1211,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             <span className="clay-mob-label">Analytics</span>
           </button>
 
-          {/* Tab 2: Developer Dashboard */}
-          <button 
-            onClick={() => navigate('/developer')}
-            className="clay-mob-nav-item"
-            title="Developer Dashboard"
-            type="button"
-          >
-            <div className="clay-mob-icon-wrap">
-              <Terminal size={18} />
-              <span className="clay-mob-dot" />
-            </div>
-            <span className="clay-mob-label">Developer</span>
-          </button>
 
           {/* Tab 3: Admin / User Profile or Login */}
           {adminAuth.token ? (
