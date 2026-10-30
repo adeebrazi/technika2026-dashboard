@@ -20,7 +20,6 @@ export const ProfileView: React.FC = () => {
   } = getAdminIdentity();
   const storedEmail = localStorage.getItem('adminEmail');
 
-  const [copiedToken, setCopiedToken] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [stats, setStats] = useState<{ totalUsers: number; totalTeams: number } | null>(null);
@@ -317,10 +316,6 @@ export const ProfileView: React.FC = () => {
                   <span className="clay-mini-stat-num">45</span>
                   <span className="clay-mini-stat-lbl">Active Competitions</span>
                 </div>
-                <div className="clay-mini-stat">
-                  <span className="clay-mini-stat-num live">ONLINE</span>
-                  <span className="clay-mini-stat-lbl">Technika Backend API</span>
-                </div>
               </div>
             </div>
           )}
@@ -393,31 +388,6 @@ export const ProfileView: React.FC = () => {
               <div className="clay-session-row">
                 <span className="clay-session-key">Token Expiry</span>
                 <span className="clay-session-val">{sessionExpiresAt} ({getRemainingTime()})</span>
-              </div>
-              <div className="clay-session-row">
-                <span className="clay-session-key">Auth Scheme</span>
-                <span className="clay-session-val">HMAC SHA-256 JWT Bearer</span>
-              </div>
-              <div className="clay-session-row">
-                <span className="clay-session-key">Bearer Token</span>
-                <div className="clay-token-row">
-                  <code className="clay-token-snippet">
-                    {token ? `${token.substring(0, 18)}...${token.substring(token.length - 10)}` : 'N/A'}
-                  </code>
-                  {token && (
-                    <button 
-                      className="clay-copy-token-btn"
-                      onClick={() => {
-                        navigator.clipboard.writeText(token);
-                        setCopiedToken(true);
-                        setTimeout(() => setCopiedToken(false), 2000);
-                      }}
-                      title="Copy full JWT token"
-                    >
-                      {copiedToken ? '✓' : 'Copy'}
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -904,7 +874,7 @@ export const ProfileView: React.FC = () => {
         .clay-stats-pills-row {
           padding: 0.6rem 1.4rem 1.4rem 1.4rem;
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(2, 1fr);
           gap: 10px;
         }
 
