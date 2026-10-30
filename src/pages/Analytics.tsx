@@ -2,32 +2,37 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
   AreaChart, Area
 } from 'recharts';
 import {
-  ClipboardList, Building2, Users, GraduationCap,
+  ClipboardList, Building2, GraduationCap,
   ArrowUpRight, RefreshCw, Download, Sparkles,
   Info, LogOut, Cpu, Palette, Calendar, Terminal,
-  Lock, BarChart3, Activity
+  Lock, BarChart3, Globe, FileText
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
+import { getAdminPhotoUrl } from '../utils/adminAuth';
 
 const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
 
 interface AnalyticsData {
   totalRegistrations: number;
+  websiteRegistrations?: number;
+  googleFormRegistrations?: number;
+  importRegistrations?: number;
+  sourceBreakdown?: {
+    website: number;
+    googleForm: number;
+    import: number;
+  };
   instituteWise: { institute: string; count: number }[];
   totalInstitutes: number;
   eventWise: { eventId: string; eventName: string; count: number }[];
   maxEvent: { eventId: string; eventName: string; count: number } | null;
   minEvent: { eventId: string; eventName: string; count: number } | null;
-  genderDistribution: Record<string, number>;
+  genderDistribution?: Record<string, number>;
   courseDistribution: { course: string; count: number }[];
   dailyTrend: { date: string; count: number }[];
-  ageDistribution?: { category: string; count: number; share: number }[];
-  averageAge?: string;
-  detailedAge?: { age: string; count: number }[];
   eventTypeBreakdown?: { category: string; count: number; share: number; color: string }[];
   totalEventRegistrations?: number;
 }
@@ -73,12 +78,18 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const [adminAuth, setAdminAuth] = useState(() => ({
-    token: localStorage.getItem('adminToken'),
-    role: localStorage.getItem('adminRole'),
-    name: localStorage.getItem('adminName') || 'Administrator',
-    designation: localStorage.getItem('adminDesignation') || 'Admin'
-  }));
+  const [adminAuth, setAdminAuth] = useState(() => {
+    const name = localStorage.getItem('adminName') || 'Administrator';
+    const email = localStorage.getItem('adminEmail') || '';
+    return {
+      token: localStorage.getItem('adminToken'),
+      role: localStorage.getItem('adminRole'),
+      name,
+      designation: localStorage.getItem('adminDesignation') || 'Admin',
+      photoUrl: getAdminPhotoUrl(name, email)
+    };
+  });
+  const [avatarImgErr, setAvatarImgErr] = useState(false);
 
   const handleAdminLogout = () => {
     localStorage.removeItem('adminToken');
@@ -89,7 +100,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
       token: null,
       role: null,
       name: 'Administrator',
-      designation: 'Admin'
+      designation: 'Admin',
+      photoUrl: null
     });
     if (onLogout) onLogout();
   };
@@ -141,14 +153,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
     });
     csvContent += '\n';
 
-    csvContent += '--- AGE DEMOGRAPHICS ---\n';
-    csvContent += `Average Age,${averageAge} yrs\n`;
-    csvContent += 'Age Bracket,Participants,Share (%)\n';
-    ageDistribution.forEach(item => {
-      csvContent += `"${item.category}",${item.count},${item.share}%\n`;
-    });
-    csvContent += '\n';
-
     csvContent += '--- INSTITUTE PARTICIPATION ---\n';
     csvContent += 'Institute,Participants,Share (%)\n';
     data.instituteWise.forEach(item => {
@@ -169,13 +173,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
     csvContent += 'Event ID,Event Name,Registrations\n';
     data.eventWise.forEach(ev => {
       csvContent += `"${ev.eventId}","${ev.eventName.replace(/"/g, '""')}",${ev.count}\n`;
-    });
-    csvContent += '\n';
-
-    csvContent += '--- GENDER DEMOGRAPHICS ---\n';
-    csvContent += 'Gender,Count\n';
-    Object.entries(data.genderDistribution).forEach(([gender, count]) => {
-      csvContent += `"${gender}",${count}\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -198,18 +195,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   };
 
   // Derived metrics with safe fallbacks
-  const maleCount = data?.genderDistribution?.Male || 0;
-  const femaleCount = data?.genderDistribution?.Female || 0;
-  const otherCount = data?.genderDistribution?.Other || 0;
   const totalRegistrations = data?.totalRegistrations || 0;
 
-  const malePercent = totalRegistrations > 0 ? Math.round((maleCount / totalRegistrations) * 100) : 0;
-  const femalePercent = totalRegistrations > 0 ? Math.round((femaleCount / totalRegistrations) * 100) : 0;
+  const websiteCount = data?.websiteRegistrations ?? Math.max(0, totalRegistrations - (data?.googleFormRegistrations || 0));
+  const googleFormCount = data?.googleFormRegistrations || 0;
+  const institutesCount = data?.totalInstitutes || 0;
+
+  const websitePercent = totalRegistrations > 0 ? Math.round((websiteCount / totalRegistrations) * 100) : 0;
+  const googleFormPercent = totalRegistrations > 0 ? Math.round((googleFormCount / totalRegistrations) * 100) : 0;
 
   const animatedTotal = useAnimatedCounter(totalRegistrations);
-  const animatedInstitutes = useAnimatedCounter(data?.totalInstitutes || 0);
-  const animatedMale = useAnimatedCounter(maleCount);
-  const animatedFemale = useAnimatedCounter(femaleCount);
+  const animatedWebsite = useAnimatedCounter(websiteCount);
+  const animatedGoogleForm = useAnimatedCounter(googleFormCount);
+  const animatedInstitutes = useAnimatedCounter(institutesCount);
 
   // Top event image resolution
   const topEvent = data?.maxEvent;
@@ -221,9 +219,43 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   const leastEventName = leastEvent?.eventName || 'Code Buster';
   const leastEventCount = leastEvent?.count || 1;
 
-  // Event Registrations Interactive Filter & View Modes
+  // Event Registrations Interactive Filter
   const [eventCategoryFilter, setEventCategoryFilter] = useState<'TOP10' | 'ALL' | 'Technical' | 'Cultural' | 'Creative'>('TOP10');
-  const [eventChartMode, setEventChartMode] = useState<'BARS' | 'AREA'>('BARS');
+
+  // Gender Demographics data computation
+  const genderData = useMemo(() => {
+    const dist = data?.genderDistribution || {};
+    let male = 0;
+    let female = 0;
+    let unspecified = 0;
+
+    Object.entries(dist).forEach(([key, val]) => {
+      const k = (key || '').trim().toLowerCase();
+      const count = typeof val === 'number' ? val : 0;
+      if (k === 'male' || k === 'm') {
+        male += count;
+      } else if (k === 'female' || k === 'f') {
+        female += count;
+      } else {
+        unspecified += count;
+      }
+    });
+
+    const total = male + female + unspecified;
+    const malePct = total > 0 ? Math.round((male / total) * 100) : (totalRegistrations > 0 ? 65 : 0);
+    const femalePct = total > 0 ? Math.round((female / total) * 100) : (totalRegistrations > 0 ? 35 : 0);
+    const unspecifiedPct = total > 0 && unspecified > 0 ? Math.max(0, 100 - malePct - femalePct) : 0;
+
+    return {
+      male,
+      female,
+      unspecified,
+      total,
+      malePct,
+      femalePct,
+      unspecifiedPct
+    };
+  }, [data, totalRegistrations]);
 
   // Helper to categorize events by ID or prefix
   const getEventCategory = (eventId: string = ''): 'Technical' | 'Cultural' | 'Creative' => {
@@ -272,21 +304,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
     return eventChartData.filter(e => e.category === eventCategoryFilter);
   }, [eventChartData, eventCategoryFilter]);
 
-  // Gender chart data
-  const genderChartData = useMemo(() => {
-    const arr = [];
-    if (maleCount > 0 || totalRegistrations === 0) {
-      arr.push({ name: 'Male', value: maleCount > 0 ? maleCount : 2, fill: '#2563eb' });
-    }
-    if (femaleCount > 0 || totalRegistrations === 0) {
-      arr.push({ name: 'Female', value: femaleCount > 0 ? femaleCount : 0.001, fill: '#f59e0b' });
-    }
-    if (otherCount > 0) {
-      arr.push({ name: 'Other', value: otherCount, fill: '#8b5cf6' });
-    }
-    return arr;
-  }, [maleCount, femaleCount, otherCount, totalRegistrations]);
-
   // Daily trend data
   const trendData = useMemo(() => {
     if (!data || data.dailyTrend.length === 0) {
@@ -325,22 +342,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   }, [data]);
 
   const totalEventRegistrations = data?.totalEventRegistrations || eventTypeBreakdown.reduce((acc, curr) => acc + curr.count, 0);
-
-  // Age Distribution demographic cohorts
-  const ageDistribution = useMemo(() => {
-    if (data?.ageDistribution && data.ageDistribution.length > 0) {
-      return data.ageDistribution;
-    }
-    const total = data?.totalRegistrations || 0;
-    return [
-      { category: '< 18 yrs', count: 0, share: 0 },
-      { category: '18 - 20 yrs', count: total, share: total > 0 ? 100 : 0 },
-      { category: '21 - 23 yrs', count: 0, share: 0 },
-      { category: '24+ yrs', count: 0, share: 0 },
-    ];
-  }, [data]);
-
-  const averageAge = data?.averageAge || '20.4';
 
   const showLoader = loading || window.location.search.includes('loader');
   if (showLoader) {
@@ -424,14 +425,23 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 className="clay-portal-user-btn"
                 title="Go to Admin Workspace"
               >
-                <div className="clay-portal-avatar">
-                  {adminAuth.name
-                    .split(' ')
-                    .filter(Boolean)
-                    .map((n: string) => n[0])
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase() || 'AD'}
+                <div className="clay-portal-avatar" style={{ padding: 0, overflow: 'hidden' }}>
+                  {adminAuth.photoUrl && !avatarImgErr ? (
+                    <img 
+                      src={adminAuth.photoUrl} 
+                      alt={adminAuth.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                      onError={() => setAvatarImgErr(true)}
+                    />
+                  ) : (
+                    adminAuth.name
+                      .split(' ')
+                      .filter(Boolean)
+                      .map((n: string) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase() || 'AD'
+                  )}
                 </div>
                 <div className="clay-portal-meta">
                   <span className="clay-portal-user-name">{adminAuth.name}</span>
@@ -524,11 +534,49 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               <span className="clay-kpi-label">participants</span>
             </div>
             <div className="clay-kpi-foot">
-              Across {data?.eventWise?.length || 3} registered events
+              Across {data?.eventWise?.length || 45} registered events
             </div>
           </div>
 
-          {/* Card 2: Participating institutes */}
+          {/* Card 2: Registration From Website */}
+          <div className="clay-kpi-card">
+            <div className="clay-kpi-head">
+              <span className="clay-kpi-title">Registration From Website</span>
+              <div className="clay-kpi-icon-wrap" style={{ color: '#2563eb', background: '#eff6ff' }}>
+                <Globe size={18} />
+              </div>
+            </div>
+            <div className="clay-kpi-val-row">
+              <span className="clay-kpi-num">
+                {formatZeroPad(animatedWebsite)}
+              </span>
+              <span className="clay-kpi-percent">{websitePercent}%</span>
+            </div>
+            <div className="clay-kpi-foot">
+              Direct website portal registrations
+            </div>
+          </div>
+
+          {/* Card 3: Registration through Google Form */}
+          <div className="clay-kpi-card">
+            <div className="clay-kpi-head">
+              <span className="clay-kpi-title">Through Google Form</span>
+              <div className="clay-kpi-icon-wrap" style={{ color: '#059669', background: '#ecfdf5' }}>
+                <FileText size={18} />
+              </div>
+            </div>
+            <div className="clay-kpi-val-row">
+              <span className="clay-kpi-num">
+                {formatZeroPad(animatedGoogleForm)}
+              </span>
+              <span className="clay-kpi-percent" style={{ color: '#059669' }}>{googleFormPercent}%</span>
+            </div>
+            <div className="clay-kpi-foot">
+              Auto-synced from Google Sheet
+            </div>
+          </div>
+
+          {/* Card 4: Participating institutes */}
           <div className="clay-kpi-card">
             <div className="clay-kpi-head">
               <span className="clay-kpi-title">Participating institutes</span>
@@ -543,52 +591,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               <span className="clay-kpi-label">institutes</span>
             </div>
             <div className="clay-kpi-foot">
-              Equal participation share
-            </div>
-          </div>
-
-          {/* Card 3: Male participants */}
-          <div className="clay-kpi-card">
-            <div className="clay-kpi-head">
-              <span className="clay-kpi-title">Male participants</span>
-              <div className="clay-kpi-icon-wrap">
-                <Users size={18} />
-              </div>
-            </div>
-            <div className="clay-kpi-val-row">
-              <span className="clay-kpi-num">
-                {formatZeroPad(animatedMale)}
-              </span>
-              <span className="clay-kpi-percent">{malePercent}%</span>
-            </div>
-            <div className="clay-kpi-foot">
-              Of total registrations
-            </div>
-          </div>
-
-          {/* Card 4: Female participants */}
-          <div className="clay-kpi-card">
-            <div className="clay-kpi-head">
-              <span className="clay-kpi-title">Female participants</span>
-              <div className="clay-kpi-icon-wrap">
-                <Users size={18} />
-              </div>
-            </div>
-            <div className="clay-kpi-val-row">
-              <span className="clay-kpi-num">
-                {formatZeroPad(animatedFemale)}
-              </span>
-              <span className="clay-kpi-percent">{femalePercent}%</span>
-            </div>
-            <div className="clay-kpi-foot">
-              {femaleCount === 0 ? 'No registrations yet' : 'Of total registrations'}
+              Representation across campuses
             </div>
           </div>
         </section>
 
-        {/* ── ROW 2: Event Type Categories & Age Demographics ── */}
+        {/* ── ROW 2: Event Type Categories ── */}
         <section className="clay-categories-grid">
-          {/* Left: Event Type Categories */}
+          {/* Event Type Categories */}
           <div className="clay-card clay-cat-card">
             <div className="clay-card-header-row">
               <div>
@@ -685,72 +695,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               <span>Categorized based on official Technika 6.0 technical, cultural and creative guidelines.</span>
             </div>
           </div>
-
-          {/* Right: Age Category Demographics */}
-          <div className="clay-card clay-age-card">
-            <div className="clay-card-header-row">
-              <div>
-                <h2 className="clay-card-serif-title">Age breakdown</h2>
-                <p className="clay-card-subtitle">Participant age groups &amp; distribution</p>
-              </div>
-              <div className="clay-badge-pill clay-badge-cyan">
-                Avg: {averageAge} yrs
-              </div>
-            </div>
-
-            {/* Age Cohorts Progress Rows */}
-            <div className="clay-age-cohorts-box">
-              {ageDistribution.map((item, idx) => {
-                const colors = ['fill-emerald', 'fill-cyan', 'fill-amber', 'fill-purple'];
-                const badgeColors = ['badge-emerald', 'badge-cyan', 'badge-amber', 'badge-purple'];
-                const subLabels = [
-                  'School students (Under 18)',
-                  'College students (18–20)',
-                  'Senior students (21–23)',
-                  'Postgraduates & older (24+)'
-                ];
-                return (
-                  <div key={idx} className="clay-age-cohort-card">
-                    <div className="clay-age-cohort-head">
-                      <div className="clay-age-cohort-title-wrap">
-                        <span className={`clay-age-badge ${badgeColors[idx % 4]}`}>
-                          {item.category}
-                        </span>
-                        <span className="clay-age-sublabel">{subLabels[idx] || 'Age group'}</span>
-                      </div>
-                      <div className="clay-age-cohort-nums">
-                        <span className="clay-age-count">{item.count}</span>
-                        <span className="clay-age-slash">/</span>
-                        <span className="clay-age-share">{item.share}%</span>
-                      </div>
-                    </div>
-
-                    <div className="clay-bar-trough clay-age-trough">
-                      <div
-                        className={`clay-bar-fill ${colors[idx % 4]}`}
-                        style={{ width: `${Math.min(100, Math.max(item.count > 0 ? 6 : 0, item.share))}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Summary Inset Box */}
-            <div className="clay-age-insight-box">
-              <div className="clay-age-insight-icon">
-                <Calendar size={18} />
-              </div>
-              <div className="clay-age-insight-text">
-                <span className="clay-age-insight-title">Key Insight:</span> Average participant age is <strong className="clay-brand-cyan">{averageAge} years</strong>, mostly college students aged 18–20.
-              </div>
-            </div>
-
-            <div className="clay-card-footer-info">
-              <Info size={14} className="clay-info-icon" />
-              <span>Live age details calculated from participant registrations.</span>
-            </div>
-          </div>
         </section>
 
         {/* ── ROW 3: Event Registrations & Most Popular Event ── */}
@@ -763,28 +707,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 <p className="clay-card-subtitle">Participation across the Technika lineup</p>
               </div>
               <div className="clay-event-header-controls">
-                {/* Visualizer Mode Toggle */}
-                <div className="clay-mini-switcher">
-                  <button
-                    type="button"
-                    className={`clay-mini-btn ${eventChartMode === 'BARS' ? 'is-active' : ''}`}
-                    onClick={() => setEventChartMode('BARS')}
-                    title="Ranked Horizontal Bars"
-                  >
-                    <BarChart3 size={13} />
-                    <span>Ranked</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`clay-mini-btn ${eventChartMode === 'AREA' ? 'is-active' : ''}`}
-                    onClick={() => setEventChartMode('AREA')}
-                    title="Distribution Area Curve"
-                  >
-                    <Activity size={13} />
-                    <span>Curve</span>
-                  </button>
-                </div>
-
                 <div className="clay-badge-pill">
                   {filteredEventData.length} of {data?.eventWise?.length || 45} events
                 </div>
@@ -833,100 +755,43 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               </button>
             </div>
 
-            {/* Visualizer Content: Ranked Bars or Spline Area Curve */}
-            {eventChartMode === 'BARS' ? (
-              <div className="clay-ranked-bars-list">
-                {filteredEventData.map((ev, idx) => {
-                  const maxCount = topEventCount > 0 ? topEventCount : 11;
-                  const pct = Math.max(8, Math.round((ev.count / maxCount) * 100));
-                  const shareOfParticipants = totalRegistrations > 0 ? ((ev.count / totalRegistrations) * 100).toFixed(0) : '0';
-                  const rankNumber = eventChartData.findIndex(e => e.eventId === ev.eventId) + 1;
-                  const isTop3 = rankNumber <= 3;
-                  const medal = rankNumber === 1 ? '🥇' : rankNumber === 2 ? '🥈' : rankNumber === 3 ? '🥉' : `#${rankNumber}`;
+            {/* Visualizer Content: Ranked Horizontal Bars */}
+            <div className="clay-ranked-bars-list">
+              {filteredEventData.map((ev, idx) => {
+                const maxCount = topEventCount > 0 ? topEventCount : 11;
+                const pct = Math.max(8, Math.round((ev.count / maxCount) * 100));
+                const shareOfParticipants = totalRegistrations > 0 ? ((ev.count / totalRegistrations) * 100).toFixed(0) : '0';
+                const rankNumber = eventChartData.findIndex(e => e.eventId === ev.eventId) + 1;
+                const isTop3 = rankNumber <= 3;
+                const medal = rankNumber === 1 ? '🥇' : rankNumber === 2 ? '🥈' : rankNumber === 3 ? '🥉' : `#${rankNumber}`;
 
-                  return (
-                    <div key={ev.eventId || idx} className="clay-ranked-bar-row">
-                      <div className="clay-ranked-meta">
-                        <span className={`clay-rank-badge ${isTop3 ? `rank-${rankNumber}` : ''}`}>
-                          {medal}
-                        </span>
-                        <span className="clay-ranked-name" title={ev.name}>{ev.name}</span>
-                        <span className={`clay-cat-tag cat-${ev.category.toLowerCase()}`}>
-                          {ev.category}
-                        </span>
-                      </div>
-
-                      <div className="clay-ranked-bar-track">
-                        <div 
-                          className={`clay-ranked-bar-fill fill-${ev.category.toLowerCase()}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-
-                      <div className="clay-ranked-counts">
-                        <span className="clay-count-val">{ev.count}</span>
-                        <span className="clay-count-pct">{shareOfParticipants}%</span>
-                      </div>
+                return (
+                  <div key={ev.eventId || idx} className="clay-ranked-bar-row">
+                    <div className="clay-ranked-meta">
+                      <span className={`clay-rank-badge ${isTop3 ? `rank-${rankNumber}` : ''}`}>
+                        {medal}
+                      </span>
+                      <span className="clay-ranked-name" title={ev.name}>{ev.name}</span>
+                      <span className={`clay-cat-tag cat-${ev.category.toLowerCase()}`}>
+                        {ev.category}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              /* Smooth Distribution Area Curve */
-              <div className="clay-barchart-container">
-                <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={filteredEventData} margin={{ top: 20, right: 20, left: -20, bottom: 20 }}>
-                    <defs>
-                      <linearGradient id="eventCurveGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }} 
-                      axisLine={false} 
-                      tickLine={false}
-                      interval={filteredEventData.length > 15 ? 1 : 0}
-                    />
-                    <YAxis 
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} 
-                      axisLine={false} 
-                      tickLine={false} 
-                      allowDecimals={false}
-                      domain={[0, (dataMax: number) => Math.max(3, dataMax + 1)]}
-                    />
-                    <Tooltip 
-                      cursor={{ stroke: '#2563eb', strokeWidth: 1.5, strokeDasharray: '3 3' }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const item = payload[0].payload;
-                          return (
-                            <div className="clay-chart-tooltip">
-                              <div className="clay-tt-name">{item.name}</div>
-                              <div className="clay-tt-row">
-                                <span className={`clay-cat-tag cat-${item.category?.toLowerCase()}`}>{item.category}</span>
-                                <span className="clay-tt-count">{item.count} registrations</span>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke="#2563eb" 
-                      strokeWidth={3} 
-                      fill="url(#eventCurveGradient)" 
-                      dot={{ fill: '#2563eb', stroke: '#ffffff', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, fill: '#1d4ed8', stroke: '#ffffff', strokeWidth: 2 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+
+                    <div className="clay-ranked-bar-track">
+                      <div 
+                        className={`clay-ranked-bar-fill fill-${ev.category.toLowerCase()}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+
+                    <div className="clay-ranked-counts">
+                      <span className="clay-count-val">{ev.count}</span>
+                      <span className="clay-count-pct">{shareOfParticipants}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
             <div className="clay-card-footer-info">
               <Info size={14} className="clay-info-icon" />
@@ -1186,93 +1051,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           </div>
         </section>
 
-        {/* ── ROW 4: Gender Distribution & Daily Registration Trend ── */}
+        {/* ── ROW 4: Daily Registration Trend ── */}
         <section className="clay-bottom-grid">
-          {/* Left: Gender Distribution Donut */}
-          <div className="clay-card clay-gender-card">
-            <div className="clay-card-header-row">
-              <div>
-                <h2 className="clay-card-serif-title">Gender distribution</h2>
-                <p className="clay-card-subtitle">Participant demographics</p>
-              </div>
-              <div className="clay-kpi-icon-wrap">
-                <Users size={18} />
-              </div>
-            </div>
-
-            <div className="clay-gender-body">
-              {/* Donut Chart with Center Text */}
-              <div className="clay-donut-wrapper">
-                <ResponsiveContainer width={180} height={180}>
-                  <PieChart>
-                    <Pie
-                      data={genderChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={62}
-                      outerRadius={84}
-                      paddingAngle={3}
-                      dataKey="value"
-                      startAngle={90}
-                      endAngle={-270}
-                      stroke="none"
-                    >
-                      {genderChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-
-                {/* Donut Center Label */}
-                <div className="clay-donut-center">
-                  <div className="clay-donut-percent">
-                    {maleCount >= femaleCount ? `${malePercent}%` : `${femalePercent}%`}
-                  </div>
-                  <div className="clay-donut-sub">
-                    {maleCount >= femaleCount ? 'male participants' : 'female participants'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Legend on right */}
-              <div className="clay-gender-legend">
-                <div className="clay-legend-row">
-                  <div className="clay-legend-left">
-                    <span className="clay-legend-dot dot-cyan" />
-                    <span className="clay-legend-label">Male</span>
-                  </div>
-                  <span className="clay-legend-val">
-                    {maleCount} &nbsp;/&nbsp; {malePercent}%
-                  </span>
-                </div>
-
-                <div className="clay-legend-row">
-                  <div className="clay-legend-left">
-                    <span className="clay-legend-dot dot-amber" />
-                    <span className="clay-legend-label">Female</span>
-                  </div>
-                  <span className="clay-legend-val">
-                    {femaleCount} &nbsp;/&nbsp; {femalePercent}%
-                  </span>
-                </div>
-
-                {otherCount > 0 && (
-                  <div className="clay-legend-row">
-                    <div className="clay-legend-left">
-                      <span className="clay-legend-dot dot-purple" />
-                      <span className="clay-legend-label">Other</span>
-                    </div>
-                    <span className="clay-legend-val">
-                      {otherCount} &nbsp;/&nbsp; {totalRegistrations > 0 ? Math.round((otherCount / totalRegistrations) * 100) : 0}%
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Daily Registration Trend Area Chart */}
+          {/* Daily Registration Trend Area Chart */}
           <div className="clay-card clay-trend-card">
             <div className="clay-card-header-row">
               <div>
@@ -1339,6 +1120,134 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               </span>
             </div>
           </div>
+
+          {/* Gender Demographics Bar Graph Card */}
+          <div className="clay-card clay-gender-card">
+            <div className="clay-card-header-row">
+              <div>
+                <h2 className="clay-card-serif-title">Gender demographics</h2>
+                <p className="clay-card-subtitle">Participant breakdown by gender</p>
+              </div>
+              <div className="clay-badge-pill">
+                {genderData.total || totalRegistrations} participants
+              </div>
+            </div>
+
+            {/* Split Proportional Visualizer Bar */}
+            <div className="clay-gender-split-wrap">
+              <div className="clay-gender-split-bar">
+                <div 
+                  className="clay-split-seg seg-male" 
+                  style={{ width: `${genderData.malePct}%` }}
+                  title={`Male: ${genderData.male} (${genderData.malePct}%)`}
+                />
+                <div 
+                  className="clay-split-seg seg-female" 
+                  style={{ width: `${genderData.femalePct}%` }}
+                  title={`Female: ${genderData.female} (${genderData.femalePct}%)`}
+                />
+                {genderData.unspecified > 0 && (
+                  <div 
+                    className="clay-split-seg seg-unspecified" 
+                    style={{ width: `${genderData.unspecifiedPct}%` }}
+                    title={`Unspecified: ${genderData.unspecified} (${genderData.unspecifiedPct}%)`}
+                  />
+                )}
+              </div>
+              <div className="clay-gender-split-labels">
+                <span className="split-lbl-male">♂ Male {genderData.malePct}%</span>
+                <span className="split-lbl-female">♀ Female {genderData.femalePct}%</span>
+                {genderData.unspecified > 0 && (
+                  <span className="split-lbl-unspecified">❔ Unspecified {genderData.unspecifiedPct}%</span>
+                )}
+              </div>
+            </div>
+
+            {/* Detailed Claymorphic Bar Rows */}
+            <div className="clay-gender-bars-list">
+              {/* Male Row */}
+              <div className="clay-gender-bar-row">
+                <div className="clay-gender-meta">
+                  <div className="clay-gender-icon-orb male">
+                    <span>♂</span>
+                  </div>
+                  <div className="clay-gender-info">
+                    <span className="clay-gender-name">Male</span>
+                    <span className="clay-gender-pct-tag male">{genderData.malePct}%</span>
+                  </div>
+                </div>
+
+                <div className="clay-gender-track">
+                  <div 
+                    className="clay-gender-fill fill-male" 
+                    style={{ width: `${Math.max(8, genderData.malePct)}%` }} 
+                  />
+                </div>
+
+                <div className="clay-gender-count-box">
+                  <span className="clay-gender-count-val">{genderData.male}</span>
+                  <span className="clay-gender-count-lbl">participants</span>
+                </div>
+              </div>
+
+              {/* Female Row */}
+              <div className="clay-gender-bar-row">
+                <div className="clay-gender-meta">
+                  <div className="clay-gender-icon-orb female">
+                    <span>♀</span>
+                  </div>
+                  <div className="clay-gender-info">
+                    <span className="clay-gender-name">Female</span>
+                    <span className="clay-gender-pct-tag female">{genderData.femalePct}%</span>
+                  </div>
+                </div>
+
+                <div className="clay-gender-track">
+                  <div 
+                    className="clay-gender-fill fill-female" 
+                    style={{ width: `${Math.max(8, genderData.femalePct)}%` }} 
+                  />
+                </div>
+
+                <div className="clay-gender-count-box">
+                  <span className="clay-gender-count-val">{genderData.female}</span>
+                  <span className="clay-gender-count-lbl">participants</span>
+                </div>
+              </div>
+
+              {/* Unspecified Row (if present) */}
+              {genderData.unspecified > 0 && (
+                <div className="clay-gender-bar-row">
+                  <div className="clay-gender-meta">
+                    <div className="clay-gender-icon-orb unspecified">
+                      <span>❔</span>
+                    </div>
+                    <div className="clay-gender-info">
+                      <span className="clay-gender-name">Unspecified</span>
+                      <span className="clay-gender-pct-tag unspecified">{genderData.unspecifiedPct}%</span>
+                    </div>
+                  </div>
+
+                  <div className="clay-gender-track">
+                    <div 
+                      className="clay-gender-fill fill-unspecified" 
+                      style={{ width: `${Math.max(8, genderData.unspecifiedPct)}%` }} 
+                    />
+                  </div>
+
+                  <div className="clay-gender-count-box">
+                    <span className="clay-gender-count-val">{genderData.unspecified}</span>
+                    <span className="clay-gender-count-lbl">participants</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="clay-card-footer-info">
+              <Info size={14} className="clay-info-icon" />
+              <span>Demographic breakdown based on verified participant registration profiles.</span>
+            </div>
+          </div>
         </section>
 
         {/* ── Footer ── */}
@@ -1390,14 +1299,23 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 title={`Admin Portal (${adminAuth.name})`}
                 type="button"
               >
-                <div className="clay-mob-avatar">
-                  {adminAuth.name
-                    .split(' ')
-                    .filter(Boolean)
-                    .map((n: string) => n[0])
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase() || 'AD'}
+                <div className="clay-mob-avatar" style={{ padding: 0, overflow: 'hidden' }}>
+                  {adminAuth.photoUrl && !avatarImgErr ? (
+                    <img 
+                      src={adminAuth.photoUrl} 
+                      alt={adminAuth.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                      onError={() => setAvatarImgErr(true)}
+                    />
+                  ) : (
+                    adminAuth.name
+                      .split(' ')
+                      .filter(Boolean)
+                      .map((n: string) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase() || 'AD'
+                  )}
                 </div>
                 <span className="clay-mob-label">Portal</span>
               </button>
@@ -2101,10 +2019,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           margin-top: auto;
         }
 
-        /* ── ROW 2: Event Type Categories & Age Demographics ── */
+        /* ── ROW 2: Event Type Categories ── */
         .clay-categories-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: 1fr;
           gap: 24px;
         }
 
@@ -2344,67 +2262,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           text-align: right;
         }
 
-        /* ── Age Category Demographics ── */
-        .clay-age-cohorts-box {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          margin-top: 18px;
-        }
-
-        .clay-age-cohort-card {
-          padding: 11px 16px;
-          background: #f8fafc;
-          border-radius: 16px;
-          border: 1.5px solid #ffffff;
-          box-shadow: 
-            4px 5px 12px rgba(162, 178, 201, 0.2),
-            inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.9),
-            inset -1.5px -1.5px 3px rgba(162, 178, 201, 0.12);
-        }
-
-        .clay-age-cohort-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 8px;
-        }
-
-        .clay-age-cohort-title-wrap {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .clay-age-badge {
-          font-size: 12px;
-          font-weight: 700;
-          padding: 3px 10px;
-          border-radius: 9999px;
-          letter-spacing: 0.02em;
-        }
-
-        .badge-emerald {
-          background: rgba(16, 185, 129, 0.12);
-          color: #059669;
-          border: 1px solid rgba(16, 185, 129, 0.25);
-        }
-        .badge-cyan {
-          background: rgba(37, 99, 235, 0.1);
-          color: #2563eb;
-          border: 1px solid rgba(37, 99, 235, 0.25);
-        }
-        .badge-amber {
-          background: rgba(245, 158, 11, 0.12);
-          color: #d97706;
-          border: 1px solid rgba(245, 158, 11, 0.25);
-        }
-        .badge-purple {
-          background: rgba(168, 85, 247, 0.12);
-          color: #7c3aed;
-          border: 1px solid rgba(168, 85, 247, 0.25);
-        }
-
         .fill-emerald {
           background: linear-gradient(90deg, #059669 0%, #10b981 100%);
         }
@@ -2413,76 +2270,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
         .fill-pink {
           background: linear-gradient(90deg, #db2777 0%, #ec4899 100%);
-        }
-
-        .clay-age-sublabel {
-          font-size: 11px;
-          color: #64748b;
-          font-weight: 600;
-        }
-
-        .clay-age-cohort-nums {
-          display: flex;
-          align-items: baseline;
-          gap: 4px;
-        }
-
-        .clay-age-count {
-          font-size: 15px;
-          font-weight: 800;
-          color: #0f172a;
-        }
-
-        .clay-age-slash {
-          font-size: 12px;
-          color: #94a3b8;
-        }
-
-        .clay-age-share {
-          font-size: 12px;
-          font-weight: 700;
-          color: #64748b;
-        }
-
-        .clay-age-trough {
-          height: 8px;
-        }
-
-        .clay-age-insight-box {
-          margin-top: 14px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          border-radius: 14px;
-          background: #eff6ff;
-          border: 1px solid #bfdbfe;
-        }
-
-        .clay-age-insight-icon {
-          color: #2563eb;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .clay-age-insight-text {
-          font-size: 12px;
-          color: #1e3a8a;
-          line-height: 1.4;
-        }
-
-        .clay-age-insight-title {
-          font-weight: 800;
-          color: #2563eb;
-          margin-right: 4px;
-        }
-
-        .clay-badge-cyan {
-          background: rgba(37, 99, 235, 0.1) !important;
-          color: #2563eb !important;
-          border: 1px solid rgba(37, 99, 235, 0.25) !important;
         }
 
         /* ── ROW 3: Event Registrations & Most Popular Event ── */
@@ -2883,6 +2670,31 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
         .clay-table-wrap {
           overflow-x: auto;
+          overflow-y: auto;
+          max-height: 430px;
+          padding-right: 4px;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
+          scroll-behavior: smooth;
+        }
+
+        .clay-table-wrap::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+
+        .clay-table-wrap::-webkit-scrollbar-track {
+          background: #f8fafc;
+          border-radius: 999px;
+        }
+
+        .clay-table-wrap::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 999px;
+        }
+
+        .clay-table-wrap::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
         }
 
         .clay-data-table {
@@ -2892,6 +2704,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         }
 
         .clay-data-table th {
+          position: sticky;
+          top: 0;
+          background: #ffffff;
+          z-index: 2;
           font-size: 11px;
           font-weight: 700;
           letter-spacing: 0.06em;
@@ -2899,6 +2715,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           text-transform: uppercase;
           padding: 8px 12px 14px 12px;
           border-bottom: 1.5px solid #e2e8f0;
+          box-shadow: 0 1px 0 #e2e8f0;
           text-align: left;
         }
 
@@ -2984,110 +2801,217 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           text-align: right;
         }
 
-        /* ── ROW 4: Gender & Trend Grid ── */
+        /* ── ROW 4: Registration Trend & Gender Demographics Grid ── */
         .clay-bottom-grid {
           display: grid;
-          grid-template-columns: 1fr 1.6fr;
+          grid-template-columns: 1.15fr 0.85fr;
           gap: 22px;
-        }
-
-        .clay-gender-body {
-          display: flex;
-          align-items: center;
-          justify-content: space-around;
-          padding: 10px 0 6px;
-          flex-wrap: wrap;
-          gap: 20px;
-        }
-
-        .clay-donut-wrapper {
-          position: relative;
-          width: 180px;
-          height: 180px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .clay-donut-center {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          pointer-events: none;
-        }
-
-        .clay-donut-percent {
-          font-size: 26px;
-          font-weight: 800;
-          color: #0f172a;
-          line-height: 1;
-          letter-spacing: -0.02em;
-        }
-
-        .clay-donut-sub {
-          font-size: 11px;
-          color: #64748b;
-          font-weight: 600;
-          margin-top: 4px;
-        }
-
-        .clay-gender-legend {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          min-width: 160px;
-        }
-
-        .clay-legend-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 13px;
-        }
-
-        .clay-legend-left {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .clay-legend-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-        }
-
-        .dot-cyan {
-          background: #2563eb;
-          box-shadow: 0 0 6px rgba(37, 99, 235, 0.4);
-        }
-
-        .dot-amber {
-          background: #f59e0b;
-          box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-        }
-
-        .dot-purple {
-          background: #8b5cf6;
-          box-shadow: 0 0 6px rgba(139, 92, 246, 0.4);
-        }
-
-        .clay-legend-label {
-          color: #475569;
-          font-weight: 600;
-        }
-
-        .clay-legend-val {
-          font-weight: 700;
-          color: #0f172a;
         }
 
         .clay-trend-chart-box {
           width: 100%;
           min-height: 200px;
+        }
+
+        /* ── Gender Demographics Card Styles ── */
+        .clay-gender-card {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .clay-gender-split-wrap {
+          margin-top: 14px;
+          margin-bottom: 18px;
+          padding: 12px 14px;
+          border-radius: 16px;
+          background: #eef3f9;
+          box-shadow: inset 2px 2px 5px rgba(162, 178, 201, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .clay-gender-split-bar {
+          height: 12px;
+          border-radius: 10px;
+          overflow: hidden;
+          display: flex;
+          background: #e2eaf4;
+          box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .clay-split-seg.seg-male {
+          background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+          transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-split-seg.seg-female {
+          background: linear-gradient(90deg, #ec4899 0%, #db2777 100%);
+          transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-split-seg.seg-unspecified,
+        .clay-split-seg.seg-other {
+          background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+          transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-gender-split-labels {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 8px;
+          font-size: 0.76rem;
+          font-weight: 700;
+        }
+
+        .split-lbl-male { color: #2563eb; }
+        .split-lbl-female { color: #db2777; }
+        .split-lbl-unspecified,
+        .split-lbl-other { color: #d97706; }
+
+        .clay-gender-bars-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .clay-gender-bar-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 14px;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.55);
+          box-shadow: 3px 4px 10px rgba(162, 178, 201, 0.15), inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.7);
+        }
+
+        .clay-gender-meta {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 105px;
+        }
+
+        .clay-gender-icon-orb {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1rem;
+          font-weight: 800;
+          flex-shrink: 0;
+        }
+
+        .clay-gender-icon-orb.male {
+          background: #eff6ff;
+          color: #2563eb;
+          border: 1px solid #bfdbfe;
+          box-shadow: 2px 3px 6px rgba(37, 99, 235, 0.15);
+        }
+
+        .clay-gender-icon-orb.female {
+          background: #fdf2f8;
+          color: #db2777;
+          border: 1px solid #fbcfe8;
+          box-shadow: 2px 3px 6px rgba(219, 39, 119, 0.15);
+        }
+
+        .clay-gender-icon-orb.unspecified,
+        .clay-gender-icon-orb.other {
+          background: #fffbeb;
+          color: #d97706;
+          border: 1px solid #fde68a;
+          box-shadow: 2px 3px 6px rgba(217, 119, 6, 0.15);
+        }
+
+        .clay-gender-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .clay-gender-name {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #1e293b;
+        }
+
+        .clay-gender-pct-tag {
+          font-size: 0.7rem;
+          font-weight: 800;
+          padding: 1px 6px;
+          border-radius: 6px;
+          display: inline-block;
+          width: fit-content;
+        }
+
+        .clay-gender-pct-tag.male {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
+        .clay-gender-pct-tag.female {
+          background: #fce7f3;
+          color: #be185d;
+        }
+
+        .clay-gender-pct-tag.unspecified,
+        .clay-gender-pct-tag.other {
+          background: #fef3c7;
+          color: #b45309;
+        }
+
+        .clay-gender-track {
+          flex: 1;
+          height: 10px;
+          border-radius: 10px;
+          background: #e2eaf4;
+          overflow: hidden;
+          box-shadow: inset 1px 1px 3px rgba(162, 178, 201, 0.4);
+        }
+
+        .clay-gender-fill {
+          height: 100%;
+          border-radius: 10px;
+          transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .clay-gender-fill.fill-male {
+          background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+        }
+
+        .clay-gender-fill.fill-female {
+          background: linear-gradient(90deg, #ec4899 0%, #be185d 100%);
+          box-shadow: 0 2px 6px rgba(219, 39, 119, 0.3);
+        }
+
+        .clay-gender-fill.fill-unspecified,
+        .clay-gender-fill.fill-other {
+          background: linear-gradient(90deg, #f59e0b 0%, #b45309 100%);
+          box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+        }
+
+        .clay-gender-count-box {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          min-width: 55px;
+        }
+
+        .clay-gender-count-val {
+          font-size: 1rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .clay-gender-count-lbl {
+          font-size: 0.65rem;
+          font-weight: 600;
+          color: #64748b;
+          text-transform: uppercase;
         }
 
         /* ── Footer ── */

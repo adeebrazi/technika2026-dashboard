@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShieldAlert } from 'lucide-react';
+import { getAdminIdentity } from '../../utils/adminAuth';
 
 const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
 
@@ -62,18 +64,22 @@ const DEFAULT_PERMS: Record<'faculty' | 'coordinator', PermissionConfig> = {
 
 export const AccessControlView: React.FC = () => {
   const navigate = useNavigate();
-  const currentRole = localStorage.getItem('adminRole');
+  const { canAccessAccessControl } = getAdminIdentity();
 
-  // Strict Administrator access check
-  if (currentRole !== 'admin') {
+  // Strict Authorization: Exclusively Adeeb Razi and Prof. Mamatha Vayelapelli
+  if (!canAccessAccessControl) {
     return (
       <div className="clay-access-denied">
         <div className="clay-denied-card">
-          <span className="clay-denied-icon">🔒</span>
-          <h2>Access Restricted to Administrators</h2>
-          <p>Only Root Administrators can assign role permissions and configure coordinator clearances.</p>
-          <button onClick={() => navigate('/admin')} className="clay-denied-btn">
-            Return to Profile
+          <div className="clay-denied-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <ShieldAlert size={54} color="#ef4444" />
+          </div>
+          <h2>Access Restricted</h2>
+          <p style={{ maxWidth: '420px', margin: '0 auto 1.5rem auto', color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>
+            Access Control and permission delegation are restricted exclusively to <strong>Adeeb Razi</strong> and <strong>Prof. Mamatha Vayelapelli</strong>.
+          </p>
+          <button onClick={() => navigate('/admin/participants')} className="clay-denied-btn">
+            Return to Dashboard
           </button>
         </div>
       </div>
@@ -217,7 +223,7 @@ export const AccessControlView: React.FC = () => {
             <div className="head-icon eye-blue">👁️</div>
             <div>
               <h2 className="clay-panel-title">WHAT THEY CAN SEE (READ ACCESS)</h2>
-              <p className="clay-panel-desc">Controls data visibility across the Participants, Teams, and Analytics views.</p>
+              <p className="clay-panel-desc">Controls data visibility across Participants and Analytics views.</p>
             </div>
           </div>
 
@@ -286,27 +292,12 @@ export const AccessControlView: React.FC = () => {
               </label>
             </div>
 
-            {/* View Teams */}
-            <div className="clay-toggle-card">
-              <div className="toggle-info">
-                <span className="toggle-title">View Formed Teams &amp; Rosters</span>
-                <span className="toggle-desc">Inspect team join codes, member lists, and leader contact numbers.</span>
-              </div>
-              <label className="clay-switch">
-                <input
-                  type="checkbox"
-                  checked={activePerms.canViewTeams}
-                  onChange={() => handleToggle('canViewTeams')}
-                />
-                <span className="clay-slider" />
-              </label>
-            </div>
 
             {/* View Analytics */}
             <div className="clay-toggle-card">
               <div className="toggle-info">
                 <span className="toggle-title">View Festival Analytics</span>
-                <span className="toggle-desc">Access live dashboard revenue summaries, gender ratios, and departmental charts.</span>
+                <span className="toggle-desc">Access live dashboard revenue summaries, category breakdowns, and departmental charts.</span>
               </div>
               <label className="clay-switch">
                 <input
@@ -342,7 +333,7 @@ export const AccessControlView: React.FC = () => {
             <div className="head-icon edit-amber">✍️</div>
             <div>
               <h2 className="clay-panel-title">WHAT THEY CAN EDIT (WRITE &amp; ACTION ACCESS)</h2>
-              <p className="clay-panel-desc">Controls verification powers, record deletion, team modifications, and data export.</p>
+              <p className="clay-panel-desc">Controls verification powers, record deletion, check-in operations, and data export.</p>
             </div>
           </div>
 
@@ -379,21 +370,6 @@ export const AccessControlView: React.FC = () => {
               </label>
             </div>
 
-            {/* Edit / Manage Teams */}
-            <div className="clay-toggle-card">
-              <div className="toggle-info">
-                <span className="toggle-title">Edit Team Rosters &amp; Names</span>
-                <span className="toggle-desc">Modify team titles, manually add missing members, or dissolve incomplete rosters.</span>
-              </div>
-              <label className="clay-switch">
-                <input
-                  type="checkbox"
-                  checked={activePerms.canEditTeams}
-                  onChange={() => handleToggle('canEditTeams')}
-                />
-                <span className="clay-slider" />
-              </label>
-            </div>
 
             {/* Export CSV */}
             <div className="clay-toggle-card">

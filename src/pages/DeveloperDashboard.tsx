@@ -8,6 +8,7 @@ import {
   Play, Check, Copy, Lock, Cloud, HardDrive, Globe, Zap, Gauge
 } from 'lucide-react';
 import { DeveloperPinGuard } from '../components/DeveloperPinGuard';
+import { getAdminIdentity } from '../utils/adminAuth';
 import './DeveloperDashboard.css';
 
 const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://reg.technika2026.online');
@@ -133,6 +134,73 @@ interface VercelData {
 
 export const DeveloperDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { canAccessDeveloper } = getAdminIdentity();
+
+  // Strictly restrict access to Adeeb Razi and Sanchit Agarwal
+  if (!canAccessDeveloper) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0f172a',
+        color: '#f8fafc',
+        fontFamily: "'Space Grotesk', -apple-system, sans-serif",
+        padding: '1.5rem'
+      }}>
+        <div style={{
+          maxWidth: '460px',
+          width: '100%',
+          background: '#1e293b',
+          border: '1px solid #334155',
+          borderRadius: '16px',
+          padding: '2.5rem 2rem',
+          textAlign: 'center',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+        }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '2px solid rgba(239, 68, 68, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1.5rem auto'
+          }}>
+            <Lock size={32} color="#ef4444" />
+          </div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
+            Developer Access Restricted
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.92rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+            This technical command center and pipeline monitor is restricted exclusively to <strong>Adeeb Razi</strong> and <strong>Sanchit Agarwal</strong>.
+          </p>
+          <button
+            onClick={() => navigate('/admin/participants')}
+            style={{
+              width: '100%',
+              padding: '0.85rem 1.25rem',
+              borderRadius: '12px',
+              border: 'none',
+              background: '#2563eb',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+              transition: 'all 0.2s'
+            }}
+          >
+            ← Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Strictly require PIN 2207 on every page load, refresh, or back navigation (no persistent storage)
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
 
@@ -425,11 +493,11 @@ export const DeveloperDashboard: React.FC = () => {
       target: 'Standalone Dashboard (dashboard.technika2026.online)',
       status: 'HEALTHY',
       latency: '14ms query time',
-      description: 'Computes institutional breakdowns, age demographics, male/female distribution, and event popularity curves on-the-fly for live presentation.',
+      description: 'Computes institutional breakdowns, male/female distribution, and event popularity curves on-the-fly for live presentation.',
       flowSteps: [
         'Dashboard Live Polling Hook',
         'MongoDB Pipeline Aggregations ($group, $match)',
-        'Event Category & Age Demographics Classifier',
+        'Event Category Breakdown Classifier',
         'Compressed JSON Response Stream'
       ],
       tech: 'Mongoose Aggregation -> React Recharts'

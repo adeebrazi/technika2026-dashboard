@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { User, Users, BarChart3, Terminal, ShieldCheck, Zap, Activity } from 'lucide-react';
+import { getAdminIdentity } from '../../utils/adminAuth';
 
 const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
 
 export const ProfileView: React.FC = () => {
   const navigate = useNavigate();
+  const [avatarImgError, setAvatarImgError] = useState(false);
 
-  const token = localStorage.getItem('adminToken');
-  const role = localStorage.getItem('adminRole') || 'admin';
-  const name = localStorage.getItem('adminName') || 'Administrator';
-  const designation = localStorage.getItem('adminDesignation') || (role === 'admin' ? 'Administration' : 'Coordinator');
+  const {
+    token,
+    role = 'admin',
+    name,
+    designation,
+    photoUrl,
+    canAccessDeveloper,
+    canAccessAccessControl,
+  } = getAdminIdentity();
   const storedEmail = localStorage.getItem('adminEmail');
 
   const [copiedToken, setCopiedToken] = useState(false);
@@ -53,24 +61,13 @@ export const ProfileView: React.FC = () => {
   useEffect(() => {
     const fetchQuickMetrics = async () => {
       try {
-        const [usersRes, teamsRes] = await Promise.allSettled([
-          fetch(`${API}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API}/api/admin/teams`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-
+        const usersRes = await fetch(`${API}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
         let uCount = 0;
-        let tCount = 0;
-
-        if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
-          const uData = await usersRes.value.json();
+        if (usersRes.ok) {
+          const uData = await usersRes.json();
           uCount = Array.isArray(uData) ? uData.length : (uData.users?.length || 0);
         }
-        if (teamsRes.status === 'fulfilled' && teamsRes.value.ok) {
-          const tData = await teamsRes.value.json();
-          tCount = Array.isArray(tData) ? tData.length : (tData.teams?.length || 0);
-        }
-
-        setStats({ totalUsers: uCount, totalTeams: tCount });
+        setStats({ totalUsers: uCount, totalTeams: 45 });
       } catch (err) {
         // Non-blocking fallback
       }
@@ -146,7 +143,9 @@ export const ProfileView: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="clay-profile-header">
         <div className="clay-header-left">
-          <div className="clay-header-emblem">👤</div>
+          <div className="clay-header-emblem">
+            <User size={22} />
+          </div>
           <div>
             <h1 className="clay-page-title">USER PROFILE & CREDENTIALS</h1>
             <p className="clay-page-subtitle">Complete administrative authorization, security credentials & session management</p>
@@ -172,8 +171,17 @@ export const ProfileView: React.FC = () => {
 
             <div className="clay-hero-body">
               <div className="clay-hero-avatar-wrapper">
-                <div className="clay-hero-avatar" style={{ background: theme.gradient }}>
-                  <span className="clay-hero-avatar-text">{getInitials(name)}</span>
+                <div className="clay-hero-avatar" style={{ background: theme.gradient, overflow: 'hidden' }}>
+                  {photoUrl && !avatarImgError ? (
+                    <img 
+                      src={photoUrl} 
+                      alt={name} 
+                      className="clay-hero-avatar-img"
+                      onError={() => setAvatarImgError(true)} 
+                    />
+                  ) : (
+                    <span className="clay-hero-avatar-text">{getInitials(name)}</span>
+                  )}
                 </div>
                 <div className="clay-hero-online-badge" title="Active Online Session">
                   <span className="clay-hero-online-dot" />
@@ -235,10 +243,14 @@ export const ProfileView: React.FC = () => {
 
           {/* Quick Shortcuts */}
           <div className="clay-card clay-shortcuts-card">
-            <h3 className="clay-card-title">⚡ QUICK SHORTCUTS</h3>
+            <h3 className="clay-card-title flex items-center gap-2">
+              <Zap size={18} style={{ color: '#eab308' }} /> QUICK SHORTCUTS
+            </h3>
             <div className="clay-shortcuts-grid">
               <Link to="/admin/participants" className="clay-shortcut-btn">
-                <span className="clay-shortcut-icon">👤</span>
+                <span className="clay-shortcut-icon">
+                  <Users size={22} style={{ color: '#2563eb' }} />
+                </span>
                 <div className="clay-shortcut-text">
                   <span className="clay-shortcut-title">Participants</span>
                   <span className="clay-shortcut-desc">View all student registrations</span>
@@ -246,17 +258,23 @@ export const ProfileView: React.FC = () => {
                 <span className="clay-shortcut-arrow">→</span>
               </Link>
 
-              <Link to="/admin/teams" className="clay-shortcut-btn">
-                <span className="clay-shortcut-icon">👥</span>
-                <div className="clay-shortcut-text">
-                  <span className="clay-shortcut-title">Teams Directory</span>
-                  <span className="clay-shortcut-desc">Monitor team rosters & codes</span>
-                </div>
-                <span className="clay-shortcut-arrow">→</span>
-              </Link>
+              {canAccessAccessControl && (
+                <Link to="/admin/access" className="clay-shortcut-btn">
+                  <span className="clay-shortcut-icon">
+                    <ShieldCheck size={22} style={{ color: '#7c3aed' }} />
+                  </span>
+                  <div className="clay-shortcut-text">
+                    <span className="clay-shortcut-title">Access Control</span>
+                    <span className="clay-shortcut-desc">Manage role privileges</span>
+                  </div>
+                  <span className="clay-shortcut-arrow">→</span>
+                </Link>
+              )}
 
               <Link to="/" className="clay-shortcut-btn">
-                <span className="clay-shortcut-icon">📊</span>
+                <span className="clay-shortcut-icon">
+                  <BarChart3 size={22} style={{ color: '#059669' }} />
+                </span>
                 <div className="clay-shortcut-text">
                   <span className="clay-shortcut-title">Live Analytics</span>
                   <span className="clay-shortcut-desc">Registration stats & charts</span>
@@ -264,14 +282,18 @@ export const ProfileView: React.FC = () => {
                 <span className="clay-shortcut-arrow">→</span>
               </Link>
 
-              <Link to="/developer" className="clay-shortcut-btn">
-                <span className="clay-shortcut-icon">⚡</span>
-                <div className="clay-shortcut-text">
-                  <span className="clay-shortcut-title">Developer Hub</span>
-                  <span className="clay-shortcut-desc">Cloudinary, Vercel & Health</span>
-                </div>
-                <span className="clay-shortcut-arrow">→</span>
-              </Link>
+              {canAccessDeveloper && (
+                <Link to="/developer" className="clay-shortcut-btn">
+                  <span className="clay-shortcut-icon">
+                    <Terminal size={22} style={{ color: '#d97706' }} />
+                  </span>
+                  <div className="clay-shortcut-text">
+                    <span className="clay-shortcut-title">Developer Hub</span>
+                    <span className="clay-shortcut-desc">Cloudinary, Vercel & Health</span>
+                  </div>
+                  <span className="clay-shortcut-arrow">→</span>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -283,15 +305,17 @@ export const ProfileView: React.FC = () => {
           {/* System Metrics Overview */}
           {stats && (
             <div className="clay-card clay-stats-summary-card">
-              <h3 className="clay-card-title">📈 SYSTEM ACTIVITY OVERVIEW</h3>
+              <h3 className="clay-card-title flex items-center gap-2">
+                <Activity size={18} style={{ color: '#2563eb' }} /> SYSTEM ACTIVITY OVERVIEW
+              </h3>
               <div className="clay-stats-pills-row">
                 <div className="clay-mini-stat">
                   <span className="clay-mini-stat-num">{stats.totalUsers}</span>
                   <span className="clay-mini-stat-lbl">Registered Participants</span>
                 </div>
                 <div className="clay-mini-stat">
-                  <span className="clay-mini-stat-num">{stats.totalTeams}</span>
-                  <span className="clay-mini-stat-lbl">Active Formed Teams</span>
+                  <span className="clay-mini-stat-num">45</span>
+                  <span className="clay-mini-stat-lbl">Active Competitions</span>
                 </div>
                 <div className="clay-mini-stat">
                   <span className="clay-mini-stat-num live">ONLINE</span>
@@ -303,7 +327,9 @@ export const ProfileView: React.FC = () => {
 
           {/* Access Matrix & Clearances */}
           <div className="clay-card clay-clearance-card">
-            <h3 className="clay-card-title">🛡️ AUTHORIZED PRIVILEGES & CLEARANCES</h3>
+            <h3 className="clay-card-title flex items-center gap-2">
+              <ShieldCheck size={18} style={{ color: '#7c3aed' }} /> AUTHORIZED PRIVILEGES & CLEARANCES
+            </h3>
             <div className="clay-clearance-list">
               <div className="clay-clearance-item active">
                 <div className="clay-clearance-icon">✓</div>
@@ -317,8 +343,8 @@ export const ProfileView: React.FC = () => {
               <div className="clay-clearance-item active">
                 <div className="clay-clearance-icon">✓</div>
                 <div className="clay-clearance-content">
-                  <span className="clay-clearance-title">Team Rosters & Code Administration</span>
-                  <span className="clay-clearance-desc">View generated team IDs, inspect leader permissions, and monitor rosters.</span>
+                  <span className="clay-clearance-title">Event Operations & Attendance Desk</span>
+                  <span className="clay-clearance-desc">Manage desk check-ins and verify student reporting for all fest events.</span>
                 </div>
                 <span className="clay-clearance-tag full">GRANTED</span>
               </div>
@@ -327,7 +353,7 @@ export const ProfileView: React.FC = () => {
                 <div className="clay-clearance-icon">✓</div>
                 <div className="clay-clearance-content">
                   <span className="clay-clearance-title">Real-Time Registration Telemetry</span>
-                  <span className="clay-clearance-desc">Access high-resolution departmental breakdown, gender stats, and trends.</span>
+                  <span className="clay-clearance-desc">Access high-resolution departmental breakdown, event category stats, and trends.</span>
                 </div>
                 <span className="clay-clearance-tag full">GRANTED</span>
               </div>
@@ -653,6 +679,14 @@ export const ProfileView: React.FC = () => {
             6px 8px 18px rgba(37, 99, 235, 0.35),
             inset 3px 3px 6px rgba(255, 255, 255, 0.5),
             inset -3px -3px 6px rgba(15, 23, 42, 0.25);
+        }
+
+        .clay-hero-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
         }
 
         .clay-hero-avatar-text {

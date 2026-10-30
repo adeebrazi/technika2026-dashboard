@@ -7,7 +7,6 @@ import { AdminLogin } from './pages/Admin/AdminLogin';
 import { AdminLayout } from './pages/Admin/AdminLayout';
 import { ProfileView } from './pages/Admin/ProfileView';
 import { UsersView } from './pages/Admin/UsersView';
-import { TeamsView } from './pages/Admin/TeamsView';
 import { AccessControlView } from './pages/Admin/AccessControlView';
 
 function App() {
@@ -72,7 +71,7 @@ function App() {
           <Route path="profile" element={<Navigate to="/admin" replace />} />
           <Route path="participants" element={<UsersView />} />
           <Route path="users" element={<Navigate to="/admin/participants" replace />} />
-          <Route path="teams" element={<TeamsView />} />
+          <Route path="teams" element={<Navigate to="/admin/participants" replace />} />
           <Route path="access" element={<AccessControlView />} />
           <Route path="permissions" element={<Navigate to="/admin/access" replace />} />
           <Route path="analytics" element={<Navigate to="/" replace />} />

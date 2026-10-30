@@ -1,16 +1,44 @@
 import React, { useState } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
+import { BarChart3, Users, Terminal, ShieldCheck, User } from 'lucide-react';
+import { getAdminIdentity } from '../../utils/adminAuth';
 
 export const AdminLayout: React.FC = () => {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [avatarImgError, setAvatarImgError] = useState(false);
 
-  const token = localStorage.getItem('adminToken');
-  const role = localStorage.getItem('adminRole');
-  const name = localStorage.getItem('adminName') || 'Administrator';
-  const designation = localStorage.getItem('adminDesignation') || (role === 'admin' ? 'Administration' : 'Coordinator');
+  const {
+    token,
+    role,
+    name,
+    designation,
+    photoUrl,
+    canAccessDeveloper,
+    canAccessAccessControl,
+  } = getAdminIdentity();
 
-  if (!token) {
+  const isTokenExpired = (tokenStr: string | null) => {
+    if (!tokenStr) return true;
+    try {
+      const parts = tokenStr.split('.');
+      if (parts.length !== 3) return false;
+      const payload = JSON.parse(atob(parts[1]));
+      if (payload.exp && Date.now() >= payload.exp * 1000) {
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  if (!token || isTokenExpired(token)) {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminRole');
+    localStorage.removeItem('adminName');
+    localStorage.removeItem('adminDesignation');
+    localStorage.removeItem('adminEmail');
     return <Navigate to="/admin/login" replace />;
   }
 
@@ -25,14 +53,18 @@ export const AdminLayout: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Analytics', path: '/', icon: '📊', desc: 'Public dashboard & stats' },
-    { name: 'Participants', path: '/admin/participants', icon: '👤', desc: 'View all registrations' },
-    { name: 'Teams', path: '/admin/teams', icon: '👥', desc: 'Team formations & rosters' },
-    { name: 'Developer', path: '/developer', icon: '⚡', desc: 'Pipelines & health check' },
-    ...(role === 'admin' ? [{ 
+    { name: 'Analytics', path: '/', icon: <BarChart3 size={19} strokeWidth={2.2} />, desc: 'Public dashboard & stats' },
+    { name: 'Participants', path: '/admin/participants', icon: <Users size={19} strokeWidth={2.2} />, desc: 'View all registrations' },
+    ...(canAccessDeveloper ? [{ 
+      name: 'Developer', 
+      path: '/developer', 
+      icon: <Terminal size={19} strokeWidth={2.2} />, 
+      desc: 'Pipelines & health check' 
+    }] : []),
+    ...(canAccessAccessControl ? [{ 
       name: 'Access Control', 
       path: '/admin/access', 
-      icon: '🛡️', 
+      icon: <ShieldCheck size={19} strokeWidth={2.2} />, 
       desc: 'Faculty & coordinator permissions' 
     }] : []),
   ];
@@ -90,7 +122,16 @@ export const AdminLayout: React.FC = () => {
           title="View Complete Profile, Credentials & Settings"
         >
           <div className="clay-avatar">
-            <span className="clay-avatar-initials">{getInitials(name)}</span>
+            {photoUrl && !avatarImgError ? (
+              <img 
+                src={photoUrl} 
+                alt={name} 
+                className="clay-avatar-img"
+                onError={() => setAvatarImgError(true)} 
+              />
+            ) : (
+              <span className="clay-avatar-initials">{getInitials(name)}</span>
+            )}
             <span className="clay-avatar-status" />
           </div>
           {!sidebarCollapsed && (
@@ -159,7 +200,16 @@ export const AdminLayout: React.FC = () => {
 
         <Link to="/admin" className="clay-mobile-profile-btn" title="View Profile">
           <div className="clay-mobile-avatar">
-            <span>{getInitials(name)}</span>
+            {photoUrl && !avatarImgError ? (
+              <img 
+                src={photoUrl} 
+                alt={name} 
+                className="clay-mobile-avatar-img"
+                onError={() => setAvatarImgError(true)} 
+              />
+            ) : (
+              <span>{getInitials(name)}</span>
+            )}
             <span className="clay-mobile-dot" />
           </div>
           <div className="clay-mobile-user-meta">
@@ -182,7 +232,7 @@ export const AdminLayout: React.FC = () => {
           to="/" 
           className={`clay-mob-nav-btn ${location.pathname === '/' ? 'active' : ''}`}
         >
-          <span className="clay-mob-icon">📊</span>
+          <span className="clay-mob-icon"><BarChart3 size={19} strokeWidth={2.2} /></span>
           <span className="clay-mob-label">Analytics</span>
         </Link>
 
@@ -190,33 +240,27 @@ export const AdminLayout: React.FC = () => {
           to="/admin/participants" 
           className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/participants') ? 'active' : ''}`}
         >
-          <span className="clay-mob-icon">👤</span>
+          <span className="clay-mob-icon"><Users size={19} strokeWidth={2.2} /></span>
           <span className="clay-mob-label">Users</span>
         </Link>
 
-        <Link 
-          to="/admin/teams" 
-          className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/teams') ? 'active' : ''}`}
-        >
-          <span className="clay-mob-icon">👥</span>
-          <span className="clay-mob-label">Teams</span>
-        </Link>
+        {canAccessDeveloper && (
+          <Link 
+            to="/developer" 
+            className={`clay-mob-nav-btn ${location.pathname.startsWith('/developer') ? 'active' : ''}`}
+          >
+            <span className="clay-mob-icon"><Terminal size={19} strokeWidth={2.2} /></span>
+            <span className="clay-mob-label">Dev</span>
+          </Link>
+        )}
 
-        <Link 
-          to="/developer" 
-          className={`clay-mob-nav-btn ${location.pathname.startsWith('/developer') ? 'active' : ''}`}
-        >
-          <span className="clay-mob-icon">⚡</span>
-          <span className="clay-mob-label">Dev</span>
-        </Link>
-
-        {role === 'admin' && (
+        {canAccessAccessControl && (
           <Link 
             to="/admin/access" 
             className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/access') ? 'active' : ''}`}
             title="Access Control"
           >
-            <span className="clay-mob-icon">🛡️</span>
+            <span className="clay-mob-icon"><ShieldCheck size={19} strokeWidth={2.2} /></span>
             <span className="clay-mob-label">Access</span>
           </Link>
         )}
@@ -225,7 +269,7 @@ export const AdminLayout: React.FC = () => {
           to="/admin" 
           className={`clay-mob-nav-btn ${location.pathname === '/admin' ? 'active' : ''}`}
         >
-          <span className="clay-mob-icon">⚙️</span>
+          <span className="clay-mob-icon"><User size={19} strokeWidth={2.2} /></span>
           <span className="clay-mob-label">Profile</span>
         </Link>
       </nav>
@@ -313,7 +357,7 @@ export const AdminLayout: React.FC = () => {
             inset 4px 0 12px rgba(255, 255, 255, 0.6);
           display: flex;
           flex-direction: column;
-          z-index: 100;
+          z-index: 40;
           overflow-y: auto;
           transition: width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
@@ -321,6 +365,84 @@ export const AdminLayout: React.FC = () => {
         .clay-sidebar.collapsed {
           width: 76px;
           min-width: 76px;
+        }
+
+        .clay-sidebar.collapsed .clay-sidebar-brand {
+          padding: 1rem 0.5rem;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .clay-sidebar.collapsed .clay-brand-row {
+          justify-content: center;
+          width: 100%;
+        }
+
+        .clay-sidebar.collapsed .clay-sidebar-toggle {
+          margin: 0 auto;
+        }
+
+        .clay-sidebar.collapsed .clay-profile-card {
+          width: 50px;
+          height: 50px;
+          margin: 0.75rem auto;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 16px;
+          box-sizing: border-box;
+        }
+
+        .clay-sidebar.collapsed .clay-avatar {
+          width: 36px;
+          height: 36px;
+          margin: 0;
+        }
+
+        .clay-sidebar.collapsed .clay-avatar-initials {
+          font-size: 0.78rem;
+        }
+
+        .clay-sidebar.collapsed .clay-avatar-status {
+          width: 10px;
+          height: 10px;
+          bottom: -1px;
+          right: -1px;
+        }
+
+        .clay-sidebar.collapsed .clay-nav {
+          padding: 0.8rem 6px;
+        }
+
+        .clay-sidebar.collapsed .clay-nav-label {
+          display: none;
+        }
+
+        .clay-sidebar.collapsed .clay-nav-list {
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        .clay-sidebar.collapsed .clay-nav-list li {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        .clay-sidebar.collapsed .clay-nav-item {
+          width: 48px;
+          height: 48px;
+          padding: 0;
+          justify-content: center;
+          border-radius: 14px;
+        }
+
+        .clay-sidebar.collapsed .clay-nav-icon {
+          font-size: 1.3rem;
+          margin: 0;
         }
 
         /* ── Brand ── */
@@ -489,6 +611,14 @@ export const AdminLayout: React.FC = () => {
             inset -3px -3px 6px rgba(15, 23, 42, 0.25);
         }
 
+        .clay-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
+        }
+
         .clay-avatar-initials {
           font-weight: 900;
           font-size: 0.82rem;
@@ -600,9 +730,23 @@ export const AdminLayout: React.FC = () => {
         }
 
         .clay-nav-icon {
-          font-size: 1.15rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
           flex-shrink: 0;
-          filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+          color: #64748b;
+          transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .clay-nav-item:hover .clay-nav-icon {
+          color: #2563eb;
+          transform: scale(1.08);
+        }
+
+        .clay-nav-item.active .clay-nav-icon {
+          color: #2563eb;
         }
 
         .clay-nav-text {
@@ -644,7 +788,7 @@ export const AdminLayout: React.FC = () => {
           min-height: 100vh;
           padding: 1.5rem 2rem;
           position: relative;
-          z-index: 1;
+          z-index: auto;
           transition: margin-left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
@@ -772,6 +916,14 @@ export const AdminLayout: React.FC = () => {
             position: relative;
           }
 
+          .clay-mobile-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+          }
+
           .clay-mobile-dot {
             position: absolute;
             bottom: -1px;
@@ -849,8 +1001,12 @@ export const AdminLayout: React.FC = () => {
           }
 
           .clay-mob-icon {
-            font-size: 1.25rem;
-            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            color: #64748b;
           }
 
           .clay-mob-label {
