@@ -153,8 +153,9 @@ export const AccessControlView: React.FC = () => {
       setIndividualPerms({ ...existing });
     } else {
       const base = activeTab === 'faculty' ? facultyPerms : coordinatorPerms;
+      const { _id, __v, ...cleanBase } = (base as any) || {};
       setIndividualPerms({
-        ...base,
+        ...cleanBase,
         targetKey: staff.email.toLowerCase(),
         title: staff.name
       });
@@ -186,13 +187,14 @@ export const AccessControlView: React.FC = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem('adminToken');
+      const { _id, __v, ...payload } = (activePerms as any) || {};
       const res = await fetch(`${API}/api/admin/permissions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(activePerms),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -232,8 +234,9 @@ export const AccessControlView: React.FC = () => {
       if (res.ok) {
         setCustomOverrides(prev => prev.filter(p => p.targetKey?.toLowerCase() !== email.toLowerCase()));
         const base = activeTab === 'faculty' ? facultyPerms : coordinatorPerms;
+        const { _id, __v, ...cleanBase } = (base as any) || {};
         setIndividualPerms({
-          ...base,
+          ...cleanBase,
           targetKey: email.toLowerCase(),
           title: name
         });
