@@ -11,9 +11,7 @@ import {
   Lock, BarChart3, Globe, FileText
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
-import { getAdminPhotoUrl } from '../utils/adminAuth';
-
-const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
+import { getAdminPhotoUrl, API_BASE_URL as API } from '../utils/adminAuth';
 
 interface AnalyticsData {
   totalRegistrations: number;

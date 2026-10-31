@@ -8,10 +8,8 @@ import {
   Play, Check, Copy, Lock, Cloud, HardDrive, Globe, Zap, Gauge
 } from 'lucide-react';
 import { DeveloperPinGuard } from '../components/DeveloperPinGuard';
-import { getAdminIdentity } from '../utils/adminAuth';
+import { getAdminIdentity, API_BASE_URL as API } from '../utils/adminAuth';
 import './DeveloperDashboard.css';
-
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://reg.technika2026.online');
 
 interface ServerInfo {
   id: string;

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Users, BarChart3, Terminal, ShieldCheck, Zap, Activity } from 'lucide-react';
-import { getAdminIdentity } from '../../utils/adminAuth';
-
-const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
+import { getAdminIdentity, API_BASE_URL as API } from '../../utils/adminAuth';
 
 export const ProfileView: React.FC = () => {
   const navigate = useNavigate();

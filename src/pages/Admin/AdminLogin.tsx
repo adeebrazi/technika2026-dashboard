@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
+import { API_BASE_URL as API } from '../../utils/adminAuth';
 
 type AdminRoleOption = 'Administration' | 'Faculty Coordinator' | 'Student Coordinator';
 

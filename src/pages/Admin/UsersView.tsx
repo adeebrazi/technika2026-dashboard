@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, QrCode, CheckCircle2, Clock, Send, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'https://reg.technika2026.online';
+import { API_BASE_URL as API } from '../../utils/adminAuth';
 
 export const UsersView: React.FC = () => {
   const role = localStorage.getItem('adminRole');
