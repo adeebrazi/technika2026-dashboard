@@ -12,7 +12,15 @@ export const UsersView: React.FC = () => {
   const [filterEvent, setFilterEvent] = useState('all');
   const [filterSource, setFilterSource] = useState('all');
   const [filterPayment, setFilterPayment] = useState('all');
-  const [accessLevel, setAccessLevel] = useState<'full' | 'limited'>('limited');
+  const [_accessLevel, setAccessLevel] = useState<'full' | 'limited'>('limited');
+  const [perms, setPerms] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem('adminPermissions');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
 
   // Email sending state & modals
@@ -128,6 +136,7 @@ export const UsersView: React.FC = () => {
   };
 
   const openDocViewer = (user: any, initialIndex = 0) => {
+    if (!canViewDocuments) return;
     const docs = getUserDocuments(user);
     if (docs.length === 0) return;
     setImgLoadErrors({});
@@ -181,15 +190,22 @@ export const UsersView: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || data);
-        setAccessLevel(data.accessLevel || 'full');
+        if (data.permissions) {
+          setPerms(data.permissions);
+          localStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
+        }
+        setAccessLevel(data.accessLevel || (role === 'admin' ? 'full' : 'limited'));
         setError('');
       } else {
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 401) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminRole');
           localStorage.removeItem('adminName');
           localStorage.removeItem('adminDesignation');
-          setError('Session expired or unauthorized. Please log in again.');
+          setError('Session expired. Please log in again.');
+        } else if (res.status === 403) {
+          const errData = await res.json().catch(() => ({}));
+          setError(errData.message || 'Access restricted. You do not have permission to view registered participants.');
         } else {
           const errData = await res.json().catch(() => ({}));
           setError(errData.message || 'Failed to fetch users');
@@ -337,8 +353,69 @@ export const UsersView: React.FC = () => {
 
   const sortedUsers = [...filteredUsers];
 
-  const canDelete = role === 'admin';
-  const fullAccess = accessLevel === 'full';
+  const isAdmin = role === 'admin';
+  const canViewParticipants = isAdmin || perms?.canViewParticipants !== false;
+  const canViewContact = isAdmin || Boolean(perms?.canViewContactInfo);
+  const canViewFinancials = isAdmin || Boolean(perms?.canViewFinancials);
+  const canViewDocuments = isAdmin || Boolean(perms?.canViewDocuments);
+  const canExportCSV = isAdmin || Boolean(perms?.canExportCSV);
+  const canDelete = isAdmin;
+  const canSendEmail = isAdmin || canViewContact;
+
+  const handleExportCSV = () => {
+    if (!canExportCSV || filteredUsers.length === 0) return;
+
+    const headers = ['Registration ID', 'Name', 'Institution', 'Course', 'Semester', 'Source', 'Events'];
+    if (canViewContact) {
+      headers.push('Email', 'WhatsApp');
+    }
+    if (canViewFinancials) {
+      headers.push('Payment Type', 'UTR', 'Clearance Status');
+    }
+
+    const rows = filteredUsers.map(user => {
+      const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
+      const eventsStr = (user.registeredEvents || []).map((r: any) => r.event?.name || r.eventId).filter(Boolean).join('; ');
+
+      const row = [
+        `"${user.registrationId || ''}"`,
+        `"${(user.name || '').replace(/"/g, '""')}"`,
+        `"${(user.institution || '').replace(/"/g, '""')}"`,
+        `"${(user.course || '').replace(/"/g, '""')}"`,
+        `"${(user.semester || '').replace(/"/g, '""')}"`,
+        `"${user.source || 'website'}"`,
+        `"${eventsStr.replace(/"/g, '""')}"`
+      ];
+
+      if (canViewContact) {
+        row.push(
+          `"${(user.email || '').replace(/"/g, '""')}"`,
+          `"${(user.whatsapp || '').replace(/"/g, '""')}"`
+        );
+      }
+
+      if (canViewFinancials) {
+        row.push(
+          `"${isExempt ? 'AJU Exempt' : 'Online Paid'}"`,
+          `"${(user.utrEnteredManually || user.paymentUTR || '').replace(/"/g, '""')}"`,
+          `"${user.paymentStatus || (isExempt ? 'Exempt' : 'Paid')}"`
+        );
+      }
+
+      return row.join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `technika_participants_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -450,6 +527,34 @@ export const UsersView: React.FC = () => {
     );
   }
 
+  if (!canViewParticipants) {
+    return (
+      <div className="clay-error-state">
+        <div className="clay-error-orb">🔒</div>
+        <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#dc2626' }}>Access Restricted</span>
+        <p style={{ maxWidth: '420px', textAlign: 'center', color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5', margin: '4px 0 14px 0' }}>
+          You do not have permission to view registered participants. Please contact <strong>Adeeb Razi</strong> (Administration) to request directory access.
+        </p>
+        <button 
+          onClick={() => { setError(''); setLoading(true); fetchUsers(); }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '12px',
+            border: '2px solid rgba(255, 255, 255, 0.8)',
+            background: '#ffffff',
+            color: '#1e293b',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '3px 4px 10px rgba(162, 178, 201, 0.25)',
+            fontFamily: "'Space Grotesk', sans-serif"
+          }}
+        >
+          🔄 Refresh Permissions
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="clay-users-page">
       {/* ── Page Header ── */}
@@ -462,6 +567,15 @@ export const UsersView: React.FC = () => {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {canExportCSV && (
+            <button
+              onClick={handleExportCSV}
+              className="clay-export-csv-btn"
+              title="Export filtered participant records to CSV"
+            >
+              📥 Export CSV
+            </button>
+          )}
           <div className="clay-count-badge">
             <span className="clay-count-num">{filteredUsers.length}</span>
             <span className="clay-count-label">{filteredUsers.length === users.length ? 'Total' : `of ${users.length}`}</span>
@@ -510,22 +624,24 @@ export const UsersView: React.FC = () => {
             <option value="admin_import">📂 School Import</option>
           </select>
         </div>
-        <div className="clay-filter-box">
-          <span className="clay-filter-icon">💳</span>
-          <select 
-            value={filterPayment} 
-            onChange={(e) => setFilterPayment(e.target.value)}
-            className="clay-filter-select"
-            title="Filter by clearance and screenshot submission type"
-          >
-            <option value="all">All Clearances</option>
-            <option value="portal_image">📸 Uploaded Screenshot (Website)</option>
-            <option value="form_image">📁 Uploaded Screenshot (Form)</option>
-            <option value="form_no_image">⚠️ Missing Screenshot (Form)</option>
-            <option value="aju_exempt">🎓 AJU Exempt (No-Dues Slip)</option>
-            <option value="online_paid">💳 Online Paid (UPI/UTR)</option>
-          </select>
-        </div>
+        {canViewFinancials && (
+          <div className="clay-filter-box">
+            <span className="clay-filter-icon">💳</span>
+            <select 
+              value={filterPayment} 
+              onChange={(e) => setFilterPayment(e.target.value)}
+              className="clay-filter-select"
+              title="Filter by clearance and screenshot submission type"
+            >
+              <option value="all">All Clearances</option>
+              <option value="portal_image">📸 Uploaded Screenshot (Website)</option>
+              <option value="form_image">📁 Uploaded Screenshot (Form)</option>
+              <option value="form_no_image">⚠️ Missing Screenshot (Form)</option>
+              <option value="aju_exempt">🎓 AJU Exempt (No-Dues Slip)</option>
+              <option value="online_paid">💳 Online Paid (UPI/UTR)</option>
+            </select>
+          </div>
+        )}
       </div>
 
       {/* ── Data Table ── */}
@@ -537,18 +653,18 @@ export const UsersView: React.FC = () => {
           <table className="clay-table">
             <thead>
               <tr>
-                {fullAccess && <th>ID</th>}
-                <th>{fullAccess ? 'Name & Email' : 'Name'}</th>
+                <th>ID</th>
+                <th>{canViewContact ? 'Name & Contact' : 'Name'}</th>
                 <th>Institution</th>
                 <th>Registered Events</th>
-                {fullAccess && <th>Payment Status</th>}
-                {(fullAccess || canDelete) && <th>Actions</th>}
+                {canViewFinancials && <th>Payment Status</th>}
+                {(canSendEmail || canDelete) && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {sortedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={fullAccess ? 6 : 3} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  <td colSpan={4 + (canViewFinancials ? 1 : 0) + ((canSendEmail || canDelete) ? 1 : 0)} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '2rem' }}>📭</span>
                       <span style={{ fontWeight: 700 }}>No participants found</span>
@@ -559,11 +675,9 @@ export const UsersView: React.FC = () => {
               ) : (
                 sortedUsers.map((user, idx) => (
                   <tr key={user._id} className={idx % 2 === 0 ? 'row-even' : 'row-odd'}>
-                    {fullAccess && (
-                      <td>
-                        <span className="clay-id-badge">{user.registrationId}</span>
-                      </td>
-                    )}
+                    <td>
+                      <span className="clay-id-badge">{user.registrationId}</span>
+                    </td>
                     <td>
                       <div className="clay-user-cell">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -576,14 +690,26 @@ export const UsersView: React.FC = () => {
                             <span className="source-pill source-web" title="Registered via Website Portal">🌐 Website</span>
                           )}
                         </div>
-                        {fullAccess && <div className="clay-user-email">{user.email}</div>}
-                        {fullAccess && <div className="clay-user-phone">📞 {user.whatsapp}</div>}
+                        {canViewContact ? (
+                          <>
+                            {user.email && <div className="clay-user-email">✉️ {user.email}</div>}
+                            {user.whatsapp && <div className="clay-user-phone">📞 {user.whatsapp}</div>}
+                          </>
+                        ) : (
+                          <div className="clay-user-contact-masked" title="Contact details protected by access control policy">
+                            <span>🔒 Contact hidden</span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>
                       <div className="clay-inst-cell">
                         <div className="clay-inst-name">{user.institution}</div>
-                        {fullAccess && <div className="clay-inst-course">{user.course} - {user.semester}</div>}
+                        {(user.course || user.semester) && (
+                          <div className="clay-inst-course">
+                            {user.course || ''}{user.course && user.semester ? ' · ' : ''}{user.semester ? `Sem ${user.semester}` : ''}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -658,7 +784,7 @@ export const UsersView: React.FC = () => {
                         <span className="clay-no-events">No events</span>
                       )}
                     </td>
-                    {fullAccess && (
+                    {canViewFinancials && (
                       <td>
                         {(() => {
                           const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
@@ -697,15 +823,21 @@ export const UsersView: React.FC = () => {
                           return (
                             <div className="clay-ss-cell-wrap">
                               {clearanceBadge}
-                              <button
-                                onClick={() => openDocViewer(user, 0)}
-                                className="clay-view-ss-btn"
-                                title="Click to view payment screenshot"
-                              >
-                                <span>📸 View SS</span>
-                              </button>
+                              {canViewDocuments ? (
+                                <button
+                                  onClick={() => openDocViewer(user, 0)}
+                                  className="clay-view-ss-btn"
+                                  title="Click to view payment screenshot"
+                                >
+                                  <span>📸 View SS</span>
+                                </button>
+                              ) : (
+                                <span className="clay-ss-restricted-badge" title="Document view restricted">
+                                  📁 SS Uploaded
+                                </span>
+                              )}
                               <div className="clay-utr-info">
-                                <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR}</div>
+                                <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR || 'N/A'}</div>
                                 <div><strong>Fetched:</strong> {user.utrFetchedFromScreenshot || 'PENDING'}</div>
                               </div>
                             </div>
@@ -713,19 +845,21 @@ export const UsersView: React.FC = () => {
                         })()}
                       </td>
                     )}
-                    {(fullAccess || canDelete) && (
+                    {(canSendEmail || canDelete) && (
                       <td>
                         <div className="clay-actions-cell-wrap">
                           {/* Send Email Action Button */}
-                          <button
-                            type="button"
-                            onClick={() => setEmailModalUser(user)}
-                            className="clay-send-email-btn"
-                            title="Send confirmation email or entry QR pass"
-                          >
-                            <Mail size={12} />
-                            <span>Send Email</span>
-                          </button>
+                          {canSendEmail && (
+                            <button
+                              type="button"
+                              onClick={() => setEmailModalUser(user)}
+                              className="clay-send-email-btn"
+                              title="Send confirmation email or entry QR pass"
+                            >
+                              <Mail size={12} />
+                              <span>Send Email</span>
+                            </button>
+                          )}
 
                           {/* Email Status Indicators */}
                           <div className="clay-email-status-pills">
@@ -1497,6 +1631,50 @@ export const UsersView: React.FC = () => {
             2px 2px 5px rgba(37, 99, 235, 0.08);
         }
 
+        .clay-user-contact-masked {
+          font-size: 0.72rem;
+          color: #94a3b8;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 2px;
+          background: #f1f5f9;
+          padding: 2px 6px;
+          border-radius: 4px;
+          border: 1px dashed #cbd5e1;
+          width: fit-content;
+        }
+        .clay-export-csv-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          background: #ffffff;
+          border: 1.5px solid #cbd5e1;
+          border-radius: 12px;
+          color: #0f172a;
+          font-weight: 700;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 2px 3px 8px rgba(148, 163, 184, 0.15);
+        }
+        .clay-export-csv-btn:hover {
+          background: #f8fafc;
+          border-color: #3b82f6;
+          color: #2563eb;
+          transform: translateY(-1px);
+        }
+        .clay-ss-restricted-badge {
+          font-size: 0.7rem;
+          color: #64748b;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          padding: 3px 8px;
+          border-radius: 6px;
+          display: inline-block;
+        }
         .clay-user-cell { display: flex; flex-direction: column; gap: 2px; }
         .clay-user-name { font-weight: 800; font-size: 0.88rem; color: #0f172a; }
         .clay-user-email { font-size: 0.78rem; color: #64748b; }
