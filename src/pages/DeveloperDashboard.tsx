@@ -708,14 +708,14 @@ export const DeveloperDashboard: React.FC = () => {
           <div className="dev-nav-logos-group">
             <div className="dev-nav-badge" title="Arka Jain University">
               <img 
-                src="/logo.png" 
+                src="/logo.webp" 
                 alt="Arka Jain University" 
                 className="dev-logo-img"
               />
             </div>
             <div className="dev-nav-tech-badge" title="Technika 6.0">
               <img 
-                src="/technika_logo.jpg" 
+                src="/technika_logo.webp" 
                 alt="Technika 6.0" 
                 className="dev-tech-logo-img"
               />

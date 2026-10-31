@@ -61,7 +61,7 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
           <div className="al-brand-row">
             <div className="al-logo-badge" title="Arka Jain University">
               <img 
-                src="/logo.png" 
+                src="/logo.webp" 
                 alt="ARKA JAIN UNIVERSITY" 
                 className="al-uni-logo-img" 
               />
@@ -74,7 +74,7 @@ export const AnalyticsLoader: React.FC<AnalyticsLoaderProps> = ({
 
           <div className="al-fest-badge" title="Technika 6.0">
             <img 
-              src="/technika_logo.jpg" 
+              src="/technika_logo.webp" 
               alt="Technika 6.0" 
               className="al-fest-logo-img" 
             />

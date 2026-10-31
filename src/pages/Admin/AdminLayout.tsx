@@ -117,7 +117,7 @@ export const AdminLayout: React.FC = () => {
           <div className="clay-brand-row">
             <div className="clay-brand-logo" style={{ padding: 0, overflow: 'hidden' }}>
               <img 
-                src="/technika_logo.jpg" 
+                src="/technika_logo.webp" 
                 alt="Technika 6.0" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} 
               />
@@ -210,7 +210,7 @@ export const AdminLayout: React.FC = () => {
         <div className="clay-mobile-brand">
           <div className="clay-mobile-logo">
             <img 
-              src="/technika_logo.jpg" 
+              src="/technika_logo.webp" 
               alt="Technika 6.0" 
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} 
             />

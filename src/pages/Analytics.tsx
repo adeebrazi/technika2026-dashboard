@@ -18,6 +18,8 @@ interface AnalyticsData {
   websiteRegistrations?: number;
   googleFormRegistrations?: number;
   importRegistrations?: number;
+  internalRegistrations?: number;
+  externalRegistrations?: number;
   sourceBreakdown?: {
     website: number;
     googleForm: number;
@@ -153,6 +155,27 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   const websitePercent = totalRegistrations > 0 ? Math.round((websiteCount / totalRegistrations) * 100) : 0;
   const googleFormPercent = totalRegistrations > 0 ? Math.round((googleFormCount / totalRegistrations) * 100) : 0;
+
+  // External students computation (ARKA JAIN University as internal, remainder as external)
+  const externalCount = useMemo(() => {
+    if (typeof data?.externalRegistrations === 'number') {
+      return data.externalRegistrations;
+    }
+    if (!data) return 0;
+    let aju = 0;
+    if (Array.isArray(data.instituteWise)) {
+      data.instituteWise.forEach(item => {
+        const inst = (item.institute || '').trim().toLowerCase();
+        if (inst.includes('arka') || inst.includes('jain') || inst === 'aju') {
+          aju += (typeof item.count === 'number' ? item.count : 0);
+        }
+      });
+    }
+    return Math.max(0, totalRegistrations - aju);
+  }, [data, totalRegistrations]);
+
+  const externalPercent = totalRegistrations > 0 ? Math.round((externalCount / totalRegistrations) * 100) : 0;
+  const animatedExternal = useAnimatedCounter(externalCount);
 
   const animatedTotal = useAnimatedCounter(totalRegistrations);
   const animatedWebsite = useAnimatedCounter(websiteCount);
@@ -322,7 +345,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           {/* AJU Official Logo */}
           <div className="clay-nav-logo-badge" title="Arka Jain University">
             <img 
-              src="/logo.png" 
+              src="/logo.webp" 
               alt="ARKA JAIN UNIVERSITY" 
               className="clay-nav-logo-img" 
             />
@@ -337,21 +360,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           {/* Technika 6.0 Official Logo */}
           <div className="clay-nav-tech-badge" title="Technika 6.0">
             <img 
-              src="/technika_logo.jpg" 
+              src="/technika_logo.webp" 
               alt="Technika 6.0" 
               className="clay-nav-tech-img" 
             />
             <div className="clay-nav-brand">
               Technika <span className="clay-brand-cyan">6.0</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="clay-nav-center">
-          <div className="clay-nav-tab-group">
-            <div className="clay-nav-tab active" title="Currently viewing Registration Analytics">
-              <span className="clay-pulse-dot" />
-              <span>Registration Analytics</span>
             </div>
           </div>
         </div>
@@ -509,7 +523,26 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             </div>
           </div>
 
-          {/* Card 4: Participating institutes */}
+          {/* Card 4: External Students */}
+          <div className="clay-kpi-card">
+            <div className="clay-kpi-head">
+              <span className="clay-kpi-title">External Students</span>
+              <div className="clay-kpi-icon-wrap" style={{ color: '#7c3aed', background: '#f5f3ff' }}>
+                <GraduationCap size={18} />
+              </div>
+            </div>
+            <div className="clay-kpi-val-row">
+              <span className="clay-kpi-num">
+                {formatZeroPad(animatedExternal)}
+              </span>
+              <span className="clay-kpi-percent" style={{ color: '#7c3aed' }}>{externalPercent}%</span>
+            </div>
+            <div className="clay-kpi-foot">
+              Other institutes &amp; schools
+            </div>
+          </div>
+
+          {/* Card 5: Participating institutes */}
           <div className="clay-kpi-card">
             <div className="clay-kpi-head">
               <span className="clay-kpi-title">Participating institutes</span>
@@ -737,7 +770,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             {/* Robot Image Container */}
             <div className="clay-img-frame">
               <img 
-                src="/robo-wars.jpg" 
+                src="/robo-wars.webp" 
                 alt="Robo Wars" 
                 className="clay-event-img"
                 onError={(e) => {
@@ -1849,11 +1882,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             -6px -6px 18px rgba(255, 255, 255, 0.95);
         }
 
-        /* ── ROW 1: 4 KPI Cards Grid ── */
+        /* ── ROW 1: 5 KPI Cards Grid ── */
         .clay-kpi-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 16px;
         }
 
         .clay-kpi-card {
