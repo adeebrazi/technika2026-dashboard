@@ -704,12 +704,18 @@ export const UsersView: React.FC = () => {
                     </td>
                     <td>
                       <div className="clay-inst-cell">
-                        <div className="clay-inst-name">{user.institution}</div>
-                        {(user.course || user.semester) && (
-                          <div className="clay-inst-course">
-                            {user.course || ''}{user.course && user.semester ? ' · ' : ''}{user.semester ? `Sem ${user.semester}` : ''}
-                          </div>
-                        )}
+                        <div className="clay-inst-name">{user.institution === 'School Student' ? 'SRI KRISHNA PUBLIC SCHOOL' : (user.institution || 'N/A')}</div>
+                        {(() => {
+                          const c = (user.course || '').trim();
+                          let s = (user.semester || '').trim();
+                          if (s.toLowerCase() === 'n/a' || s.toLowerCase() === 'general' || s.toLowerCase() === 'standard') s = '';
+                          else if (s && !s.toLowerCase().startsWith('sem') && !s.toLowerCase().startsWith('class') && !s.toLowerCase().startsWith('grade')) {
+                            s = `Sem ${s}`;
+                          }
+                          const displayCourse = (c.toLowerCase() === 'school student' || c.toLowerCase() === 'school / college student') ? '' : c;
+                          const subtitle = [displayCourse, s].filter(Boolean).join(' · ');
+                          return subtitle ? <div className="clay-inst-course">{subtitle}</div> : null;
+                        })()}
                       </div>
                     </td>
                     <td>
