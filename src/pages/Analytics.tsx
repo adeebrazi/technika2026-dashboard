@@ -8,7 +8,8 @@ import {
   ClipboardList, Building2, GraduationCap,
   ArrowUpRight, RefreshCw, Sparkles,
   Info, LogOut, Cpu, Palette, Calendar,
-  Lock, BarChart3, Globe, FileText
+  Lock, BarChart3, Globe, FileText,
+  Maximize2, Minimize2, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
 import { getAdminPhotoUrl, API_BASE_URL as API } from '../utils/adminAuth';
@@ -194,6 +195,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   // Event Registrations Interactive Filter
   const [eventCategoryFilter, setEventCategoryFilter] = useState<'TOP10' | 'ALL' | 'Technical' | 'Cultural' | 'Creative'>('TOP10');
+
+  // Table Expansion Controls (Collapsed vs Expanded view for easy screenshotting)
+  const [isInstExpanded, setIsInstExpanded] = useState<boolean>(false);
+  const [instFullWidth, setInstFullWidth] = useState<boolean>(false);
+  const [isCourseExpanded, setIsCourseExpanded] = useState<boolean>(false);
 
   // Gender Demographics data computation
   const genderData = useMemo(() => {
@@ -832,18 +838,71 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
         {/* ── ROW 3: Institute Participation & Course Participation ── */}
         <section className="clay-tables-grid">
           {/* Left: Institute Participation */}
-          <div className="clay-card clay-table-card">
-            <div className="clay-card-header-row">
+          <div 
+            id="institute-participation-card"
+            className={`clay-card clay-table-card ${isInstExpanded ? 'clay-card-expanded' : ''}`}
+            style={{
+              gridColumn: (instFullWidth && isInstExpanded) ? '1 / -1' : undefined,
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div className="clay-card-header-row" style={{ alignItems: 'center', gap: '12px' }}>
               <div>
-                <h2 className="clay-card-serif-title">Institute participation</h2>
-                <p className="clay-card-subtitle">Representation from participating institutions</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h2 className="clay-card-serif-title" style={{ margin: 0 }}>Institute participation</h2>
+                  {isInstExpanded && (
+                    <span 
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        background: '#eff6ff',
+                        color: '#2563eb',
+                        border: '1px solid #bfdbfe'
+                      }}
+                    >
+                      30 total
+                    </span>
+                  )}
+                </div>
+                <p className="clay-card-subtitle" style={{ margin: '3px 0 0 0' }}>Representation from participating institutions</p>
               </div>
-              <div className="clay-kpi-icon-wrap">
-                <Building2 size={18} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsInstExpanded(!isInstExpanded)}
+                  className={`clay-table-toggle-btn ${isInstExpanded ? 'active' : ''}`}
+                  title={isInstExpanded ? "Switch to Collapsed View (scrollable)" : "Switch to Expanded View (shows all institutions for screenshot)"}
+                >
+                  {isInstExpanded ? (
+                    <>
+                      <Minimize2 size={13} />
+                      <span>Collapse</span>
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 size={13} />
+                      <span>Expanded View</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="clay-kpi-icon-wrap" style={{ flexShrink: 0 }}>
+                  <Building2 size={18} />
+                </div>
               </div>
             </div>
 
-            <div className="clay-table-wrap">
+            <div 
+              className="clay-table-wrap"
+              style={{
+                maxHeight: isInstExpanded ? 'none' : '430px',
+                overflowY: isInstExpanded ? 'visible' : 'auto',
+                paddingRight: isInstExpanded ? '0' : '4px'
+              }}
+            >
               <table className="clay-data-table">
                 <thead>
                   <tr>
@@ -932,21 +991,93 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 </tbody>
               </table>
             </div>
+
+            {/* Bottom Footer Expand / Collapse Toggle */}
+            <div className="clay-table-footer-bar">
+              <button
+                type="button"
+                onClick={() => setIsInstExpanded(!isInstExpanded)}
+                className="clay-footer-expand-btn"
+              >
+                {isInstExpanded ? (
+                  <>
+                    <ChevronUp size={14} />
+                    <span>Collapse to compact scroll view</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={14} />
+                    <span>Show all {data?.instituteWise?.length || 30} institutions (Expanded for screenshot)</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Right: Course Participation */}
-          <div className="clay-card clay-table-card">
-            <div className="clay-card-header-row">
+          <div 
+            className={`clay-card clay-table-card ${isCourseExpanded ? 'clay-card-expanded' : ''}`}
+            style={{
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div className="clay-card-header-row" style={{ alignItems: 'center', gap: '12px' }}>
               <div>
-                <h2 className="clay-card-serif-title">Course participation</h2>
-                <p className="clay-card-subtitle">Registrations by academic discipline</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h2 className="clay-card-serif-title" style={{ margin: 0 }}>Course participation</h2>
+                  {isCourseExpanded && (
+                    <span 
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        background: '#eff6ff',
+                        color: '#2563eb',
+                        border: '1px solid #bfdbfe'
+                      }}
+                    >
+                      14 total
+                    </span>
+                  )}
+                </div>
+                <p className="clay-card-subtitle" style={{ margin: '3px 0 0 0' }}>Registrations by academic discipline</p>
               </div>
-              <div className="clay-kpi-icon-wrap">
-                <GraduationCap size={18} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCourseExpanded(!isCourseExpanded)}
+                  className={`clay-table-toggle-btn ${isCourseExpanded ? 'active' : ''}`}
+                  title={isCourseExpanded ? "Switch to Collapsed View" : "Switch to Expanded View for screenshot"}
+                >
+                  {isCourseExpanded ? (
+                    <>
+                      <Minimize2 size={13} />
+                      <span>Collapse</span>
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 size={13} />
+                      <span>Expanded View</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="clay-kpi-icon-wrap" style={{ flexShrink: 0 }}>
+                  <GraduationCap size={18} />
+                </div>
               </div>
             </div>
 
-            <div className="clay-table-wrap">
+            <div 
+              className="clay-table-wrap"
+              style={{
+                maxHeight: isCourseExpanded ? 'none' : '430px',
+                overflowY: isCourseExpanded ? 'visible' : 'auto',
+                paddingRight: isCourseExpanded ? '0' : '4px'
+              }}
+            >
               <table className="clay-data-table">
                 <thead>
                   <tr>
@@ -1034,6 +1165,27 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Bottom Footer Expand / Collapse Toggle */}
+            <div className="clay-table-footer-bar">
+              <button
+                type="button"
+                onClick={() => setIsCourseExpanded(!isCourseExpanded)}
+                className="clay-footer-expand-btn"
+              >
+                {isCourseExpanded ? (
+                  <>
+                    <ChevronUp size={14} />
+                    <span>Collapse to compact scroll view</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={14} />
+                    <span>Show all {data?.courseDistribution?.length || 14} courses (Expanded for screenshot)</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </section>
@@ -2640,6 +2792,78 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 22px;
+          align-items: start;
+        }
+
+        .clay-card-expanded {
+          box-shadow: 
+            10px 14px 32px rgba(162, 178, 201, 0.35),
+            -6px -6px 20px rgba(255, 255, 255, 0.95),
+            inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+            inset -2px -2px 4px rgba(162, 178, 201, 0.18) !important;
+        }
+
+        .clay-table-toggle-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #475569;
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .clay-table-toggle-btn:hover {
+          background: #e2e8f0;
+          color: #1e293b;
+          border-color: #cbd5e1;
+          transform: translateY(-1px);
+        }
+
+        .clay-table-toggle-btn.active {
+          background: #eff6ff;
+          color: #2563eb;
+          border-color: #bfdbfe;
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+        }
+
+        .clay-table-footer-bar {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 14px 0 2px 0;
+          margin-top: 10px;
+          border-top: 1px dashed #e2e8f0;
+        }
+
+        .clay-footer-expand-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 8px 20px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #2563eb;
+          background: #f0f7ff;
+          border: 1.5px solid #dbeafe;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+        }
+
+        .clay-footer-expand-btn:hover {
+          background: #2563eb;
+          color: #ffffff;
+          border-color: #2563eb;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }
 
         .clay-table-wrap {
