@@ -485,11 +485,32 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             </div>
           </div>
 
-          {/* Card 2: Registration From Website */}
+          {/* Card 2: Registration From Website (FREEZE) */}
           <div className="clay-kpi-card">
             <div className="clay-kpi-head">
-              <span className="clay-kpi-title">Registration From Website</span>
-              <div className="clay-kpi-icon-wrap" style={{ color: '#2563eb', background: '#eff6ff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span className="clay-kpi-title">Registration From Website</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 900,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    background: '#e0f2fe',
+                    color: '#0284c7',
+                    border: '1.5px solid #bae6fd',
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title="Direct website registrations are closed and data is frozen"
+                >
+                  <span style={{ fontSize: '11px' }}>❄️</span> FREEZE
+                </span>
+              </div>
+              <div className="clay-kpi-icon-wrap" style={{ color: '#0284c7', background: '#e0f2fe' }}>
                 <Globe size={18} />
               </div>
             </div>
@@ -499,8 +520,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               </span>
               <span className="clay-kpi-percent">{websitePercent}%</span>
             </div>
-            <div className="clay-kpi-foot">
-              Direct website portal registrations
+            <div className="clay-kpi-foot" style={{ color: '#0369a1', fontWeight: 600 }}>
+              ❄️ Freeze · Portal closed (no longer accepting data)
             </div>
           </div>
 

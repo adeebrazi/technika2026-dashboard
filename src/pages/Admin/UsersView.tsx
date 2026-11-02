@@ -619,7 +619,7 @@ export const UsersView: React.FC = () => {
             className="clay-filter-select"
           >
             <option value="all">All Sources</option>
-            <option value="website">🌐 Website Portal</option>
+            <option value="website">🌐 Website Portal (Frozen)</option>
             <option value="google_form">📝 Google Form</option>
             <option value="admin_import">📂 School Import</option>
           </select>
