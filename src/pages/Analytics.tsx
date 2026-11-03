@@ -113,7 +113,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
       const token = localStorage.getItem('adminToken') || localStorage.getItem('dashboardToken');
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const res = await fetch(`${API}/api/admin/analytics`, { headers });
+      const url = isManual ? `${API}/api/admin/analytics?sync=1` : `${API}/api/admin/analytics`;
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error('Failed to fetch analytics');
       const json: AnalyticsData = await res.json();
       setData(json);
@@ -130,6 +131,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   useEffect(() => {
     fetchAnalytics();
+    // Live periodic polling: refresh analytics every 25 seconds so new Google Form submissions appear automatically
+    const pollTimer = setInterval(() => {
+      fetchAnalytics(false);
+    }, 25000);
+    return () => clearInterval(pollTimer);
   }, []);
 
   // Format with leading zero if single digit, e.g. "02"
@@ -198,7 +204,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   // Table Expansion Controls (Collapsed vs Expanded view for easy screenshotting)
   const [isInstExpanded, setIsInstExpanded] = useState<boolean>(false);
-  const [instFullWidth, setInstFullWidth] = useState<boolean>(false);
   const [isCourseExpanded, setIsCourseExpanded] = useState<boolean>(false);
 
   // Gender Demographics data computation
@@ -458,14 +463,44 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             </p>
           </div>
 
-          <div className="clay-hero-actions">
+          <div className="clay-hero-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '7px', 
+                padding: '7px 14px', 
+                borderRadius: '999px', 
+                background: '#ecfdf5', 
+                border: '1.5px solid #a7f3d0', 
+                fontSize: '12px', 
+                fontWeight: 700, 
+                color: '#065f46',
+                boxShadow: '0 2px 5px rgba(16, 185, 129, 0.08)'
+              }}
+              title="Continuous live telemetry connected to Google Form responses"
+            >
+              <span 
+                style={{ 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '50%', 
+                  background: '#10b981', 
+                  display: 'inline-block', 
+                  boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25)' 
+                }} 
+              />
+              <span>Live Sync Active</span>
+            </div>
+
             <button 
               className={`clay-btn-refresh ${isRefreshing ? 'is-spinning' : ''}`}
               onClick={() => fetchAnalytics(true)}
               disabled={isRefreshing}
+              title="Force immediate synchronization with Google Form spreadsheet"
             >
               <RefreshCw size={17} className={isRefreshing ? 'clay-spin-anim' : ''} />
-              <span>Refresh</span>
+              <span>{isRefreshing ? 'Syncing...' : 'Sync Live'}</span>
             </button>
           </div>
         </section>
@@ -842,7 +877,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             id="institute-participation-card"
             className={`clay-card clay-table-card ${isInstExpanded ? 'clay-card-expanded' : ''}`}
             style={{
-              gridColumn: (instFullWidth && isInstExpanded) ? '1 / -1' : undefined,
               transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
