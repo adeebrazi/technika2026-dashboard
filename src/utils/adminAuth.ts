@@ -6,10 +6,10 @@ export const getApiUrl = (): string => {
   const isProd = import.meta.env.PROD || (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1'));
   if (isProd) {
     if (!envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1')) {
-      return 'https://reg.technika2026.online';
+      return typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
     }
   }
-  return envUrl || 'https://reg.technika2026.online';
+  return envUrl || (typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'http://localhost:5000');
 };
 
 export const API_BASE_URL = getApiUrl();
