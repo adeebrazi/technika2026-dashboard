@@ -485,7 +485,7 @@ export const AccessControlView: React.FC = () => {
           <span className="tab-icon">🎓</span>
           <div className="tab-text">
             <span className="tab-title">Faculty Coordinators</span>
-            <span className="tab-sub">Professors &amp; Event Leads ({staffList.faculty.length || 9} staff)</span>
+            <span className="tab-sub">Professors &amp; Event Leads ({staffList.faculty.length} staff)</span>
           </div>
         </button>
 
@@ -496,7 +496,7 @@ export const AccessControlView: React.FC = () => {
           <span className="tab-icon">⚡</span>
           <div className="tab-text">
             <span className="tab-title">Student Coordinators</span>
-            <span className="tab-sub">On-ground desk organizers ({staffList.coordinators.length || 13} staff)</span>
+            <span className="tab-sub">On-ground desk organizers ({staffList.coordinators.length} staff)</span>
           </div>
         </button>
       </div>
@@ -766,6 +766,15 @@ export const AccessControlView: React.FC = () => {
                     </div>
                   );
                 })}
+
+                {filteredStaffList.length === 0 && (
+                  <div className="clay-empty-staff-msg" style={{ gridColumn: '1 / -1' }}>
+                    <span>⚡ No {activeTab === 'faculty' ? 'Faculty Coordinators' : 'Student Coordinators'} added yet.</span>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                      Click <strong>&quot;+ Add {activeTab === 'faculty' ? 'Faculty' : 'Coordinator'}&quot;</strong> above to create an account and assign their designation.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
