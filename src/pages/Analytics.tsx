@@ -478,7 +478,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 color: '#065f46',
                 boxShadow: '0 2px 5px rgba(16, 185, 129, 0.08)'
               }}
-              title="Continuous live telemetry connected to Google Form responses"
+              title="Continuous live telemetry connected to OG Form Sheet responses"
             >
               <span 
                 style={{ 
@@ -497,7 +497,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               className={`clay-btn-refresh ${isRefreshing ? 'is-spinning' : ''}`}
               onClick={() => fetchAnalytics(true)}
               disabled={isRefreshing}
-              title="Force immediate synchronization with Google Form spreadsheet"
+              title="Force immediate synchronization with OG Form Sheet"
             >
               <RefreshCw size={17} className={isRefreshing ? 'clay-spin-anim' : ''} />
               <span>{isRefreshing ? 'Syncing...' : 'Sync Live'}</span>
@@ -566,10 +566,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             </div>
           </div>
 
-          {/* Card 3: Registration through Google Form */}
+          {/* Card 3: Registration through OG Form Sheet */}
           <div className="clay-kpi-card">
             <div className="clay-kpi-head">
-              <span className="clay-kpi-title">Through Google Form</span>
+              <span className="clay-kpi-title">Through OG Form Sheet</span>
               <div className="clay-kpi-icon-wrap" style={{ color: '#059669', background: '#ecfdf5' }}>
                 <FileText size={18} />
               </div>
@@ -581,7 +581,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               <span className="clay-kpi-percent" style={{ color: '#059669' }}>{googleFormPercent}%</span>
             </div>
             <div className="clay-kpi-foot">
-              Auto-synced from Google Sheet
+              Direct from Original Form Sheet
             </div>
           </div>
 
