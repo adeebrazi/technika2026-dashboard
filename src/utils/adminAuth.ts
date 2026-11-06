@@ -2,14 +2,10 @@
 
 export const getApiUrl = (): string => {
   const envUrl = (import.meta.env.VITE_API_URL || '').trim();
-  // If in production mode or running under a live domain, never allow localhost or 127.0.0.1
-  const isProd = import.meta.env.PROD || (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1'));
-  if (isProd) {
-    if (!envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1')) {
-      return 'https://reg.technika2026.online';
-    }
+  if (envUrl && !envUrl.startsWith('/') && !envUrl.includes('reg.technika2026.online')) {
+    return envUrl.replace(/\/$/, '');
   }
-  return envUrl || 'https://reg.technika2026.online';
+  return '';
 };
 
 export const API_BASE_URL = getApiUrl();
