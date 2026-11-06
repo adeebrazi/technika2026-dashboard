@@ -18,16 +18,20 @@ import {
   Trash,
   Database,
   Search,
-  Sparkles
+  Sparkles,
+  Send
 } from 'lucide-react';
 import { getAdminIdentity, API_BASE_URL as API, getAdminPhotoUrl } from '../../utils/adminAuth';
 
 export interface StaffPermissions {
-  canViewContact: boolean;
+  canViewPhone: boolean;
+  canViewEmail: boolean;
+  canSendEmail: boolean;
   canVerifyPayments: boolean;
   canCheckIn: boolean;
   canExportCSV: boolean;
   canDelete: boolean;
+  canViewContact?: boolean;
 }
 
 export interface StaffUser {
@@ -214,7 +218,9 @@ export const AccessControlView: React.FC = () => {
     if (staff.isPermanent || staff.role === 'admin') return;
 
     const currentPerms: StaffPermissions = staff.permissions ? { ...staff.permissions } : {
-      canViewContact: staff.role === 'faculty',
+      canViewPhone: staff.role === 'faculty',
+      canViewEmail: staff.role === 'faculty',
+      canSendEmail: staff.role === 'faculty',
       canVerifyPayments: staff.role === 'faculty',
       canCheckIn: true,
       canExportCSV: staff.role === 'faculty',
@@ -226,6 +232,9 @@ export const AccessControlView: React.FC = () => {
       ...currentPerms,
       [permKey]: nextVal,
     };
+    if (permKey === 'canViewPhone') {
+      updatedPerms.canViewContact = nextVal;
+    }
 
     // 1. Optimistic UI Update
     setStaffUsers(prev => prev.map(s => {
@@ -253,11 +262,14 @@ export const AccessControlView: React.FC = () => {
 
       if (res.ok) {
         const labelMap: Record<keyof StaffPermissions, string> = {
-          canViewContact: 'Student Contacts',
-          canVerifyPayments: 'Payment Verification',
+          canViewPhone: 'Contact (Phone)',
+          canViewEmail: 'Email Address',
+          canSendEmail: 'Send Email',
+          canVerifyPayments: 'Payment Details',
           canCheckIn: 'Check-In Desk',
           canExportCSV: 'Export CSV',
-          canDelete: 'Delete Registrations'
+          canDelete: 'Delete Power',
+          canViewContact: 'Contact (Phone)'
         };
         setSaveToast({
           message: `✓ ${labelMap[permKey]} ${nextVal ? 'Granted' : 'Revoked'} for ${staff.name} (Saved in MongoDB)`,
@@ -402,11 +414,13 @@ export const AccessControlView: React.FC = () => {
       <div className="limited-legend-bar">
         <span className="legend-label">Limited Privileges Key:</span>
         <div className="legend-items">
-          <span className="legend-item"><Phone size={13} /> Contacts (Phone &amp; Email)</span>
-          <span className="legend-item"><CreditCard size={13} /> Payments (Verify UPI &amp; Fees)</span>
-          <span className="legend-item"><QrCode size={13} /> Check-In (QR Gate Scanner)</span>
-          <span className="legend-item"><FileSpreadsheet size={13} /> Export CSV (Download Sheets)</span>
-          <span className="legend-item"><Trash size={13} /> Delete (Purge Registrations)</span>
+          <span className="legend-item"><Phone size={13} /> Contact (Phone)</span>
+          <span className="legend-item"><Mail size={13} /> Email Address</span>
+          <span className="legend-item"><Send size={13} /> Send Email</span>
+          <span className="legend-item"><CreditCard size={13} /> Payment Details</span>
+          <span className="legend-item"><QrCode size={13} /> Check-In Desk</span>
+          <span className="legend-item"><FileSpreadsheet size={13} /> Export CSV</span>
+          <span className="legend-item"><Trash size={13} /> Delete Power</span>
         </div>
       </div>
 
@@ -419,7 +433,9 @@ export const AccessControlView: React.FC = () => {
 
           // Resolve effective permissions
           const p: StaffPermissions = staff.permissions || {
-            canViewContact: isAdmin || staff.role === 'faculty',
+            canViewPhone: isAdmin || staff.role === 'faculty',
+            canViewEmail: isAdmin || staff.role === 'faculty',
+            canSendEmail: isAdmin || staff.role === 'faculty',
             canVerifyPayments: isAdmin || staff.role === 'faculty',
             canCheckIn: true,
             canExportCSV: isAdmin || staff.role === 'faculty',
@@ -496,36 +512,82 @@ export const AccessControlView: React.FC = () => {
                   </div>
                 ) : (
                   <div className="limited-toggles-grid">
-                    {/* 1. Student Contacts */}
-                    <div className={`perm-toggle-tile ${p.canViewContact ? 'active' : ''}`}>
+                    {/* 1. Contact (Phone) */}
+                    <div className={`perm-toggle-tile ${p.canViewPhone ? 'active' : ''}`}>
                       <div className="tile-info">
                         <Phone size={15} className="tile-icon" />
                         <div>
-                          <div className="tile-title">Contacts</div>
-                          <div className="tile-desc">Phone &amp; Email access</div>
+                          <div className="tile-title">Contact (Phone)</div>
+                          <div className="tile-desc">WhatsApp &amp; phone number</div>
                         </div>
                       </div>
                       <div className="switch-wrap">
-                        {savingKey === `${staff._id || staff.email}-canViewContact` && (
+                        {savingKey === `${staff._id || staff.email}-canViewPhone` && (
                           <span className="saving-pulse">Saving...</span>
                         )}
                         <button
                           type="button"
-                          onClick={() => handleTogglePermission(staff, 'canViewContact')}
-                          className={`switch-btn ${p.canViewContact ? 'on' : 'off'}`}
+                          onClick={() => handleTogglePermission(staff, 'canViewPhone')}
+                          className={`switch-btn ${p.canViewPhone ? 'on' : 'off'}`}
                         >
                           <span className="switch-thumb" />
                         </button>
                       </div>
                     </div>
 
-                    {/* 2. Payment Verification */}
+                    {/* 2. Email Address */}
+                    <div className={`perm-toggle-tile ${p.canViewEmail ? 'active' : ''}`}>
+                      <div className="tile-info">
+                        <Mail size={15} className="tile-icon" />
+                        <div>
+                          <div className="tile-title">Email Address</div>
+                          <div className="tile-desc">View participant email</div>
+                        </div>
+                      </div>
+                      <div className="switch-wrap">
+                        {savingKey === `${staff._id || staff.email}-canViewEmail` && (
+                          <span className="saving-pulse">Saving...</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePermission(staff, 'canViewEmail')}
+                          className={`switch-btn ${p.canViewEmail ? 'on' : 'off'}`}
+                        >
+                          <span className="switch-thumb" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 3. Send Email */}
+                    <div className={`perm-toggle-tile ${p.canSendEmail ? 'active' : ''}`}>
+                      <div className="tile-info">
+                        <Send size={15} className="tile-icon" />
+                        <div>
+                          <div className="tile-title">Send Email</div>
+                          <div className="tile-desc">Dispatch QR passes &amp; emails</div>
+                        </div>
+                      </div>
+                      <div className="switch-wrap">
+                        {savingKey === `${staff._id || staff.email}-canSendEmail` && (
+                          <span className="saving-pulse">Saving...</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePermission(staff, 'canSendEmail')}
+                          className={`switch-btn ${p.canSendEmail ? 'on' : 'off'}`}
+                        >
+                          <span className="switch-thumb" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4. Payment Details */}
                     <div className={`perm-toggle-tile ${p.canVerifyPayments ? 'active' : ''}`}>
                       <div className="tile-info">
                         <CreditCard size={15} className="tile-icon" />
                         <div>
-                          <div className="tile-title">Payments</div>
-                          <div className="tile-desc">Verify UPI &amp; fees</div>
+                          <div className="tile-title">Payment Details</div>
+                          <div className="tile-desc">Verify UPI, slips &amp; fees</div>
                         </div>
                       </div>
                       <div className="switch-wrap">
@@ -542,7 +604,7 @@ export const AccessControlView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 3. Check-In Desk */}
+                    {/* 5. Check-In Desk */}
                     <div className={`perm-toggle-tile ${p.canCheckIn ? 'active' : ''}`}>
                       <div className="tile-info">
                         <QrCode size={15} className="tile-icon" />
@@ -565,7 +627,7 @@ export const AccessControlView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 4. Export CSV */}
+                    {/* 6. Export CSV */}
                     <div className={`perm-toggle-tile ${p.canExportCSV ? 'active' : ''}`}>
                       <div className="tile-info">
                         <FileSpreadsheet size={15} className="tile-icon" />
@@ -588,7 +650,7 @@ export const AccessControlView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 5. Delete Records */}
+                    {/* 7. Delete Records */}
                     <div className={`perm-toggle-tile ${p.canDelete ? 'active danger' : ''}`}>
                       <div className="tile-info">
                         <Trash size={15} className="tile-icon danger" />

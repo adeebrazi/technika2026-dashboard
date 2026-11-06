@@ -416,19 +416,23 @@ export const UsersView: React.FC = () => {
 
   const isAdmin = role === 'admin';
   const canViewParticipants = isAdmin || perms?.canViewParticipants !== false;
-  const canViewContact = isAdmin || Boolean(perms?.canViewContactInfo);
-  const canViewFinancials = isAdmin || Boolean(perms?.canViewFinancials);
-  const canViewDocuments = isAdmin || Boolean(perms?.canViewDocuments);
+  const canViewPhone = isAdmin || Boolean(perms?.canViewPhone || perms?.canViewContact);
+  const canViewEmail = isAdmin || Boolean(perms?.canViewEmail);
+  const canSendEmail = isAdmin || Boolean(perms?.canSendEmail);
+  const canViewFinancials = isAdmin || Boolean(perms?.canViewFinancials || perms?.canVerifyPayments);
+  const canViewDocuments = isAdmin || Boolean(perms?.canViewDocuments || perms?.canVerifyPayments);
   const canExportCSV = isAdmin || Boolean(perms?.canExportCSV);
   const canDelete = isAdmin;
-  const canSendEmail = isAdmin || canViewContact;
 
   const handleExportCSV = () => {
     if (!canExportCSV || filteredUsers.length === 0) return;
 
     const headers = ['Registration ID', 'Name', 'Institution', 'Course', 'Semester', 'Source', 'Events'];
-    if (canViewContact) {
-      headers.push('Email', 'WhatsApp');
+    if (canViewEmail) {
+      headers.push('Email');
+    }
+    if (canViewPhone) {
+      headers.push('WhatsApp');
     }
     if (canViewFinancials) {
       headers.push('Payment Type', 'UTR', 'Clearance Status');
@@ -448,9 +452,13 @@ export const UsersView: React.FC = () => {
         `"${eventsStr.replace(/"/g, '""')}"`
       ];
 
-      if (canViewContact) {
+      if (canViewEmail) {
         row.push(
-          `"${(user.email || '').replace(/"/g, '""')}"`,
+          `"${(user.email || '').replace(/"/g, '""')}"`
+        );
+      }
+      if (canViewPhone) {
+        row.push(
           `"${(user.whatsapp || '').replace(/"/g, '""')}"`
         );
       }
@@ -722,7 +730,7 @@ export const UsersView: React.FC = () => {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>{canViewContact ? 'Name & Contact' : 'Name'}</th>
+                <th>{(canViewPhone || canViewEmail) ? 'Name & Contact' : 'Name'}</th>
                 <th>Institution</th>
                 <th>Registered Events</th>
                 {canViewFinancials && <th>Payment Status</th>}
@@ -758,12 +766,9 @@ export const UsersView: React.FC = () => {
                             <span className="source-pill source-web" title="Registered via Website Portal">🌐 Website</span>
                           )}
                         </div>
-                        {canViewContact ? (
-                          <>
-                            {user.email && <div className="clay-user-email">✉️ {user.email}</div>}
-                            {user.whatsapp && <div className="clay-user-phone">📞 {user.whatsapp}</div>}
-                          </>
-                        ) : (
+                        {canViewEmail && user.email && <div className="clay-user-email">✉️ {user.email}</div>}
+                        {canViewPhone && user.whatsapp && <div className="clay-user-phone">📞 {user.whatsapp}</div>}
+                        {!canViewEmail && !canViewPhone && (
                           <div className="clay-user-contact-masked" title="Contact details protected by access control policy">
                             <span>🔒 Contact hidden</span>
                           </div>
@@ -1258,7 +1263,8 @@ export const UsersView: React.FC = () => {
               })()}
 
               {/* Coordinator 1-Click Verification Email Actions */}
-              <div className="clay-modal-footer-email-actions">
+              {canSendEmail && (
+                <div className="clay-modal-footer-email-actions">
                 <button
                   type="button"
                   disabled={sendingEmailType !== null}
@@ -1275,6 +1281,7 @@ export const UsersView: React.FC = () => {
                   )}
                 </button>
               </div>
+              )}
             </div>
           </div>
         </div>
