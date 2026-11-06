@@ -19,7 +19,8 @@ import {
   Database,
   Search,
   Sparkles,
-  Send
+  Send,
+  UserCheck
 } from 'lucide-react';
 import { getAdminIdentity, API_BASE_URL as API, getAdminPhotoUrl } from '../../utils/adminAuth';
 
@@ -71,7 +72,7 @@ export const AccessControlView: React.FC = () => {
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'faculty' | 'coordinator'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'faculty' | 'coordinator' | 'volunteer'>('all');
   const [saveToast, setSaveToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
@@ -308,7 +309,8 @@ export const AccessControlView: React.FC = () => {
 
   const adminCount = staffUsers.filter(s => s.role === 'admin').length;
   const facultyCount = staffUsers.filter(s => s.role === 'faculty').length;
-  const coordinatorCount = staffUsers.filter(s => s.role === 'coordinator' || s.role === 'volunteer').length;
+  const coordinatorCount = staffUsers.filter(s => s.role === 'coordinator').length;
+  const volunteerCount = staffUsers.filter(s => s.role === 'volunteer').length;
 
   return (
     <div className="fresh-access-wrap">
@@ -393,6 +395,15 @@ export const AccessControlView: React.FC = () => {
             <QrCode size={16} />
             <span>Coordinators: <strong>{coordinatorCount}</strong></span>
           </button>
+          <button
+            type="button"
+            className={`stat-chip volunteer ${roleFilter === 'volunteer' ? 'active' : ''}`}
+            onClick={() => setRoleFilter('volunteer')}
+            title="Filter Desk Volunteers"
+          >
+            <UserCheck size={16} />
+            <span>Volunteers: <strong>{volunteerCount}</strong></span>
+          </button>
         </div>
 
         <div className="search-box-wrap">
@@ -470,6 +481,8 @@ export const AccessControlView: React.FC = () => {
                         ? 'Admin'
                         : staff.role === 'faculty'
                         ? 'Faculty'
+                        : staff.role === 'volunteer'
+                        ? 'Volunteer'
                         : 'Coordinator'}
                     </span>
                   </div>
@@ -1044,6 +1057,17 @@ export const AccessControlView: React.FC = () => {
           box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
         }
 
+        /* Volunteers */
+        .stat-chip.volunteer {
+          color: #059669;
+        }
+        .stat-chip.volunteer.active {
+          background: #059669;
+          color: #ffffff;
+          border-color: #059669;
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+        }
+
         .search-box-wrap {
           display: flex;
           align-items: center;
@@ -1196,6 +1220,10 @@ export const AccessControlView: React.FC = () => {
           background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);
         }
 
+        .avatar-fallback.volunteer {
+          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
         .crown-badge {
           position: absolute;
           top: -6px;
@@ -1248,6 +1276,11 @@ export const AccessControlView: React.FC = () => {
         .role-tag.coordinator {
           background: #e0f2fe;
           color: #0369a1;
+        }
+
+        .role-tag.volunteer {
+          background: #d1fae5;
+          color: #065f46;
         }
 
         .profile-designation {
