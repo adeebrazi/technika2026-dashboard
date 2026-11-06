@@ -12,7 +12,7 @@ interface PermissionConfig {
   canViewDocuments: boolean;
   canViewTeams: boolean;
   canViewAnalytics: boolean;
-  canViewDeveloperHub: boolean;
+  canViewDeveloperHub?: boolean;
   canVerifyPayments: boolean;
   canDeleteParticipants: boolean;
   canEditTeams: boolean;
@@ -44,7 +44,6 @@ const DEFAULT_PERMS: Record<'faculty' | 'coordinator', PermissionConfig> = {
     canViewDocuments: true,
     canViewTeams: true,
     canViewAnalytics: true,
-    canViewDeveloperHub: false,
     canVerifyPayments: true,
     canDeleteParticipants: false,
     canEditTeams: true,
@@ -61,7 +60,6 @@ const DEFAULT_PERMS: Record<'faculty' | 'coordinator', PermissionConfig> = {
     canViewDocuments: false,
     canViewTeams: true,
     canViewAnalytics: false,
-    canViewDeveloperHub: false,
     canVerifyPayments: false,
     canDeleteParticipants: false,
     canEditTeams: false,
@@ -921,21 +919,7 @@ export const AccessControlView: React.FC = () => {
                   </label>
                 </div>
 
-                {/* View Developer Hub */}
-                <div className="clay-toggle-card">
-                  <div className="toggle-info">
-                    <span className="toggle-title">View Developer Telemetry Hub</span>
-                    <span className="toggle-desc">Inspect Cloudinary storage meters, Vercel CDN logs, and pipeline latency probes.</span>
-                  </div>
-                  <label className="clay-switch">
-                    <input
-                      type="checkbox"
-                      checked={activePerms.canViewDeveloperHub}
-                      onChange={() => handleToggle('canViewDeveloperHub')}
-                    />
-                    <span className="clay-slider" />
-                  </label>
-                </div>
+
               </div>
             </div>
 

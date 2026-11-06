@@ -76,7 +76,6 @@ export interface AdminIdentity {
   isAdeeb: boolean;
   isSanchit: boolean;
   isMamatha: boolean;
-  canAccessDeveloper: boolean;
   canAccessAccessControl: boolean;
 }
 
@@ -110,17 +109,7 @@ export const getAdminIdentity = (): AdminIdentity => {
   // Prof. Mamatha Vayelapelli: 'mamatha' in email or name
   const isMamatha = n.includes('mamatha') || e.includes('mamatha');
 
-  // Developer Access: Adeeb Razi, Sanchit Agarwal, or any student/staff explicitly assigned canViewDeveloperHub by Admin
-  let hasAssignedDevPerm = false;
-  try {
-    const raw = localStorage.getItem('adminPermissions');
-    if (raw) {
-      const p = JSON.parse(raw);
-      if (p.canViewDeveloperHub) hasAssignedDevPerm = true;
-    }
-  } catch {}
 
-  const canAccessDeveloper = isAdeeb || isSanchit || hasAssignedDevPerm;
 
   // Access Control: ONLY Adeeb Razi and Mamatha Mam
   const canAccessAccessControl = isAdeeb || isMamatha;
@@ -137,7 +126,6 @@ export const getAdminIdentity = (): AdminIdentity => {
     isAdeeb,
     isSanchit,
     isMamatha,
-    canAccessDeveloper,
     canAccessAccessControl,
   };
 };

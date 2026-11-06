@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Users, BarChart3, Terminal, ShieldCheck, Zap, Activity } from 'lucide-react';
+import { User, Users, BarChart3, ShieldCheck, Zap, Activity } from 'lucide-react';
 import { getAdminIdentity, API_BASE_URL as API } from '../../utils/adminAuth';
 
 export const ProfileView: React.FC = () => {
@@ -13,7 +13,6 @@ export const ProfileView: React.FC = () => {
     name,
     designation,
     photoUrl,
-    canAccessDeveloper,
     canAccessAccessControl,
   } = getAdminIdentity();
   const storedEmail = localStorage.getItem('adminEmail');
@@ -279,18 +278,7 @@ export const ProfileView: React.FC = () => {
                 <span className="clay-shortcut-arrow">→</span>
               </Link>
 
-              {canAccessDeveloper && (
-                <Link to="/developer" className="clay-shortcut-btn">
-                  <span className="clay-shortcut-icon">
-                    <Terminal size={22} style={{ color: '#d97706' }} />
-                  </span>
-                  <div className="clay-shortcut-text">
-                    <span className="clay-shortcut-title">Developer Hub</span>
-                    <span className="clay-shortcut-desc">Cloudinary, Vercel & Health</span>
-                  </div>
-                  <span className="clay-shortcut-arrow">→</span>
-                </Link>
-              )}
+
             </div>
           </div>
 

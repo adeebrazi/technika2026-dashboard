@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { BarChart3, Users, Terminal, ShieldCheck, User } from 'lucide-react';
+import { BarChart3, Users, ShieldCheck, User } from 'lucide-react';
 import { getAdminIdentity, API_BASE_URL as API } from '../../utils/adminAuth';
 
 export const AdminLayout: React.FC = () => {
@@ -14,13 +14,8 @@ export const AdminLayout: React.FC = () => {
     name,
     designation,
     photoUrl,
-    isAdeeb,
-    isSanchit,
-    canAccessDeveloper,
     canAccessAccessControl,
   } = getAdminIdentity();
-
-  const [liveDevAccess, setLiveDevAccess] = useState(canAccessDeveloper);
 
   useEffect(() => {
     if (!token) return;
@@ -31,15 +26,10 @@ export const AdminLayout: React.FC = () => {
       .then(d => {
         if (d.permissions) {
           localStorage.setItem('adminPermissions', JSON.stringify(d.permissions));
-          if (isAdeeb || isSanchit) {
-            setLiveDevAccess(true);
-          } else {
-            setLiveDevAccess(Boolean(d.permissions.canViewDeveloperHub));
-          }
         }
       })
       .catch(() => {});
-  }, [token, isAdeeb, isSanchit]);
+  }, [token]);
 
   const isTokenExpired = (tokenStr: string | null) => {
     if (!tokenStr) return true;
@@ -78,12 +68,6 @@ export const AdminLayout: React.FC = () => {
   const navItems = [
     { name: 'Analytics', path: '/', icon: <BarChart3 size={19} strokeWidth={2.2} />, desc: 'Public dashboard & stats' },
     { name: 'Participants', path: '/admin/participants', icon: <Users size={19} strokeWidth={2.2} />, desc: 'View all registrations' },
-    ...(liveDevAccess ? [{ 
-      name: 'Developer', 
-      path: '/developer', 
-      icon: <Terminal size={19} strokeWidth={2.2} />, 
-      desc: 'Pipelines & health check' 
-    }] : []),
     ...(canAccessAccessControl ? [{ 
       name: 'Access Control', 
       path: '/admin/access', 
@@ -267,15 +251,7 @@ export const AdminLayout: React.FC = () => {
           <span className="clay-mob-label">Users</span>
         </Link>
 
-        {canAccessDeveloper && (
-          <Link 
-            to="/developer" 
-            className={`clay-mob-nav-btn ${location.pathname.startsWith('/developer') ? 'active' : ''}`}
-          >
-            <span className="clay-mob-icon"><Terminal size={19} strokeWidth={2.2} /></span>
-            <span className="clay-mob-label">Dev</span>
-          </Link>
-        )}
+
 
         {canAccessAccessControl && (
           <Link 

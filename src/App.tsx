@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AnalyticsView } from './pages/Analytics';
-import { DeveloperDashboard } from './pages/DeveloperDashboard';
 import { AdminLogin } from './pages/Admin/AdminLogin';
 import { AdminLayout } from './pages/Admin/AdminLayout';
 import { ProfileView } from './pages/Admin/ProfileView';
@@ -62,7 +61,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AnalyticsView />} />
-        <Route path="/developer" element={<DeveloperDashboard />} />
+        <Route path="/developer" element={<Navigate to="/" replace />} />
 
         {/* Admin / Organizer Portal */}
         <Route path="/admin/login" element={<AdminLogin />} />
