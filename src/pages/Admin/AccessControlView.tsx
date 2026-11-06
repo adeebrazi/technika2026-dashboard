@@ -342,52 +342,44 @@ export const AccessControlView: React.FC = () => {
         </div>
       )}
 
-      {/* ── Stats Strip ── */}
-      <div className="fresh-stats-bar">
-        <div className="stat-chip total">
-          <User size={16} />
-          <span>Total Staff: <strong>{staffUsers.length}</strong></span>
-        </div>
-        <div className="stat-chip admin">
-          <Shield size={16} />
-          <span>Administrators: <strong>{adminCount}</strong></span>
-        </div>
-        <div className="stat-chip faculty">
-          <Sparkles size={16} />
-          <span>Faculty: <strong>{facultyCount}</strong></span>
-        </div>
-        <div className="stat-chip coordinator">
-          <QrCode size={16} />
-          <span>Coordinators: <strong>{coordinatorCount}</strong></span>
-        </div>
-      </div>
-
-      {/* ── Filter & Search Toolbar ── */}
+      {/* ── Toolbar with Colorful Filter Chips & Search (Unified) ── */}
       <div className="fresh-toolbar">
-        <div className="role-filter-group">
+        <div className="fresh-stats-bar">
           <button
-            className={`filter-pill ${roleFilter === 'all' ? 'active' : ''}`}
+            type="button"
+            className={`stat-chip total ${roleFilter === 'all' ? 'active' : ''}`}
             onClick={() => setRoleFilter('all')}
+            title="Show all personnel"
           >
-            All Staff ({staffUsers.length})
+            <User size={16} />
+            <span>Total Staff: <strong>{staffUsers.length}</strong></span>
           </button>
           <button
-            className={`filter-pill admin ${roleFilter === 'admin' ? 'active' : ''}`}
+            type="button"
+            className={`stat-chip admin ${roleFilter === 'admin' ? 'active' : ''}`}
             onClick={() => setRoleFilter('admin')}
+            title="Filter Administrators"
           >
-            Administrators ({adminCount})
+            <Shield size={16} />
+            <span>Administrators: <strong>{adminCount}</strong></span>
           </button>
           <button
-            className={`filter-pill faculty ${roleFilter === 'faculty' ? 'active' : ''}`}
+            type="button"
+            className={`stat-chip faculty ${roleFilter === 'faculty' ? 'active' : ''}`}
             onClick={() => setRoleFilter('faculty')}
+            title="Filter Faculty Coordinators"
           >
-            Faculty ({facultyCount})
+            <Sparkles size={16} />
+            <span>Faculty: <strong>{facultyCount}</strong></span>
           </button>
           <button
-            className={`filter-pill coordinator ${roleFilter === 'coordinator' ? 'active' : ''}`}
+            type="button"
+            className={`stat-chip coordinator ${roleFilter === 'coordinator' ? 'active' : ''}`}
             onClick={() => setRoleFilter('coordinator')}
+            title="Filter Student Coordinators"
           >
-            Coordinators ({coordinatorCount})
+            <QrCode size={16} />
+            <span>Coordinators: <strong>{coordinatorCount}</strong></span>
           </button>
         </div>
 
@@ -908,70 +900,86 @@ export const AccessControlView: React.FC = () => {
           color: #ffffff;
         }
 
-        /* Stats Bar */
-        .fresh-stats-bar {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-          margin-bottom: 1.5rem;
-        }
-
-        .stat-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 0.55rem 1rem;
-          border-radius: 12px;
-          font-size: 0.85rem;
-          font-weight: 500;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-        }
-
-        .stat-chip.admin { color: #4338ca; }
-        .stat-chip.faculty { color: #b45309; }
-        .stat-chip.coordinator { color: #0284c7; }
-
-        /* Toolbar */
+        /* Toolbar & Interactive Colorful Filter Chips */
         .fresh-toolbar {
           display: flex;
           align-items: center;
           justify-content: space-between;
           flex-wrap: wrap;
           gap: 12px;
-          margin-bottom: 1rem;
+          margin-bottom: 1.25rem;
         }
 
-        .role-filter-group {
+        .fresh-stats-bar {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           flex-wrap: wrap;
         }
 
-        .filter-pill {
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          padding: 0.5rem 1rem;
-          border-radius: 10px;
-          font-size: 0.82rem;
+        .stat-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0.55rem 1.1rem;
+          border-radius: 12px;
+          font-size: 0.85rem;
           font-weight: 600;
-          color: #64748b;
+          background: #ffffff;
+          border: 1.5px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          color: #334155;
         }
 
-        .filter-pill:hover {
-          background: #f1f5f9;
+        .stat-chip:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Total Staff */
+        .stat-chip.total {
           color: #0f172a;
         }
-
-        .filter-pill.active {
+        .stat-chip.total.active {
           background: #0f172a;
           color: #ffffff;
           border-color: #0f172a;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+        }
+
+        /* Administrators */
+        .stat-chip.admin {
+          color: #4338ca;
+        }
+        .stat-chip.admin.active {
+          background: #4338ca;
+          color: #ffffff;
+          border-color: #4338ca;
+          box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25);
+        }
+
+        /* Faculty */
+        .stat-chip.faculty {
+          color: #b45309;
+        }
+        .stat-chip.faculty.active {
+          background: #b45309;
+          color: #ffffff;
+          border-color: #b45309;
+          box-shadow: 0 4px 12px rgba(180, 83, 9, 0.25);
+        }
+
+        /* Coordinators */
+        .stat-chip.coordinator {
+          color: #0284c7;
+        }
+        .stat-chip.coordinator.active {
+          background: #0284c7;
+          color: #ffffff;
+          border-color: #0284c7;
+          box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
         }
 
         .search-box-wrap {
