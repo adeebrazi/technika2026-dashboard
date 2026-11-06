@@ -60,6 +60,63 @@ export const UsersView: React.FC = () => {
     return clean.startsWith('http://') || clean.startsWith('https://');
   };
 
+  // Check if student belongs to ARKA JAIN University and B.Tech / BCA / Diploma
+  const isAjuBtechBcaDiploma = (user: any): boolean => {
+    if (!user) return false;
+    const inst = (user.institution || '').toLowerCase();
+    const isAju = inst.includes('arka') || inst.includes('jain') || inst === 'aju';
+    if (!isAju) return false;
+
+    const crs = `${user.course || ''} ${user.semester || ''}`.toLowerCase();
+    return (
+      crs.includes('b.tech') ||
+      crs.includes('btech') ||
+      crs.includes('b.e.') ||
+      crs.includes('bca') ||
+      crs.includes('diploma') ||
+      crs.includes('polytechnic')
+    );
+  };
+
+  // Amount resolution: 600 if ARKA JAIN University B.Tech / BCA / Diploma, else user expectedAmount or 100
+  const getUserAmount = (user: any): number => {
+    if (!user) return 100;
+    if (isAjuBtechBcaDiploma(user)) {
+      return 600;
+    }
+    return user.expectedAmount || 100;
+  };
+
+  // Filter UTR: ONLY return if a genuine UTR is provided, exclude dummy/auto-generated/placeholder text
+  const getValidUTR = (user: any): string | null => {
+    if (!user) return null;
+    const raw = (user.utrEnteredManually || user.paymentUTR || '').trim();
+    if (!raw) return null;
+    const upper = raw.toUpperCase();
+
+    // Ignore placeholder, dummy, or auto-generated collision strings:
+    if (
+      upper === 'DONE' ||
+      upper === 'D' ||
+      upper === 'N/A' ||
+      upper === 'NA' ||
+      upper === 'NONE' ||
+      upper === 'NIL' ||
+      upper === 'NO' ||
+      upper === 'PENDING' ||
+      upper === 'OK' ||
+      upper === 'PAID' ||
+      raw === '.' ||
+      raw === '-' ||
+      raw.startsWith('.-S') ||
+      raw.startsWith('GFORM-') ||
+      raw.startsWith('NODUES-')
+    ) {
+      return null;
+    }
+    return raw;
+  };
+
 
   
   // Modal State & Multi-Document Viewer
@@ -118,11 +175,13 @@ export const UsersView: React.FC = () => {
     if (isScreenshotUploaded(user) && user.paymentScreenshotUrl && typeof user.paymentScreenshotUrl === 'string' && user.paymentScreenshotUrl.trim()) {
       const trimmed = user.paymentScreenshotUrl.trim();
       if (!addedUrls.has(trimmed)) {
-        const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
+        const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-')) || isAjuBtechBcaDiploma(user);
+        const validUtr = getValidUTR(user);
+        const amount = getUserAmount(user);
         docs.push({
           id: 'payment',
-          title: isExempt ? 'Fee Receipt / Verification Slip' : 'Payment Screenshot',
-          subtitle: `UTR: ${user.utrEnteredManually || user.paymentUTR || 'N/A'}`,
+          title: isExempt ? '₹600 Fee Receipt / Verification Slip' : `₹${amount} Payment Screenshot`,
+          subtitle: validUtr ? `UTR: ${validUtr}` : 'Payment Screenshot',
           url: trimmed,
           badge: isExempt ? 'Receipt' : 'Payment SS',
           type: 'payment',
@@ -327,7 +386,7 @@ export const UsersView: React.FC = () => {
     const userSrc = user.source || 'website';
     const matchesSource = filterSource === 'all' || userSrc === filterSource;
 
-    const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
+    const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-')) || isAjuBtechBcaDiploma(user);
     const isGForm = user.source === 'google_form';
     const hasSS = isScreenshotUploaded(user);
 
@@ -345,7 +404,9 @@ export const UsersView: React.FC = () => {
     } else if (filterPayment === 'aju_exempt') {
       matchesPayment = isExempt;
     } else if (filterPayment === 'online_paid') {
-      matchesPayment = !isExempt;
+      matchesPayment = !isExempt && hasSS;
+    } else if (filterPayment === 'payment_pending') {
+      matchesPayment = !hasSS;
     }
 
     return matchesSearch && matchesEvent && matchesSource && matchesPayment;
@@ -395,10 +456,16 @@ export const UsersView: React.FC = () => {
       }
 
       if (canViewFinancials) {
+        const amount = getUserAmount(user);
+        const validUtr = getValidUTR(user);
+        const hasSS = isScreenshotUploaded(user);
+        const statusText = isExempt
+          ? `AJU (₹600 Clearance${user.noDuesSlipUrl || hasSS ? '' : ' - Missing Slip'})`
+          : (hasSS ? `Online Paid (₹${amount})` : `Payment Pending (₹${amount})`);
         row.push(
-          `"${isExempt ? 'AJU Exempt' : 'Online Paid'}"`,
-          `"${(user.utrEnteredManually || user.paymentUTR || '').replace(/"/g, '""')}"`,
-          `"${user.paymentStatus || (isExempt ? 'Exempt' : 'Paid')}"`
+          `"${statusText}"`,
+          `"${(validUtr || '').replace(/"/g, '""')}"`,
+          `"${isExempt || hasSS ? 'Clearance Verified' : 'Pending Screenshot'}"`
         );
       }
 
@@ -634,11 +701,12 @@ export const UsersView: React.FC = () => {
               title="Filter by clearance and screenshot submission type"
             >
               <option value="all">All Clearances</option>
+              <option value="online_paid">💳 Online Paid (Screenshot Uploaded)</option>
+              <option value="payment_pending">⚠️ Payment Pending (No Screenshot)</option>
+              <option value="aju_exempt">🎓 AJU (₹600 Clearance)</option>
               <option value="portal_image">📸 Uploaded Screenshot (Website)</option>
               <option value="form_image">📁 Uploaded Screenshot (Form)</option>
               <option value="form_no_image">⚠️ Missing Screenshot (Form)</option>
-              <option value="aju_exempt">🎓 AJU Exempt (No-Dues Slip)</option>
-              <option value="online_paid">💳 Online Paid (UPI/UTR)</option>
             </select>
           </div>
         )}
@@ -793,59 +861,72 @@ export const UsersView: React.FC = () => {
                     {canViewFinancials && (
                       <td>
                         {(() => {
-                          const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
-                          const clearanceBadge = isExempt ? (
-                            <div style={{ marginBottom: '5px' }}>
-                              <span style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fde68a', display: 'inline-block' }}>
-                                🎓 AJU Exempt (No-Dues)
-                              </span>
-                            </div>
-                          ) : (
-                            <div style={{ marginBottom: '5px' }}>
-                              <span style={{ background: '#ecfdf5', color: '#065f46', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: '1px solid #a7f3d0', display: 'inline-block' }}>
-                                💳 Online Paid (₹{user.expectedAmount || 100})
-                              </span>
-                            </div>
-                          );
-
+                          const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-')) || isAjuBtechBcaDiploma(user);
                           const hasSS = isScreenshotUploaded(user);
-                          const docs = getUserDocuments(user);
+                          const validUtr = getValidUTR(user);
+                          const amount = getUserAmount(user);
 
-                          if (!hasSS || docs.length === 0) {
-                            return (
-                              <div>
-                                {clearanceBadge}
-                                <span className="clay-no-ss-badge" title="No payment screenshot uploaded">
-                                  No SS Uploaded
+                          let clearanceBadge = null;
+
+                          if (isExempt) {
+                            if (hasSS || user.noDuesSlipUrl) {
+                              clearanceBadge = (
+                                <span style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fde68a', display: 'inline-block' }}>
+                                  🎓 AJU (₹600 Clearance)
                                 </span>
-                                <div className="clay-utr-info">
-                                  <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR || 'N/A'}</div>
-                                  <div><strong>Fetched:</strong> {user.utrFetchedFromScreenshot || 'PENDING'}</div>
-                                </div>
-                              </div>
-                            );
+                              );
+                            } else {
+                              clearanceBadge = (
+                                <span style={{ background: '#fff1f2', color: '#9f1239', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fecdd3', display: 'inline-block' }}>
+                                  ⚠️ AJU (₹600 Slip Missing)
+                                </span>
+                              );
+                            }
+                          } else {
+                            if (hasSS) {
+                              clearanceBadge = (
+                                <span style={{ background: '#ecfdf5', color: '#065f46', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: '1px solid #a7f3d0', display: 'inline-block' }}>
+                                  💳 Online Paid (₹{amount})
+                                </span>
+                              );
+                            } else {
+                              clearanceBadge = (
+                                <span style={{ background: '#fff1f2', color: '#be123c', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', border: '1px solid #fecdd3', display: 'inline-block' }}>
+                                  ⚠️ Payment Pending (₹{amount})
+                                </span>
+                              );
+                            }
                           }
 
                           return (
                             <div className="clay-ss-cell-wrap">
-                              {clearanceBadge}
-                              {canViewDocuments ? (
-                                <button
-                                  onClick={() => openDocViewer(user, 0)}
-                                  className="clay-view-ss-btn"
-                                  title="Click to view payment screenshot"
-                                >
-                                  <span>📸 View SS</span>
-                                </button>
+                              <div style={{ marginBottom: '5px' }}>{clearanceBadge}</div>
+
+                              {hasSS ? (
+                                canViewDocuments ? (
+                                  <button
+                                    onClick={() => openDocViewer(user, 0)}
+                                    className="clay-view-ss-btn"
+                                    title="Click to view payment screenshot"
+                                  >
+                                    <span>📸 View SS</span>
+                                  </button>
+                                ) : (
+                                  <span className="clay-ss-restricted-badge" title="Document view restricted">
+                                    📁 SS Uploaded
+                                  </span>
+                                )
                               ) : (
-                                <span className="clay-ss-restricted-badge" title="Document view restricted">
-                                  📁 SS Uploaded
+                                <span className="clay-no-ss-badge" title="No payment screenshot uploaded">
+                                  No SS Uploaded
                                 </span>
                               )}
-                              <div className="clay-utr-info">
-                                <div><strong>UTR:</strong> {user.utrEnteredManually || user.paymentUTR || 'N/A'}</div>
-                                <div><strong>Fetched:</strong> {user.utrFetchedFromScreenshot || 'PENDING'}</div>
-                              </div>
+
+                              {validUtr && (
+                                <div className="clay-utr-info">
+                                  <div><strong>UTR:</strong> {validUtr}</div>
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
@@ -1143,25 +1224,38 @@ export const UsersView: React.FC = () => {
 
             {/* Modal Footer with Verification Metadata */}
             <div className="clay-modal-footer">
-              <div className="clay-doc-meta-item">
-                <span className="meta-label">Entered UTR:</span>
-                <span className="meta-val">{activeDocModal.user.utrEnteredManually || activeDocModal.user.paymentUTR || 'N/A'}</span>
-              </div>
-              <div className="clay-doc-meta-item">
-                <span className="meta-label">Fetched UTR:</span>
-                <span className="meta-val">{activeDocModal.user.utrFetchedFromScreenshot || 'PENDING'}</span>
-              </div>
-              <div className="clay-doc-meta-item">
-                <span className="meta-label">Status:</span>
-                <span className={`meta-badge status-${(activeDocModal.user.verificationStatus || '').toLowerCase()}`}>
-                  {activeDocModal.user.verificationStatus || 'UNKNOWN'}
-                </span>
-              </div>
-              {activeDocModal.user.isAjuExempt && (
-                <div className="clay-doc-meta-item">
-                  <span className="meta-badge badge-exempt">⚡ AJU Exempt (No-Dues)</span>
-                </div>
-              )}
+              {(() => {
+                const modalUser = activeDocModal.user;
+                const modalUtr = getValidUTR(modalUser);
+                const modalAmount = getUserAmount(modalUser);
+                const isAjuTarget = isAjuBtechBcaDiploma(modalUser) || modalUser.isAjuExempt;
+
+                return (
+                  <>
+                    {modalUtr && (
+                      <div className="clay-doc-meta-item">
+                        <span className="meta-label">Entered UTR:</span>
+                        <span className="meta-val">{modalUtr}</span>
+                      </div>
+                    )}
+                    <div className="clay-doc-meta-item">
+                      <span className="meta-label">Fee Amount:</span>
+                      <span className="meta-val">₹{modalAmount}</span>
+                    </div>
+                    <div className="clay-doc-meta-item">
+                      <span className="meta-label">Status:</span>
+                      <span className={`meta-badge status-${(modalUser.verificationStatus || '').toLowerCase()}`}>
+                        {isScreenshotUploaded(modalUser) ? 'VERIFIED' : 'PENDING PROOF'}
+                      </span>
+                    </div>
+                    {isAjuTarget && (
+                      <div className="clay-doc-meta-item">
+                        <span className="meta-badge badge-exempt">🎓 AJU (₹600 Clearance)</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* Coordinator 1-Click Verification Email Actions */}
               <div className="clay-modal-footer-email-actions">
@@ -1221,10 +1315,12 @@ export const UsersView: React.FC = () => {
               <div className="clay-email-events-recap">
                 <div className="clay-events-recap-head">
                   <span>Registered Events ({emailModalUser.registeredEvents?.length || 0}):</span>
-                  {emailModalUser.isAjuExempt ? (
-                    <span className="recap-exempt-badge">🎓 AJU Exempt (No-Dues)</span>
+                  {isAjuBtechBcaDiploma(emailModalUser) || emailModalUser.isAjuExempt ? (
+                    <span className="recap-exempt-badge">🎓 AJU (₹600 Clearance)</span>
+                  ) : isScreenshotUploaded(emailModalUser) ? (
+                    <span className="recap-paid-badge">💳 Paid (₹{getUserAmount(emailModalUser)})</span>
                   ) : (
-                    <span className="recap-paid-badge">💳 Paid (₹{emailModalUser.expectedAmount || 100})</span>
+                    <span className="recap-pending-badge" style={{ background: '#fee2e2', color: '#991b1b', padding: '2px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '0.75rem' }}>⚠️ Payment Pending (₹{getUserAmount(emailModalUser)})</span>
                   )}
                 </div>
                 <div className="clay-events-recap-chips">
