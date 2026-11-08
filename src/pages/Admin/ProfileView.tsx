@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Users, BarChart3, ShieldCheck, Zap, Activity } from 'lucide-react';
-import { getAdminIdentity, API_BASE_URL as API } from '../../utils/adminAuth';
+import { getAdminIdentity, fetchAdminApi } from '../../utils/adminAuth';
 
 export const ProfileView: React.FC = () => {
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ export const ProfileView: React.FC = () => {
   useEffect(() => {
     const fetchQuickMetrics = async () => {
       try {
-        const usersRes = await fetch(`${API}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
+        const usersRes = await fetchAdminApi('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } });
         let uCount = 0;
         if (usersRes.ok) {
           const uData = await usersRes.json();

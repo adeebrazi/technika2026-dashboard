@@ -22,7 +22,7 @@ import {
   Send,
   UserCheck
 } from 'lucide-react';
-import { getAdminIdentity, API_BASE_URL as API, getAdminPhotoUrl } from '../../utils/adminAuth';
+import { getAdminIdentity, fetchAdminApi, getAdminPhotoUrl } from '../../utils/adminAuth';
 
 export interface StaffPermissions {
   canViewPhone: boolean;
@@ -100,7 +100,7 @@ export const AccessControlView: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await fetch(`${API}/api/admin/staff`, {
+      const res = await fetchAdminApi('/api/admin/staff', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -151,7 +151,7 @@ export const AccessControlView: React.FC = () => {
     setModalSubmitting(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await fetch(`${API}/api/admin/staff`, {
+      const res = await fetchAdminApi('/api/admin/staff', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ export const AccessControlView: React.FC = () => {
     try {
       const token = localStorage.getItem('adminToken');
       const idToDel = staff._id || staff.email;
-      const res = await fetch(`${API}/api/admin/staff/${encodeURIComponent(idToDel)}`, {
+      const res = await fetchAdminApi(`/api/admin/staff/${encodeURIComponent(idToDel)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -252,7 +252,7 @@ export const AccessControlView: React.FC = () => {
     try {
       const token = localStorage.getItem('adminToken');
       const idToUpdate = staff._id || staff.email;
-      const res = await fetch(`${API}/api/admin/staff/${encodeURIComponent(idToUpdate)}/permissions`, {
+      const res = await fetchAdminApi(`/api/admin/staff/${encodeURIComponent(idToUpdate)}/permissions`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

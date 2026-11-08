@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { API_BASE_URL as API } from '../../utils/adminAuth';
+import { fetchAdminApi } from '../../utils/adminAuth';
 
 export const TeamsView: React.FC = () => {
   const [teams, setTeams] = useState<any[]>([]);
@@ -13,7 +13,7 @@ export const TeamsView: React.FC = () => {
 
   const fetchTeams = async () => {
     try {
-      const res = await fetch(`${API}/api/admin/teams`, {
+      const res = await fetchAdminApi('/api/admin/teams', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }

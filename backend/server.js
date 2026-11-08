@@ -55,7 +55,12 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Wildcard fallback to serve React index.html for client-side routing
+// Catch-all for unhandled API routes: ALWAYS return JSON, never HTML
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ message: `API route not found: ${req.method} ${req.originalUrl}` });
+});
+
+// Wildcard fallback to serve React index.html for client-side routing ONLY
 app.get('*', (req, res) => {
   res.sendFile(path.join(staticDir, 'index.html'));
 });

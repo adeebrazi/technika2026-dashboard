@@ -32,6 +32,70 @@ export const getApiUrl = (): string => {
 
 export const API_BASE_URL = getApiUrl();
 
+export const fetchAdminApi = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
+  const token = localStorage.getItem('adminToken') || localStorage.getItem('dashboardToken');
+  const headers = new Headers(options.headers || {});
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  // Multi-tier candidate URLs for high resilience
+  const candidates: string[] = [];
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  // 1. Configured base URL
+  const base = (getApiUrl() || '').replace(/\/$/, '');
+  if (base) {
+    candidates.push(`${base}${cleanEndpoint}`);
+  }
+
+  // 2. Relative same-origin path (exclude on static Live Server ports 5500/5501)
+  const isLiveServer = typeof window !== 'undefined' && (window.location.port === '5500' || window.location.port === '5501');
+  if (!isLiveServer && !candidates.includes(cleanEndpoint)) {
+    candidates.push(cleanEndpoint);
+  }
+
+  // 3. Local direct backend candidates if on localhost or LAN
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(host);
+    if (isLocal) {
+      if (!candidates.includes(`http://localhost:5000${cleanEndpoint}`)) {
+        candidates.push(`http://localhost:5000${cleanEndpoint}`);
+      }
+      if (!candidates.includes(`http://127.0.0.1:5000${cleanEndpoint}`)) {
+        candidates.push(`http://127.0.0.1:5000${cleanEndpoint}`);
+      }
+    }
+    // 4. Production Cloud Fallback (always included as guaranteed reliable target)
+    if (!candidates.includes(`https://reg.technika2026.online${cleanEndpoint}`)) {
+      candidates.push(`https://reg.technika2026.online${cleanEndpoint}`);
+    }
+  }
+
+  let lastError: Error = new Error('Failed to connect to backend server');
+
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { ...options, headers });
+      const contentType = res.headers.get('content-type') || '';
+
+      // If response is HTML (e.g. 504 proxy timeout or static file 404/405), skip to next candidate
+      if (contentType.includes('text/html')) {
+        lastError = new Error(`Server returned HTML instead of API JSON (status ${res.status})`);
+        continue;
+      }
+
+      return res;
+    } catch (err: any) {
+      lastError = err;
+      continue;
+    }
+  }
+
+  throw lastError;
+};
+
 export const getMainWebsiteUrl = (): string => {
   if (typeof window === 'undefined') return 'https://technika2026.online';
   const hostname = window.location.hostname;

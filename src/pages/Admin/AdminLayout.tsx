@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { BarChart3, Users, ShieldCheck, User, MessageSquare } from 'lucide-react';
-import { getAdminIdentity, API_BASE_URL as API } from '../../utils/adminAuth';
+import { getAdminIdentity, fetchAdminApi } from '../../utils/adminAuth';
 
 export const AdminLayout: React.FC = () => {
   const location = useLocation();
@@ -19,7 +19,7 @@ export const AdminLayout: React.FC = () => {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`${API}/api/admin/my-permissions`, {
+    fetchAdminApi('/api/admin/my-permissions', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.json())

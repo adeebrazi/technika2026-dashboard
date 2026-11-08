@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, QrCode, CheckCircle2, Clock, Send, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
-import { API_BASE_URL as API } from '../../utils/adminAuth';
+import { API_BASE_URL as API, fetchAdminApi } from '../../utils/adminAuth';
 
 export const UsersView: React.FC = () => {
   const role = localStorage.getItem('adminRole');
@@ -241,11 +241,7 @@ export const UsersView: React.FC = () => {
         setError('No active session found. Please log in.');
         return;
       }
-      const res = await fetch(`${API}/api/admin/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await fetchAdminApi('/api/admin/users');
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || data);
@@ -283,11 +279,8 @@ export const UsersView: React.FC = () => {
     }
     
     try {
-      const res = await fetch(`${API}/api/admin/users/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
+      const res = await fetchAdminApi(`/api/admin/users/${id}`, {
+        method: 'DELETE'
       });
       if (res.ok) {
         setUsers(users.filter(u => u._id !== id));
@@ -308,12 +301,10 @@ export const UsersView: React.FC = () => {
     setEmailToast(null);
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const res = await fetch(`${API}/api/admin/send-email`, {
+      const res = await fetchAdminApi('/api/admin/send-email', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           userId: targetUser._id || targetUser.registrationId,

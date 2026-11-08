@@ -12,7 +12,7 @@ import {
   Maximize2, Minimize2, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { AnalyticsLoader } from '../components/AnalyticsLoader';
-import { getAdminPhotoUrl, API_BASE_URL as API } from '../utils/adminAuth';
+import { getAdminPhotoUrl, fetchAdminApi } from '../utils/adminAuth';
 
 interface AnalyticsData {
   totalRegistrations: number;
@@ -110,11 +110,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
   const fetchAnalytics = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const token = localStorage.getItem('adminToken') || localStorage.getItem('dashboardToken');
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      const url = isManual ? `${API}/api/admin/analytics?sync=1` : `${API}/api/admin/analytics`;
-      const res = await fetch(url, { headers });
+      const endpoint = isManual ? '/api/admin/analytics?sync=1' : '/api/admin/analytics';
+      const res = await fetchAdminApi(endpoint);
       if (!res.ok) throw new Error('Failed to fetch analytics');
       const json: AnalyticsData = await res.json();
       setData(json);
