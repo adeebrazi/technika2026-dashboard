@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   ExternalLink,
-  Copy,
   Save,
   Download,
   Lock,
@@ -636,28 +635,6 @@ export const WhatsAppManagementView: React.FC = () => {
                       {savingId === g.id ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
                       <span>Save</span>
                     </button>
-                  </div>
-                  <div className="flex justify-between items-center mt-2 pt-1 border-t border-slate-200/60 text-xs">
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(g.link);
-                        showToast(`Copied ${g.name} WhatsApp link!`, "success");
-                      }}
-                      className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
-                    >
-                      <Copy size={13} />
-                      <span>Copy Link</span>
-                    </button>
-
-                    <a 
-                      href={g.link} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="text-emerald-600 font-semibold hover:underline flex items-center gap-1"
-                    >
-                      <span>Test Join Link</span>
-                      <ExternalLink size={13} />
-                    </a>
                   </div>
                 </div>
 
