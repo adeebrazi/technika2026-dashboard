@@ -9,7 +9,6 @@ import {
   Trash2,
   ExternalLink,
   Save,
-  Download,
   Lock,
   Radio,
   Sliders,
@@ -35,12 +34,6 @@ interface WhatsAppState {
   totalCapacity: number;
   totalRemaining: number;
   allFull: boolean;
-}
-
-interface AuditLog {
-  timestamp: string;
-  type: string;
-  message: string;
 }
 
 const DEFAULT_STATE: WhatsAppState = {
@@ -94,8 +87,6 @@ export const WhatsAppManagementView: React.FC = () => {
   const [state, setState] = useState<WhatsAppState>(DEFAULT_STATE);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [showLogs, setShowLogs] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Group Invite Links editing state
@@ -187,22 +178,8 @@ export const WhatsAppManagementView: React.FC = () => {
     }
   }, []);
 
-  // Fetch audit logs
-  const fetchLogs = useCallback(async () => {
-    try {
-      const res = await fetchWhatsAppApi('/logs');
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.logs)) setLogs(data.logs);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
   useEffect(() => {
     fetchStatus();
-    fetchLogs();
 
     // Auto polling every 2.5 seconds for instantaneous 2-way live sync
     const interval = setInterval(() => {
@@ -212,7 +189,7 @@ export const WhatsAppManagementView: React.FC = () => {
     return () => {
       clearInterval(interval);
     };
-  }, [fetchStatus, fetchLogs]);
+  }, [fetchStatus]);
 
   // Save updated WhatsApp link for a group
   const handleSaveLink = async (groupId: number) => {
@@ -237,7 +214,6 @@ export const WhatsAppManagementView: React.FC = () => {
         if (data.success) {
           showToast(`Group #${groupId} WhatsApp invite link saved!`, "success");
           if (data.state) setState(data.state);
-          fetchLogs();
         } else {
           showToast(data.message || "Failed to update link", "error");
         }
@@ -266,7 +242,6 @@ export const WhatsAppManagementView: React.FC = () => {
         if (data.success) {
           showToast(`Group #${groupId} quota updated!`, "success");
           if (data.state) setState(data.state);
-          fetchLogs();
         } else {
           showToast(data.message || "Adjustment failed", "error");
         }
@@ -310,7 +285,6 @@ export const WhatsAppManagementView: React.FC = () => {
           if (data.state) setState(data.state);
           setIsAddModalOpen(false);
           setNewGroupData({ name: '', tag: '', link: '', accent: '#00FF66' });
-          fetchLogs();
         } else {
           showToast(data.message || "Failed to create group", "error");
         }
@@ -340,7 +314,6 @@ export const WhatsAppManagementView: React.FC = () => {
         if (data.success) {
           showToast(`Group removed successfully`, "success");
           if (data.state) setState(data.state);
-          fetchLogs();
         } else {
           showToast(data.message || "Failed to remove group", "error");
         }
@@ -348,13 +321,6 @@ export const WhatsAppManagementView: React.FC = () => {
     } catch {
       showToast("Error removing group", "error");
     }
-  };
-
-  // Export CSV
-  const handleExportCsv = () => {
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const exportUrl = isLocal ? '/api/whatsapp/export-csv' : 'https://www.technika2026.online/api/whatsapp/export-csv';
-    window.open(exportUrl, '_blank');
   };
 
   if (loading && !state) {
@@ -431,15 +397,6 @@ export const WhatsAppManagementView: React.FC = () => {
           >
             <Plus size={16} />
             <span>Add New Group</span>
-          </button>
-
-          <button 
-            onClick={handleExportCsv}
-            className="clay-btn clay-btn-outline"
-            title="Download CSV Audit Logs"
-          >
-            <Download size={16} />
-            <span>Export CSV</span>
           </button>
         </div>
       </div>
@@ -665,46 +622,6 @@ export const WhatsAppManagementView: React.FC = () => {
             </div>
           );
         })}
-      </div>
-
-      {/* ── Collapsible Audit Trail ── */}
-      <div className="clay-card clay-logs-card mt-8">
-        <div 
-          className="clay-logs-header cursor-pointer"
-          onClick={() => setShowLogs(!showLogs)}
-        >
-          <div className="flex items-center gap-2">
-            <Radio size={16} className="text-blue-600" />
-            <h3 className="font-extrabold text-sm text-slate-800">
-              Live Rollover Audit Trail ({logs.length} Events)
-            </h3>
-          </div>
-          <span className="text-xs font-bold text-blue-600 hover:underline">
-            {showLogs ? 'Hide Logs ▲' : 'Show Logs ▼'}
-          </span>
-        </div>
-
-        {showLogs && (
-          <div className="clay-logs-content">
-            {logs.length === 0 ? (
-              <p className="text-xs text-slate-500 py-3 text-center font-medium">No audit events recorded yet.</p>
-            ) : (
-              <div className="clay-logs-list">
-                {logs.slice(0, 50).map((log, i) => (
-                  <div key={i} className="clay-log-item">
-                    <span className="clay-log-time">
-                      {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                    </span>
-                    <span className={`clay-log-badge ${log.type.toLowerCase()}`}>
-                      {log.type}
-                    </span>
-                    <span className="clay-log-msg">{log.message}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── Add New Group Modal ── */}
@@ -1316,59 +1233,6 @@ export const WhatsAppManagementView: React.FC = () => {
           background: #ffe4e6;
           border-color: #fecdd3;
           color: #be123c;
-        }
-
-        /* Logs Card */
-        .clay-logs-card {
-          padding: 1.25rem;
-        }
-        .clay-logs-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .clay-logs-content {
-          margin-top: 1rem;
-          padding-top: 0.75rem;
-          border-top: 1px solid #e2e8f0;
-          max-height: 300px;
-          overflow-y: auto;
-        }
-        .clay-logs-list {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .clay-log-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.75rem;
-          padding: 4px 8px;
-          border-radius: 8px;
-          background: #ffffff;
-          border: 1px solid #f1f5f9;
-        }
-        .clay-log-time {
-          font-family: monospace;
-          color: #94a3b8;
-          font-size: 0.7rem;
-        }
-        .clay-log-badge {
-          font-size: 0.65rem;
-          font-weight: 800;
-          padding: 2px 6px;
-          border-radius: 4px;
-          text-transform: uppercase;
-        }
-        .clay-log-badge.rollover { background: #fef3c7; color: #b45309; }
-        .clay-log-badge.config_update { background: #eff6ff; color: #1d4ed8; }
-        .clay-log-badge.quota_adjust { background: #f3e8ff; color: #7e22ce; }
-        .clay-log-badge.add_group { background: #dcfce7; color: #15803d; }
-        .clay-log-badge.remove_group { background: #ffe4e6; color: #be123c; }
-        .clay-log-msg {
-          color: #334155;
-          font-weight: 600;
         }
 
         /* Modal Overlay */
