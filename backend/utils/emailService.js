@@ -275,7 +275,7 @@ const sendRegistrationConfirmationEmail = async ({ user, events = [], senderName
                 <p style="color: #047857; font-size: 12px; line-height: 1.5; margin: 0 0 10px 0;">
                   Stay updated with important announcements, event schedules, and other fest-related information.
                 </p>
-                <a href="https://chat.whatsapp.com/LR0WpPwaKwVDie7H4zD7OJ" target="_blank" style="display: inline-block; background: #16a34a; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 10px 16px; border-radius: 6px;">
+                <a href="https://www.technika2026.online/whatsapp" target="_blank" style="display: inline-block; background: #16a34a; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 10px 16px; border-radius: 6px;">
                   Join WhatsApp Group
                 </a>
               </div>
@@ -332,7 +332,7 @@ const sendRegistrationConfirmationEmail = async ({ user, events = [], senderName
     from: `"Technika 6.0 | ARKA JAIN University" <${smtpUser}>`,
     to: user.email,
     subject: `🎉 Registration Confirmed: Technika 6.0 [${user.registrationId}]`,
-    text: `Hello ${user.name},\n\nYour registration for Technika 6.0 is confirmed!\nParticipant ID: ${user.registrationId}\nInstitution: ${user.institution || 'ARKA JAIN University'}\nEvents: ${events.map(e => e.name || e.title).join(', ')}\n\nSee you at the fest!`,
+    text: `Hello ${user.name},\n\nYour registration for Technika 6.0 is confirmed!\nParticipant ID: ${user.registrationId}\nInstitution: ${user.institution || 'ARKA JAIN University'}\nEvents: ${events.map(e => e.name || e.title).join(', ')}\n\nJoin the Official WhatsApp Group: https://www.technika2026.online/whatsapp\n\nSee you at the fest!`,
     html,
   };
 
