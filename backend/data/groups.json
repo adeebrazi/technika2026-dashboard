@@ -6,23 +6,23 @@
       "name": "Group Alpha",
       "tag": "Alpha",
       "link": "https://chat.whatsapp.com/JGuwj0BeaqXHtaOT8azHtc",
-      "count": 0,
-      "status": "OPEN",
+      "count": 1000,
+      "status": "FROZEN",
       "accent": "#00FF66"
     },
     {
       "id": 2,
       "name": "Group Beta",
-      "tag": "BETA",
-      "link": "https://chat.whatsapp.com/CjfVMQB3G8oA9IlKH3RTXm",
-      "count": 0,
-      "status": "LOCKED",
+      "tag": "Beta",
+      "link": "https://chat.whatsapp.com/Byt0h7SkQzX7kLuNLgDPeW",
+      "count": 36,
+      "status": "OPEN",
       "accent": "#FFE600"
     }
   ],
-  "activeGroupId": 1,
-  "totalJoined": 0,
+  "activeGroupId": 2,
+  "totalJoined": 1036,
   "totalCapacity": 2000,
-  "totalRemaining": 2000,
+  "totalRemaining": 964,
   "allFull": false
 }

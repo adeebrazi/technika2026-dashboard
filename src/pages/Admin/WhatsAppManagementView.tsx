@@ -44,42 +44,24 @@ const DEFAULT_STATE: WhatsAppState = {
       name: "Group Alpha",
       tag: "Alpha",
       link: "https://chat.whatsapp.com/JGuwj0BeaqXHtaOT8azHtc",
-      count: 0,
-      status: "OPEN",
+      count: 1000,
+      status: "FROZEN",
       accent: "#00FF66",
     },
     {
       id: 2,
       name: "Group Beta",
       tag: "Beta",
-      link: "https://chat.whatsapp.com/CjfVMQB3G8oA9IlKH3RTXm",
-      count: 0,
-      status: "LOCKED",
+      link: "https://chat.whatsapp.com/Byt0h7SkQzX7kLuNLgDPeW",
+      count: 36,
+      status: "OPEN",
       accent: "#FFE600",
     },
-    {
-      id: 3,
-      name: "Group Gamma",
-      tag: "Gamma",
-      link: "https://chat.whatsapp.com/invite-gamma-03",
-      count: 0,
-      status: "LOCKED",
-      accent: "#00D8F6",
-    },
-    {
-      id: 4,
-      name: "Group Delta",
-      tag: "Delta",
-      link: "https://chat.whatsapp.com/invite-delta-04",
-      count: 0,
-      status: "LOCKED",
-      accent: "#FF007F",
-    },
   ],
-  activeGroupId: 1,
-  totalJoined: 0,
-  totalCapacity: 4000,
-  totalRemaining: 4000,
+  activeGroupId: 2,
+  totalJoined: 1036,
+  totalCapacity: 2000,
+  totalRemaining: 964,
   allFull: false,
 };
 
@@ -125,14 +107,15 @@ export const WhatsAppManagementView: React.FC = () => {
       ? [
           `/api/whatsapp${endpoint}`,
           `http://localhost:5000/api/whatsapp${endpoint}`,
-          `https://reg.technika2026.online/api/whatsapp${endpoint}`,
+          `https://technika2026.online/api/whatsapp${endpoint}`,
           `https://www.technika2026.online/api/whatsapp${endpoint}`
         ]
       : [
           `/api/whatsapp${endpoint}`,
+          `https://technika2026.online/api/whatsapp${endpoint}`,
+          `https://www.technika2026.online/api/whatsapp${endpoint}`,
           `${API}/api/whatsapp${endpoint}`,
-          `https://reg.technika2026.online/api/whatsapp${endpoint}`,
-          `https://www.technika2026.online/api/whatsapp${endpoint}`
+          `https://dashboard.technika2026.online/api/whatsapp${endpoint}`
         ];
 
     for (const url of urls) {

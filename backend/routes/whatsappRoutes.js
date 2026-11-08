@@ -26,43 +26,25 @@ const DEFAULT_STATE = {
       name: "Group Alpha",
       tag: "Alpha",
       link: "https://chat.whatsapp.com/JGuwj0BeaqXHtaOT8azHtc",
-      count: 0,
-      status: "OPEN",
+      count: 1000,
+      status: "FROZEN",
       accent: "#00FF66"
     },
     {
       id: 2,
       name: "Group Beta",
       tag: "Beta",
-      link: "https://chat.whatsapp.com/CjfVMQB3G8oA9IlKH3RTXm",
-      count: 0,
-      status: "LOCKED",
+      link: "https://chat.whatsapp.com/Byt0h7SkQzX7kLuNLgDPeW",
+      count: 36,
+      status: "OPEN",
       accent: "#FFE600"
-    },
-    {
-      id: 3,
-      name: "Group Gamma",
-      tag: "Gamma",
-      link: "https://chat.whatsapp.com/invite-gamma-03",
-      count: 0,
-      status: "LOCKED",
-      accent: "#00D8F6"
-    },
-    {
-      id: 4,
-      name: "Group Delta",
-      tag: "Delta",
-      link: "https://chat.whatsapp.com/invite-delta-04",
-      count: 0,
-      status: "LOCKED",
-      accent: "#FF007F"
     }
   ],
   allFull: false,
-  activeGroupId: 1,
-  totalJoined: 0,
-  totalCapacity: 4000,
-  totalRemaining: 4000
+  activeGroupId: 2,
+  totalJoined: 1036,
+  totalCapacity: 2000,
+  totalRemaining: 964
 };
 
 // In-memory cache for fast zero-latency response
