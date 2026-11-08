@@ -44,9 +44,56 @@ interface AuditLog {
   message: string;
 }
 
+const DEFAULT_STATE: WhatsAppState = {
+  limit: 1000,
+  groups: [
+    {
+      id: 1,
+      name: "Group Alpha",
+      tag: "Alpha",
+      link: "https://chat.whatsapp.com/JGuwj0BeaqXHtaOT8azHtc",
+      count: 0,
+      status: "OPEN",
+      accent: "#00FF66",
+    },
+    {
+      id: 2,
+      name: "Group Beta",
+      tag: "Beta",
+      link: "https://chat.whatsapp.com/CjfVMQB3G8oA9IlKH3RTXm",
+      count: 0,
+      status: "LOCKED",
+      accent: "#FFE600",
+    },
+    {
+      id: 3,
+      name: "Group Gamma",
+      tag: "Gamma",
+      link: "https://chat.whatsapp.com/invite-gamma-03",
+      count: 0,
+      status: "LOCKED",
+      accent: "#00D8F6",
+    },
+    {
+      id: 4,
+      name: "Group Delta",
+      tag: "Delta",
+      link: "https://chat.whatsapp.com/invite-delta-04",
+      count: 0,
+      status: "LOCKED",
+      accent: "#FF007F",
+    },
+  ],
+  activeGroupId: 1,
+  totalJoined: 0,
+  totalCapacity: 4000,
+  totalRemaining: 4000,
+  allFull: false,
+};
+
 export const WhatsAppManagementView: React.FC = () => {
-  const [state, setState] = useState<WhatsAppState | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [state, setState] = useState<WhatsAppState>(DEFAULT_STATE);
+  const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [showLogs, setShowLogs] = useState<boolean>(false);
@@ -81,33 +128,57 @@ export const WhatsAppManagementView: React.FC = () => {
     }, 4000);
   };
 
-  // Determine API root: try /api/whatsapp, fallback to http://localhost:3000/api if standalone
-  const getWhatsAppApiUrl = (endpoint: string) => {
-    return `${API}/api/whatsapp${endpoint}`;
+  // Robust multi-tier API fetcher connecting directly to production unified engine
+  const fetchWhatsAppApi = async (endpoint: string, options?: RequestInit): Promise<Response | null> => {
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+    const urls = isLocal
+      ? [
+          `/api/whatsapp${endpoint}`,
+          `http://localhost:5000/api/whatsapp${endpoint}`,
+          `https://www.technika2026.online/api/whatsapp${endpoint}`,
+          `http://localhost:3000/api${endpoint === '/status' ? '/status' : `/admin${endpoint}`}`
+        ]
+      : [
+          `https://www.technika2026.online/api/whatsapp${endpoint}`,
+          `${API}/api/whatsapp${endpoint}`,
+          `/api/whatsapp${endpoint}`,
+          `http://localhost:5000/api/whatsapp${endpoint}`
+        ];
+
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, options);
+        if (res && res.ok) {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json') || endpoint === '/export-csv') {
+            return res;
+          }
+        }
+      } catch {
+        // try next endpoint fallback
+      }
+    }
+    return null;
   };
 
   // Fetch status from backend
   const fetchStatus = useCallback(async (isSilent = false) => {
     if (!isSilent) setRefreshing(true);
     try {
-      // Try Dashboard backend endpoint first
-      let res = await fetch(getWhatsAppApiUrl('/status')).catch(() => null);
-      
-      // Fallback to port 3000 if backend isn't mounted yet
-      if (!res || !res.ok) {
-        res = await fetch('http://localhost:3000/api/status').catch(() => null);
-      }
-
+      const res = await fetchWhatsAppApi('/status');
       if (res && res.ok) {
         const data: WhatsAppState = await res.json();
-        setState(data);
-        
-        // Sync editing links
-        const links: { [id: number]: string } = {};
-        data.groups.forEach(g => {
-          links[g.id] = g.link;
-        });
-        setEditLinks(links);
+        if (data && Array.isArray(data.groups)) {
+          setState(data);
+          
+          // Sync editing links
+          const links: { [id: number]: string } = {};
+          data.groups.forEach(g => {
+            links[g.id] = g.link;
+          });
+          setEditLinks(links);
+        }
       }
     } catch (err) {
       console.error("Error fetching WhatsApp status:", err);
@@ -120,13 +191,10 @@ export const WhatsAppManagementView: React.FC = () => {
   // Fetch audit logs
   const fetchLogs = useCallback(async () => {
     try {
-      let res = await fetch(getWhatsAppApiUrl('/logs')).catch(() => null);
-      if (!res || !res.ok) {
-        res = await fetch('http://localhost:3000/api/admin/logs').catch(() => null);
-      }
+      const res = await fetchWhatsAppApi('/logs');
       if (res && res.ok) {
         const data = await res.json();
-        if (data.logs) setLogs(data.logs);
+        if (data && Array.isArray(data.logs)) setLogs(data.logs);
       }
     } catch {
       // ignore
@@ -137,31 +205,13 @@ export const WhatsAppManagementView: React.FC = () => {
     fetchStatus();
     fetchLogs();
 
-    // Real-time SSE connection for instantaneous 2-way live sync
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource(getWhatsAppApiUrl('/events'));
-      eventSource.onmessage = (event) => {
-        try {
-          const data: WhatsAppState = JSON.parse(event.data);
-          setState(data);
-          const links: { [id: number]: string } = {};
-          data.groups.forEach(g => {
-            links[g.id] = g.link;
-          });
-          setEditLinks(links);
-        } catch {}
-      };
-    } catch {}
-
-    // Auto polling backup every 3 seconds for resilience
+    // Auto polling every 2.5 seconds for instantaneous 2-way live sync
     const interval = setInterval(() => {
       fetchStatus(true);
-    }, 3000);
+    }, 2500);
 
     return () => {
       clearInterval(interval);
-      if (eventSource) eventSource.close();
     };
   }, [fetchStatus, fetchLogs]);
 
@@ -175,31 +225,25 @@ export const WhatsAppManagementView: React.FC = () => {
 
     setSavingId(groupId);
     try {
-      let res = await fetch(getWhatsAppApiUrl('/config'), {
+      const res = await fetchWhatsAppApi('/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           groups: [{ id: groupId, link }]
         })
-      }).catch(() => null);
+      });
 
-      if (!res || !res.ok) {
-        res = await fetch('http://localhost:3000/api/admin/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            groups: [{ id: groupId, link }]
-          })
-        });
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Group #${groupId} WhatsApp invite link saved!`, "success");
-        if (data.state) setState(data.state);
-        fetchLogs();
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Group #${groupId} WhatsApp invite link saved!`, "success");
+          if (data.state) setState(data.state);
+          fetchLogs();
+        } else {
+          showToast(data.message || "Failed to update link", "error");
+        }
       } else {
-        showToast(data.message || "Failed to update link", "error");
+        showToast("Error updating link", "error");
       }
     } catch (err) {
       console.error("Save error:", err);
@@ -212,27 +256,21 @@ export const WhatsAppManagementView: React.FC = () => {
   // Adjust quota / counts (e.g. +1, +50, set, reset)
   const handleAdjustCount = async (groupId: number, action: 'add' | 'set' | 'reset', value?: number) => {
     try {
-      let res = await fetch(getWhatsAppApiUrl('/simulate'), {
+      const res = await fetchWhatsAppApi('/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groupId, action, value })
-      }).catch(() => null);
+      });
 
-      if (!res || !res.ok) {
-        res = await fetch('http://localhost:3000/api/admin/simulate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ groupId, action, value })
-        });
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Group #${groupId} quota updated!`, "success");
-        if (data.state) setState(data.state);
-        fetchLogs();
-      } else {
-        showToast(data.message || "Adjustment failed", "error");
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Group #${groupId} quota updated!`, "success");
+          if (data.state) setState(data.state);
+          fetchLogs();
+        } else {
+          showToast(data.message || "Adjustment failed", "error");
+        }
       }
     } catch {
       showToast("Network error applying adjustment", "error");
@@ -260,29 +298,23 @@ export const WhatsAppManagementView: React.FC = () => {
 
     setModalSubmitting(true);
     try {
-      let res = await fetch(getWhatsAppApiUrl('/add-group'), {
+      const res = await fetchWhatsAppApi('/add-group', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newGroupData)
-      }).catch(() => null);
+      });
 
-      if (!res || !res.ok) {
-        res = await fetch('http://localhost:3000/api/admin/add-group', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newGroupData)
-        });
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        showToast(`New group created successfully!`, "success");
-        if (data.state) setState(data.state);
-        setIsAddModalOpen(false);
-        setNewGroupData({ name: '', tag: '', link: '', accent: '#00FF66' });
-        fetchLogs();
-      } else {
-        showToast(data.message || "Failed to create group", "error");
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          showToast(`New group created successfully!`, "success");
+          if (data.state) setState(data.state);
+          setIsAddModalOpen(false);
+          setNewGroupData({ name: '', tag: '', link: '', accent: '#00FF66' });
+          fetchLogs();
+        } else {
+          showToast(data.message || "Failed to create group", "error");
+        }
       }
     } catch {
       showToast("Error creating group", "error");
@@ -298,27 +330,21 @@ export const WhatsAppManagementView: React.FC = () => {
     }
 
     try {
-      let res = await fetch(getWhatsAppApiUrl('/remove-group'), {
+      const res = await fetchWhatsAppApi('/remove-group', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groupId })
-      }).catch(() => null);
+      });
 
-      if (!res || !res.ok) {
-        res = await fetch('http://localhost:3000/api/admin/remove-group', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ groupId })
-        });
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Group removed successfully`, "success");
-        if (data.state) setState(data.state);
-        fetchLogs();
-      } else {
-        showToast(data.message || "Failed to remove group", "error");
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Group removed successfully`, "success");
+          if (data.state) setState(data.state);
+          fetchLogs();
+        } else {
+          showToast(data.message || "Failed to remove group", "error");
+        }
       }
     } catch {
       showToast("Error removing group", "error");
@@ -327,7 +353,9 @@ export const WhatsAppManagementView: React.FC = () => {
 
   // Export CSV
   const handleExportCsv = () => {
-    window.open(`${API}/api/whatsapp/export-csv`, '_blank');
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const exportUrl = isLocal ? '/api/whatsapp/export-csv' : 'https://www.technika2026.online/api/whatsapp/export-csv';
+    window.open(exportUrl, '_blank');
   };
 
   if (loading && !state) {
@@ -376,9 +404,9 @@ export const WhatsAppManagementView: React.FC = () => {
         </div>
 
         <div className="clay-header-actions">
-          {/* Direct link connecting to public WhatsApp Page */}
+          {/* Direct link connecting to live public WhatsApp Page */}
           <a
-            href="http://localhost:3000"
+            href="https://technika2026.online/whatsapp"
             target="_blank"
             rel="noreferrer"
             className="clay-btn clay-btn-ghost flex items-center gap-1.5"
