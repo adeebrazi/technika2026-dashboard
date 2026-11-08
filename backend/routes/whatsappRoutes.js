@@ -119,13 +119,13 @@ function recalculateState(state) {
   return state;
 }
 
-// Asynchronously load and initialize from MongoDB Atlas if available
-async function syncFromMongo() {
+// Asynchronously load and initialize from MongoDB Atlas (Single Source of Truth)
+async function getOrSyncState() {
   try {
     const doc = await WhatsAppState.findOne({ key: 'global_state' });
-    if (doc) {
+    if (doc && Array.isArray(doc.groups) && doc.groups.length > 0) {
       memoryState = recalculateState({
-        limit: doc.limit,
+        limit: doc.limit || 1000,
         groups: doc.groups.map(g => ({
           id: g.id,
           name: g.name,
@@ -146,19 +146,26 @@ async function syncFromMongo() {
     } else {
       // First time MongoDB initialization: persist initial state
       const initial = recalculateState(JSON.parse(JSON.stringify(memoryState)));
-      await WhatsAppState.create({
-        key: 'global_state',
-        ...initial
-      });
+      await WhatsAppState.findOneAndUpdate(
+        { key: 'global_state' },
+        { ...initial, updatedAt: new Date() },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
       return initial;
     }
   } catch (err) {
-    // MongoDB not ready or network issue; fallback to memory/file
-    return null;
+    console.warn('MongoDB getOrSyncState warning:', err.message);
+    if (fs.existsSync(DATA_FILE)) {
+      try {
+        const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+        return recalculateState(JSON.parse(raw));
+      } catch (e) {}
+    }
+    return recalculateState(memoryState);
   }
 }
 
-// Asynchronously persist to MongoDB Atlas
+// Asynchronously persist to MongoDB Atlas with guaranteed completion
 async function syncToMongo(state) {
   try {
     await WhatsAppState.findOneAndUpdate(
@@ -173,10 +180,10 @@ async function syncToMongo(state) {
         allFull: state.allFull,
         updatedAt: new Date()
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
   } catch (err) {
-    // Non-blocking catch
+    console.error('MongoDB syncToMongo critical write error:', err.message);
   }
 }
 
@@ -193,66 +200,41 @@ function syncToLocalFile(state) {
 }
 
 function loadState() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      memoryState = recalculateState(parsed);
-      return memoryState;
-    }
-  } catch (err) {
-    // ignore
-  }
   return recalculateState(memoryState);
 }
 
-function saveState(state) {
+async function saveState(state) {
   memoryState = recalculateState(state);
   syncToLocalFile(memoryState);
-  syncToMongo(memoryState);
+  await syncToMongo(memoryState);
   broadcastToClients();
+  return memoryState;
 }
 
-// Initial async MongoDB bootstrap
-setTimeout(() => {
-  syncFromMongo().then(st => {
-    if (st) broadcastToClients();
-  }).catch(() => {});
-}, 1000);
+// Bootstrap MongoDB immediately on load
+getOrSyncState().then(st => {
+  if (st) broadcastToClients();
+}).catch(() => {});
 
 let sseClients = [];
 
 function broadcastToClients() {
   try {
-    const fresh = loadState();
-    const payload = `data: ${JSON.stringify(fresh)}\n\n`;
+    const payload = `data: ${JSON.stringify(memoryState)}\n\n`;
     sseClients.forEach(c => {
       try { c.res.write(payload); } catch(e) {}
     });
   } catch (err) {}
 }
 
-// Watch DATA_FILE so any change from standalone port 3000 syncs instantly
-let sseDebounce = null;
-try {
-  if (fs.existsSync(DATA_FILE)) {
-    fs.watch(DATA_FILE, () => {
-      clearTimeout(sseDebounce);
-      sseDebounce = setTimeout(() => {
-        broadcastToClients();
-      }, 80);
-    });
-  }
-} catch (e) {}
-
 // SSE stream for real-time live synchronization
-router.get('/events', (req, res) => {
+router.get('/events', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const state = loadState();
+  const state = await getOrSyncState();
   res.write(`data: ${JSON.stringify(state)}\n\n`);
 
   const id = Date.now() + Math.random();
@@ -263,17 +245,19 @@ router.get('/events', (req, res) => {
 });
 
 // GET status
-router.get('/', (req, res) => {
-  res.json(loadState());
+router.get('/', async (req, res) => {
+  const state = await getOrSyncState();
+  res.json(state);
 });
 
-router.get('/status', (req, res) => {
-  res.json(loadState());
+router.get('/status', async (req, res) => {
+  const state = await getOrSyncState();
+  res.json(state);
 });
 
 // POST /join - Claim a seat in the active WhatsApp squad
-router.post('/join', (req, res) => {
-  let state = loadState();
+router.post('/join', async (req, res) => {
+  let state = await getOrSyncState();
   const activeGroup = state.groups.find(g => g.status === "OPEN");
 
   if (!activeGroup) {
@@ -287,8 +271,7 @@ router.post('/join', (req, res) => {
   activeGroup.count += 1;
   logEvent("MEMBER_JOIN", `Seat claimed in ${activeGroup.name} (${activeGroup.tag}). Seats remaining: ${Math.max(0, state.limit - activeGroup.count)}`);
 
-  state = recalculateState(state);
-  saveState(state);
+  state = await saveState(state);
 
   res.json({
     success: true,
@@ -300,8 +283,8 @@ router.post('/join', (req, res) => {
 });
 
 // POST /config - Update invite links, names, counts or global limit
-router.post('/config', (req, res) => {
-  let state = loadState();
+router.post('/config', async (req, res) => {
+  let state = await getOrSyncState();
   const { limit, groups } = req.body;
 
   if (limit && Number(limit) > 0) {
@@ -322,8 +305,7 @@ router.post('/config', (req, res) => {
     logEvent("CONFIG_UPDATE", "WhatsApp group details and invite links updated via Dashboard.");
   }
 
-  state = recalculateState(state);
-  saveState(state);
+  state = await saveState(state);
 
   res.json({
     success: true,
@@ -333,8 +315,8 @@ router.post('/config', (req, res) => {
 });
 
 // POST /simulate - Adjust group member counts
-router.post('/simulate', (req, res) => {
-  let state = loadState();
+router.post('/simulate', async (req, res) => {
+  let state = await getOrSyncState();
   const { groupId, action, value } = req.body;
   const group = state.groups.find(g => g.id === Number(groupId));
 
@@ -356,8 +338,7 @@ router.post('/simulate', (req, res) => {
     logEvent("QUOTA_RESET_ALL", "All WhatsApp groups reset to 0 members.");
   }
 
-  state = recalculateState(state);
-  saveState(state);
+  state = await saveState(state);
 
   res.json({
     success: true,
@@ -367,8 +348,8 @@ router.post('/simulate', (req, res) => {
 });
 
 // POST /add-group - Add new squad
-router.post('/add-group', (req, res) => {
-  let state = loadState();
+router.post('/add-group', async (req, res) => {
+  let state = await getOrSyncState();
   const { name, tag, link, accent } = req.body;
   const newId = state.groups.length > 0 
     ? Math.max(...state.groups.map(g => g.id)) + 1 
@@ -388,8 +369,7 @@ router.post('/add-group', (req, res) => {
   };
 
   state.groups.push(newGroup);
-  state = recalculateState(state);
-  saveState(state);
+  state = await saveState(state);
 
   logEvent("ADD_GROUP", `Created new WhatsApp group #${newId}: ${newGroup.name}`);
 
@@ -401,8 +381,8 @@ router.post('/add-group', (req, res) => {
 });
 
 // POST /remove-group - Delete squad
-router.post('/remove-group', (req, res) => {
-  let state = loadState();
+router.post('/remove-group', async (req, res) => {
+  let state = await getOrSyncState();
   const { groupId } = req.body;
   const idToRemove = Number(groupId);
 
@@ -420,8 +400,7 @@ router.post('/remove-group', (req, res) => {
 
   const removedName = state.groups[groupIndex].name;
   state.groups.splice(groupIndex, 1);
-  state = recalculateState(state);
-  saveState(state);
+  state = await saveState(state);
 
   logEvent("REMOVE_GROUP", `Removed Group #${idToRemove}: ${removedName}`);
 

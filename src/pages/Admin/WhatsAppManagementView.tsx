@@ -125,13 +125,14 @@ export const WhatsAppManagementView: React.FC = () => {
       ? [
           `/api/whatsapp${endpoint}`,
           `http://localhost:5000/api/whatsapp${endpoint}`,
+          `https://reg.technika2026.online/api/whatsapp${endpoint}`,
           `https://www.technika2026.online/api/whatsapp${endpoint}`
         ]
       : [
-          `https://www.technika2026.online/api/whatsapp${endpoint}`,
-          `${API}/api/whatsapp${endpoint}`,
           `/api/whatsapp${endpoint}`,
-          `http://localhost:5000/api/whatsapp${endpoint}`
+          `${API}/api/whatsapp${endpoint}`,
+          `https://reg.technika2026.online/api/whatsapp${endpoint}`,
+          `https://www.technika2026.online/api/whatsapp${endpoint}`
         ];
 
     for (const url of urls) {

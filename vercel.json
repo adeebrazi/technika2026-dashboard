@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://reg.technika2026.online/api/:match*"
+      "source": "/api/(.*)",
+      "destination": "/api/index.cjs"
     },
     {
       "source": "/(.*)",
