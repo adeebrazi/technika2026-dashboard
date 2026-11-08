@@ -43,19 +43,20 @@ export const AdminLogin: React.FC = () => {
     setError('');
     setLoading(true);
 
-    // Multi-tier candidate endpoints for maximum resilience across localhost, LAN, and cloud
+    // Multi-tier candidate endpoints for maximum resilience across localhost, LAN, Live Server, and cloud
     const candidates: string[] = [];
     const base = (API || '').replace(/\/$/, '');
+    const isLiveServer = typeof window !== 'undefined' && (window.location.port === '5500' || window.location.port === '5501');
     
     // 1. Primary candidate from adminAuth
     if (base) {
       candidates.push(`${base}/api/admin/login`);
     }
-    // 2. Relative same-origin path
-    if (!candidates.includes('/api/admin/login')) {
+    // 2. Relative same-origin path (exclude on static Live Server ports which cannot handle POST)
+    if (!isLiveServer && !candidates.includes('/api/admin/login')) {
       candidates.push('/api/admin/login');
     }
-    // 3. If in local or LAN dev environment, include direct backend & production fallback
+    // 3. Local direct backend candidates (try both localhost and 127.0.0.1)
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
       const isLocalHost = host === 'localhost' || host === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(host);
@@ -63,9 +64,13 @@ export const AdminLogin: React.FC = () => {
         if (!candidates.includes('http://localhost:5000/api/admin/login')) {
           candidates.push('http://localhost:5000/api/admin/login');
         }
-        if (!candidates.includes('https://reg.technika2026.online/api/admin/login')) {
-          candidates.push('https://reg.technika2026.online/api/admin/login');
+        if (!candidates.includes('http://127.0.0.1:5000/api/admin/login')) {
+          candidates.push('http://127.0.0.1:5000/api/admin/login');
         }
+      }
+      // 4. Cloud production fallback (always available as resilient backstop)
+      if (!candidates.includes('https://reg.technika2026.online/api/admin/login')) {
+        candidates.push('https://reg.technika2026.online/api/admin/login');
       }
     }
 
@@ -83,6 +88,11 @@ export const AdminLogin: React.FC = () => {
             role: selectedRole,
           }),
         });
+
+        // If endpoint is a static server or wrong route (404/405), skip to next candidate
+        if (res.status === 404 || res.status === 405) {
+          continue;
+        }
 
         let data: any = null;
         try {

@@ -3,6 +3,13 @@
 export const getApiUrl = (): string => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
+    const port = window.location.port;
+
+    // If opened through VS Code / Antigravity Live Server (port 5500), route directly to backend
+    if (port === '5500' || port === '5501') {
+      return 'http://localhost:5000';
+    }
+
     // When hosted on reg.technika2026.online, always use relative path '' so requests are same-origin
     if (host === 'reg.technika2026.online') {
       return '';
