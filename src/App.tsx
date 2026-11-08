@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AnalyticsView } from './pages/Analytics';
@@ -7,6 +6,7 @@ import { AdminLayout } from './pages/Admin/AdminLayout';
 import { ProfileView } from './pages/Admin/ProfileView';
 import { UsersView } from './pages/Admin/UsersView';
 import { AccessControlView } from './pages/Admin/AccessControlView';
+import { WhatsAppManagementView } from './pages/Admin/WhatsAppManagementView';
 
 function App() {
   // Global Anti-Inspect & Security Protection
@@ -73,6 +73,7 @@ function App() {
           <Route path="teams" element={<Navigate to="/admin/participants" replace />} />
           <Route path="access" element={<AccessControlView />} />
           <Route path="permissions" element={<Navigate to="/admin/access" replace />} />
+          <Route path="whatsapp" element={<WhatsAppManagementView />} />
           <Route path="analytics" element={<Navigate to="/" replace />} />
         </Route>
 

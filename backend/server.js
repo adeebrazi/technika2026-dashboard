@@ -34,6 +34,8 @@ app.use('/api/teams', require('./routes/teamRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/google-form', require('./routes/googleFormRoutes'));
+app.use('/api/whatsapp', require('./routes/whatsappRoutes'));
+app.use('/api/admin/whatsapp', require('./routes/whatsappRoutes'));
 
 // Fallback error handler for multer and system errors
 app.use((err, req, res, next) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { BarChart3, Users, ShieldCheck, User } from 'lucide-react';
+import { BarChart3, Users, ShieldCheck, User, MessageSquare } from 'lucide-react';
 import { getAdminIdentity, API_BASE_URL as API } from '../../utils/adminAuth';
 
 export const AdminLayout: React.FC = () => {
@@ -74,6 +74,12 @@ export const AdminLayout: React.FC = () => {
       icon: <ShieldCheck size={19} strokeWidth={2.2} />, 
       desc: 'Faculty & coordinator permissions' 
     }] : []),
+    { 
+      name: 'WhatsApp Management', 
+      path: '/admin/whatsapp', 
+      icon: <MessageSquare size={19} strokeWidth={2.2} />, 
+      desc: 'Group allocation & rollover' 
+    },
   ];
 
   const getRoleBadgeColor = () => {
@@ -263,6 +269,15 @@ export const AdminLayout: React.FC = () => {
             <span className="clay-mob-label">Access</span>
           </Link>
         )}
+
+        <Link 
+          to="/admin/whatsapp" 
+          className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/whatsapp') ? 'active' : ''}`}
+          title="WhatsApp Management"
+        >
+          <span className="clay-mob-icon"><MessageSquare size={19} strokeWidth={2.2} /></span>
+          <span className="clay-mob-label">WhatsApp</span>
+        </Link>
 
         <Link 
           to="/admin" 
