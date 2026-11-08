@@ -86,7 +86,6 @@ const DEFAULT_STATE: WhatsAppState = {
 export const WhatsAppManagementView: React.FC = () => {
   const [state, setState] = useState<WhatsAppState>(DEFAULT_STATE);
   const [loading, setLoading] = useState<boolean>(false);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Group Invite Links editing state
@@ -152,9 +151,8 @@ export const WhatsAppManagementView: React.FC = () => {
     return null;
   };
 
-  // Fetch status from backend
-  const fetchStatus = useCallback(async (isSilent = false) => {
-    if (!isSilent) setRefreshing(true);
+  // Fetch status from backend (automatic live sync)
+  const fetchStatus = useCallback(async () => {
     try {
       const res = await fetchWhatsAppApi('/status');
       if (res && res.ok) {
@@ -174,7 +172,6 @@ export const WhatsAppManagementView: React.FC = () => {
       console.error("Error fetching WhatsApp status:", err);
     } finally {
       setLoading(false);
-      if (!isSilent) setRefreshing(false);
     }
   }, []);
 
@@ -183,7 +180,7 @@ export const WhatsAppManagementView: React.FC = () => {
 
     // Auto polling every 2.5 seconds for instantaneous 2-way live sync
     const interval = setInterval(() => {
-      fetchStatus(true);
+      fetchStatus();
     }, 2500);
 
     return () => {
@@ -380,16 +377,6 @@ export const WhatsAppManagementView: React.FC = () => {
             <ExternalLink size={15} className="text-emerald-600" />
             <span>View Public Page ↗</span>
           </a>
-
-          <button 
-            onClick={() => fetchStatus()} 
-            disabled={refreshing}
-            className="clay-btn clay-btn-ghost"
-            title="Refresh Live Data"
-          >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            <span>{refreshing ? 'Syncing...' : 'Live Sync'}</span>
-          </button>
 
           <button 
             onClick={() => setIsAddModalOpen(true)}
