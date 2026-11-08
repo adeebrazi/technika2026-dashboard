@@ -538,7 +538,6 @@ export const WhatsAppManagementView: React.FC = () => {
       <div className="clay-squads-grid">
         {groups.map((g) => {
           const seatsAvailable = Math.max(0, limit - g.count);
-          const pct = Math.min(100, Math.round((g.count / limit) * 100));
           const isOpen = g.status === 'OPEN';
           const isFrozen = g.status === 'FROZEN';
 
@@ -614,23 +613,6 @@ export const WhatsAppManagementView: React.FC = () => {
                   <div className="clay-stat-col">
                     <span className="clay-stat-label">LIMIT</span>
                     <span className="clay-stat-val text-slate-600">{limit}</span>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="clay-squad-progress-wrap">
-                  <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
-                    <span>Capacity Occupied</span>
-                    <span>{pct}%</span>
-                  </div>
-                  <div className="clay-progress-track-mini">
-                    <div 
-                      className="clay-progress-fill-mini" 
-                      style={{ 
-                        width: `${pct}%`,
-                        backgroundColor: g.accent || '#3b82f6'
-                      }}
-                    />
                   </div>
                 </div>
 
