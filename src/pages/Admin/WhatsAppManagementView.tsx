@@ -125,8 +125,7 @@ export const WhatsAppManagementView: React.FC = () => {
       ? [
           `/api/whatsapp${endpoint}`,
           `http://localhost:5000/api/whatsapp${endpoint}`,
-          `https://www.technika2026.online/api/whatsapp${endpoint}`,
-          `http://localhost:3000/api${endpoint === '/status' ? '/status' : `/admin${endpoint}`}`
+          `https://www.technika2026.online/api/whatsapp${endpoint}`
         ]
       : [
           `https://www.technika2026.online/api/whatsapp${endpoint}`,

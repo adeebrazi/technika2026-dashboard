@@ -15,7 +15,7 @@ router.use((req, res, next) => {
   next();
 });
 
-const DATA_FILE = path.resolve(__dirname, '../../../whatsapp group system/whatsapp committe system/data/groups.json');
+const DATA_FILE = path.resolve(__dirname, '../data/groups.json');
 
 // Default fallback state if database or file does not exist
 const DEFAULT_STATE = {
