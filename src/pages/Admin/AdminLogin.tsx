@@ -43,37 +43,87 @@ export const AdminLogin: React.FC = () => {
     setError('');
     setLoading(true);
 
-    try {
-      const res = await fetch(`${API}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          role: selectedRole,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminRole', data.role);
-        localStorage.setItem('adminName', data.name || 'Administrator');
-        localStorage.setItem('adminDesignation', data.designation || selectedRole);
-        localStorage.setItem('adminEmail', formData.email.trim().toLowerCase());
-        if (data.permissions) {
-          localStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
-        }
-        navigate('/admin/participants');
-      } else {
-        setError(data.message || 'Login failed. Please check your credentials.');
-      }
-    } catch (err) {
-      setError('Network error. Is the backend server running?');
-    } finally {
-      setLoading(false);
+    // Multi-tier candidate endpoints for maximum resilience across localhost, LAN, and cloud
+    const candidates: string[] = [];
+    const base = (API || '').replace(/\/$/, '');
+    
+    // 1. Primary candidate from adminAuth
+    if (base) {
+      candidates.push(`${base}/api/admin/login`);
     }
+    // 2. Relative same-origin path
+    if (!candidates.includes('/api/admin/login')) {
+      candidates.push('/api/admin/login');
+    }
+    // 3. If in local or LAN dev environment, include direct backend & production fallback
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const isLocalHost = host === 'localhost' || host === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(host);
+      if (isLocalHost) {
+        if (!candidates.includes('http://localhost:5000/api/admin/login')) {
+          candidates.push('http://localhost:5000/api/admin/login');
+        }
+        if (!candidates.includes('https://reg.technika2026.online/api/admin/login')) {
+          candidates.push('https://reg.technika2026.online/api/admin/login');
+        }
+      }
+    }
+
+    let lastError = 'Unable to connect to the login server. Please ensure the backend is running.';
+    let handled = false;
+
+    for (const endpoint of candidates) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email.trim(),
+            password: formData.password,
+            role: selectedRole,
+          }),
+        });
+
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch {
+          // If response was not JSON (e.g. 502/504 HTML proxy gateway error), try next fallback
+          lastError = `Server returned invalid response (status ${res.status}).`;
+          continue;
+        }
+
+        if (res.ok && data?.token) {
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('adminRole', data.role);
+          localStorage.setItem('adminName', data.name || 'Administrator');
+          localStorage.setItem('adminDesignation', data.designation || selectedRole);
+          localStorage.setItem('adminEmail', formData.email.trim().toLowerCase());
+          if (data.permissions) {
+            localStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
+          }
+          handled = true;
+          navigate('/admin/participants');
+          break;
+        } else if (res.status === 401 || res.status === 400 || res.status === 403) {
+          // Server is alive and explicitly rejected credentials/role
+          setError(data?.message || 'Login failed. Please check your credentials.');
+          handled = true;
+          break;
+        } else {
+          // 5xx server error, record and attempt next candidate
+          lastError = data?.message || `Server error (${res.status}).`;
+        }
+      } catch (err: any) {
+        lastError = err?.message || 'Network error. Is the backend server running?';
+        // Continue to next candidate
+      }
+    }
+
+    if (!handled) {
+      setError(lastError);
+    }
+    setLoading(false);
   };
 
   return (
