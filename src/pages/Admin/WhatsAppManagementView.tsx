@@ -661,12 +661,12 @@ export const WhatsAppManagementView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quota Override & Testing Buttons */}
+                {/* Quota Override */}
                 <div className="clay-override-box">
-                  <label className="clay-input-label">Manual Member Count & Simulation</label>
+                  <label className="clay-input-label">Manual Member Count Override</label>
                   
                   {/* Direct input row */}
-                  <div className="flex gap-2 mb-2.5">
+                  <div className="flex gap-2">
                     <input 
                       type="number"
                       min={0}
@@ -681,47 +681,6 @@ export const WhatsAppManagementView: React.FC = () => {
                       className="clay-btn clay-btn-primary px-3 text-xs"
                     >
                       Set Count
-                    </button>
-                  </div>
-
-                  {/* Quick Clicker Pills */}
-                  <div className="flex flex-wrap gap-1.5">
-                    <button 
-                      onClick={() => handleAdjustCount(g.id, 'add', 1)}
-                      className="clay-pill-btn"
-                    >
-                      +1
-                    </button>
-                    <button 
-                      onClick={() => handleAdjustCount(g.id, 'add', 50)}
-                      className="clay-pill-btn"
-                    >
-                      +50
-                    </button>
-                    <button 
-                      onClick={() => handleAdjustCount(g.id, 'add', 250)}
-                      className="clay-pill-btn"
-                    >
-                      +250
-                    </button>
-                    <button 
-                      onClick={() => handleAdjustCount(g.id, 'set', 999)}
-                      className="clay-pill-btn clay-pill-amber"
-                    >
-                      Set 999
-                    </button>
-                    <button 
-                      onClick={() => handleAdjustCount(g.id, 'set', 1000)}
-                      className="clay-pill-btn clay-pill-emerald"
-                      title="Test Auto-Rollover"
-                    >
-                      Fill 1,000
-                    </button>
-                    <button 
-                      onClick={() => handleAdjustCount(g.id, 'reset')}
-                      className="clay-pill-btn clay-pill-rose"
-                    >
-                      Reset 0
                     </button>
                   </div>
                 </div>
