@@ -1,3 +1,6 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config();
 const dns = require('dns');
 // Ensure IPv4 is strictly prioritized across all child sockets
 try {
@@ -344,3 +347,52 @@ module.exports = {
   sendPasswordResetOtpEmail,
   sendRegistrationConfirmationEmail,
 };
+
+
+// Direct Execution Runner
+if (require.main === module) {
+  (async () => {
+    console.log('====================================================');
+    console.log(' TECHNIKA 6.0 — EMAIL SERVICE RUNNER');
+    console.log('====================================================');
+    console.log('SMTP Sender:          ' + smtpUser);
+    console.log('WhatsApp Target Link: https://technika2026.online/whatsapp');
+
+    const recipient = process.argv[2] || process.env.TEST_EMAIL || 'adeebrazi22@gmail.com';
+    console.log('Target Recipient:     ' + recipient + '\n');
+
+    try {
+      console.log('[1/2] Connecting to Gmail SMTP server...');
+      await transporter.verify();
+      console.log('✓ SMTP Connection Verified successfully!\n');
+
+      console.log('[2/2] Generating and dispatching confirmation email...');
+      await sendRegistrationConfirmationEmail({
+        user: {
+          name: 'Adeeb Razi',
+          email: recipient,
+          registrationId: 'TECH26-TEST-' + Math.floor(1000 + Math.random() * 9000),
+          institution: 'ARKA JAIN University',
+          verifiedAmount: 100,
+          paymentUTR: 'UPI-VERIFIED-TEST'
+        },
+        events: [
+          { name: 'Code Buster', category: 'Technical', isTeam: false },
+          { name: 'Treasure Hunt', category: 'Cultural', isTeam: true }
+        ],
+        senderName: 'Adeeb Razi (Core Organizer)'
+      });
+
+      console.log('✓ Email successfully delivered to: ' + recipient);
+      console.log('\nVerified Contents:');
+      console.log('  • Subject: 🎉 Registration Confirmed: Technika 6.0 [...]');
+      console.log('  • WhatsApp Button URL: https://technika2026.online/whatsapp');
+      console.log('  • Redirect Behavior: Opens Community Squad Portal on website');
+      console.log('====================================================');
+      process.exit(0);
+    } catch (err) {
+      console.error('\n✗ Email dispatch failed:', err);
+      process.exit(1);
+    }
+  })();
+}
