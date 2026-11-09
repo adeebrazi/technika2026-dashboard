@@ -1,6 +1,16 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 require('dotenv').config();
+
+if (!process.env.MONGODB_URI) {
+  process.env.MONGODB_URI = 'mongodb+srv://officialcrazygamingyt01_db_user:2kGnfSdIJx4NJN9P@cluster0.yiccjim.mongodb.net/?appName=Cluster0';
+}
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'technica_jwt_secret_key_2026_local_dev';
+}
+if (!process.env.ADMIN_USERS) {
+  process.env.ADMIN_USERS = 'Adeeb Razi:adeeb@technika2026.online:Lion@2048@Technika6.0';
+}
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
@@ -70,7 +80,7 @@ app.get('*', (req, res) => {
 
 // Start background sync workers and server listening (standalone mode only)
 const PORT = process.env.PORT || 5000;
-if (require.main === module || (!process.env.VERCEL && process.env.NODE_ENV !== 'production')) {
+if (require.main === module) {
   startQueueWorker();
   const { startGoogleSheetPoller } = require('./services/googleSheetPoller');
   startGoogleSheetPoller(60000);

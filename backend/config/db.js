@@ -56,7 +56,7 @@ const initialEvents = [
 ];
 
 const connectDB = async () => {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI || 'mongodb+srv://officialcrazygamingyt01_db_user:2kGnfSdIJx4NJN9P@cluster0.yiccjim.mongodb.net/?appName=Cluster0';
   
   try {
     console.log(`Connecting to configured MongoDB database...`);
