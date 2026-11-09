@@ -62,6 +62,9 @@ app.all('/api/*', (req, res) => {
 
 // Wildcard fallback to serve React index.html for client-side routing ONLY
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/api') || req.originalUrl.startsWith('/api')) {
+    return res.status(404).json({ message: `API route not found: ${req.method} ${req.originalUrl}` });
+  }
   res.sendFile(path.join(staticDir, 'index.html'));
 });
 

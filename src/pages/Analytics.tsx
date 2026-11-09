@@ -112,8 +112,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
     try {
       const endpoint = isManual ? '/api/admin/analytics?sync=1' : '/api/admin/analytics';
       const res = await fetchAdminApi(endpoint);
-      if (!res.ok) throw new Error('Failed to fetch analytics');
-      const json: AnalyticsData = await res.json();
+      const text = await res.text();
+      let json: any = {};
+      try {
+        json = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error('Server returned invalid analytics format');
+      }
+      if (!res.ok) throw new Error(json.message || 'Failed to fetch analytics');
       setData(json);
       setError('');
     } catch (err: any) {

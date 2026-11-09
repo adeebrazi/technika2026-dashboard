@@ -89,17 +89,27 @@ export const AdminLogin: React.FC = () => {
           }),
         });
 
-        // If endpoint is a static server or wrong route (404/405), skip to next candidate
-        if (res.status === 404 || res.status === 405) {
+        // If endpoint is a static server or wrong route (404/405/5xx), skip to next candidate
+        if (res.status === 404 || res.status === 405 || res.status >= 500) {
+          lastError = `Server returned status ${res.status}`;
+          continue;
+        }
+
+        const contentType = (res.headers.get('content-type') || '').toLowerCase();
+        if (contentType.includes('text/html')) {
+          continue;
+        }
+
+        const rawText = await res.text();
+        const trimmed = rawText.trim();
+        if (!trimmed || trimmed.startsWith('<!doctype') || trimmed.startsWith('<html')) {
           continue;
         }
 
         let data: any = null;
         try {
-          data = await res.json();
+          data = JSON.parse(rawText);
         } catch {
-          // If response was not JSON (e.g. 502/504 HTML proxy gateway error), try next fallback
-          lastError = `Server returned invalid response (status ${res.status}).`;
           continue;
         }
 
@@ -121,7 +131,6 @@ export const AdminLogin: React.FC = () => {
           handled = true;
           break;
         } else {
-          // 5xx server error, record and attempt next candidate
           lastError = data?.message || `Server error (${res.status}).`;
         }
       } catch (err: any) {

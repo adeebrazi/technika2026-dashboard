@@ -242,9 +242,16 @@ export const UsersView: React.FC = () => {
         return;
       }
       const res = await fetchAdminApi('/api/admin/users');
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
+      }
+
       if (res.ok) {
-        const data = await res.json();
-        setUsers(data.users || data);
+        setUsers(data.users || data || []);
         if (data.permissions) {
           setPerms(data.permissions);
           localStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
@@ -259,11 +266,9 @@ export const UsersView: React.FC = () => {
           localStorage.removeItem('adminDesignation');
           setError('Session expired. Please log in again.');
         } else if (res.status === 403) {
-          const errData = await res.json().catch(() => ({}));
-          setError(errData.message || 'Access restricted. You do not have permission to view registered participants.');
+          setError(data.message || 'Access restricted. You do not have permission to view registered participants.');
         } else {
-          const errData = await res.json().catch(() => ({}));
-          setError(errData.message || 'Failed to fetch users');
+          setError(data.message || 'Failed to fetch users');
         }
       }
     } catch {
@@ -312,9 +317,16 @@ export const UsersView: React.FC = () => {
         })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { message: text || `Server returned invalid response (status ${res.status})` };
+      }
+
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to send email');
+        throw new Error(data.message || `Failed to send email (${res.status})`);
       }
 
       setEmailToast({ type: 'success', message: data.message || 'Email sent successfully!' });

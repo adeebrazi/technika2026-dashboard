@@ -78,22 +78,52 @@ export const fetchAdminApi = async (endpoint: string, options: RequestInit = {})
   for (const url of candidates) {
     try {
       const res = await fetch(url, { ...options, headers });
-      const contentType = res.headers.get('content-type') || '';
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
 
-      // If response is HTML (e.g. 504 proxy timeout or static file 404/405), skip to next candidate
+      // If endpoint is on a static dev server or route not found (404/405/5xx), try next candidate
+      if (res.status === 404 || res.status === 405 || res.status >= 500) {
+        lastError = new Error(`Server returned status ${res.status}`);
+        continue;
+      }
+
+      // If response is HTML (e.g. static file fallback serving index.html), skip to next candidate
       if (contentType.includes('text/html')) {
         lastError = new Error(`Server returned HTML instead of API JSON (status ${res.status})`);
         continue;
       }
 
-      return res;
+      // Read response body safely to verify non-empty JSON
+      const rawText = await res.text();
+      const trimmed = rawText.trim();
+
+      // If empty response or HTML in disguise, skip to next candidate
+      if (!trimmed || trimmed.startsWith('<!doctype') || trimmed.startsWith('<html')) {
+        lastError = new Error(`Server returned empty or HTML response (status ${res.status})`);
+        continue;
+      }
+
+      // Return synthetic Response with buffered text so caller can safely read .json() or .text()
+      return new Response(rawText, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: res.headers,
+      });
     } catch (err: any) {
       lastError = err;
       continue;
     }
   }
 
-  throw lastError;
+  // If all candidates failed, return synthetic 503 JSON Response so res.json() NEVER throws syntax errors
+  const fallbackJson = JSON.stringify({
+    success: false,
+    message: lastError.message || 'Unable to connect to backend server. Please verify your connection.',
+  });
+  return new Response(fallbackJson, {
+    status: 503,
+    statusText: 'Service Unavailable',
+    headers: { 'Content-Type': 'application/json' },
+  });
 };
 
 export const getMainWebsiteUrl = (): string => {
