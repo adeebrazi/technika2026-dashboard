@@ -20,14 +20,14 @@ export const getApiUrl = (): string => {
       if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.startsWith('/')) {
         return envUrl.replace(/\/$/, '');
       }
-      return '';
+      return 'https://reg.technika2026.online';
     }
   }
   const envUrl = (import.meta.env.VITE_API_URL || '').trim();
   if (envUrl && !envUrl.startsWith('/')) {
     return envUrl.replace(/\/$/, '');
   }
-  return '';
+  return 'https://reg.technika2026.online';
 };
 
 export const API_BASE_URL = getApiUrl();
