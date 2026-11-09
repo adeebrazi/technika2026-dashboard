@@ -10,24 +10,16 @@ export const getApiUrl = (): string => {
       return 'http://localhost:5000';
     }
 
-    // When hosted on reg.technika2026.online, always use relative path '' so requests are same-origin
-    if (host === 'reg.technika2026.online') {
-      return '';
-    }
     const isLocal = host === 'localhost' || host === '127.0.0.1';
-    if (!isLocal) {
-      const envUrl = (import.meta.env.VITE_API_URL || '').trim();
-      if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1') && !envUrl.startsWith('/')) {
-        return envUrl.replace(/\/$/, '');
-      }
-      return 'https://reg.technika2026.online';
+    if (isLocal) {
+      return 'http://localhost:5000';
     }
   }
   const envUrl = (import.meta.env.VITE_API_URL || '').trim();
   if (envUrl && !envUrl.startsWith('/')) {
     return envUrl.replace(/\/$/, '');
   }
-  return 'https://reg.technika2026.online';
+  return '';
 };
 
 export const API_BASE_URL = getApiUrl();
@@ -67,10 +59,7 @@ export const fetchAdminApi = async (endpoint: string, options: RequestInit = {})
         candidates.push(`http://127.0.0.1:5000${cleanEndpoint}`);
       }
     }
-    // 4. Production Cloud Fallback (always included as guaranteed reliable target)
-    if (!candidates.includes(`https://reg.technika2026.online${cleanEndpoint}`)) {
-      candidates.push(`https://reg.technika2026.online${cleanEndpoint}`);
-    }
+
   }
 
   let lastError: Error = new Error('Failed to connect to backend server');

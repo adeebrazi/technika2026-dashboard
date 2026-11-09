@@ -68,10 +68,7 @@ export const AdminLogin: React.FC = () => {
           candidates.push('http://127.0.0.1:5000/api/admin/login');
         }
       }
-      // 4. Cloud production fallback (always available as resilient backstop)
-      if (!candidates.includes('https://reg.technika2026.online/api/admin/login')) {
-        candidates.push('https://reg.technika2026.online/api/admin/login');
-      }
+
     }
 
     let lastError = 'Unable to connect to the login server. Please ensure the backend is running.';
