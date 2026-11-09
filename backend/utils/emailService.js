@@ -176,7 +176,7 @@ const sendRegistrationConfirmationEmail = async ({ user, events = [], senderName
           <tr>
             <td style="padding: 0; margin: 0; background-color: #0f172a; text-align: center; border-bottom: 4px solid #2563eb;">
               <img
-                src="https://i.postimg.cc/Bv7C2ZZc/Whats-App-Image-2026-10-30-at-12-42-52-PM.jpg"
+                src="https://res.cloudinary.com/dclyzbzlc/image/upload/v1794224267/technika-assets/technika-email-banner.png"
                 alt="ARKA JAIN University – Technika 6.0"
                 width="600"
                 border="0"
