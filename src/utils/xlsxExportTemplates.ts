@@ -162,6 +162,117 @@ function setActiveTab(wbXml: string, activeIndex: number): string {
 }
 
 /**
+ * Prunes the loaded JSZip workbook to keep ONLY the specified sheet:
+ * sheetNum: 1 ('Institute Wise Data', rId: 'rId5', draw: 1)
+ * sheetNum: 2 ('Event Wise Data', rId: 'rId6', draw: 2)
+ * sheetNum: 3 ('PARTICIPANT COUNT', rId: 'rId7', draw: 3)
+ */
+async function pruneToSingleSheet(zip: JSZip, targetSheetNum: 1 | 2 | 3, sheetName: string): Promise<void> {
+  const allSheets = [
+    { num: 1, rId: 'rId5', sheetPath: 'xl/worksheets/sheet1.xml', drawPath: 'xl/drawings/drawing1.xml' },
+    { num: 2, rId: 'rId6', sheetPath: 'xl/worksheets/sheet2.xml', drawPath: 'xl/drawings/drawing2.xml' },
+    { num: 3, rId: 'rId7', sheetPath: 'xl/worksheets/sheet3.xml', drawPath: 'xl/drawings/drawing3.xml' }
+  ];
+
+  const target = allSheets.find(s => s.num === targetSheetNum)!;
+  const others = allSheets.filter(s => s.num !== targetSheetNum);
+
+  // 1. Remove other sheet and drawing files
+  others.forEach(s => {
+    zip.remove(s.sheetPath);
+    zip.remove(`xl/worksheets/_rels/sheet${s.num}.xml.rels`);
+    zip.remove(s.drawPath);
+    zip.remove(`xl/drawings/_rels/drawing${s.num}.xml.rels`);
+  });
+
+  // 2. Set workbook.xml sheets to only target
+  const wbXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><workbookPr/><sheets><sheet state="visible" name="${escapeXml(sheetName)}" sheetId="1" r:id="${target.rId}"/></sheets><definedNames/><calcPr/></workbook>`;
+  zip.file('xl/workbook.xml', wbXml);
+
+  // 3. Remove other sheet relationships from xl/_rels/workbook.xml.rels
+  let wbRels = await zip.file('xl/_rels/workbook.xml.rels')!.async('string');
+  others.forEach(s => {
+    const relRegex = new RegExp(`<Relationship [^>]*Id="${s.rId}"[^>]*/>`);
+    wbRels = wbRels.replace(relRegex, '');
+  });
+  zip.file('xl/_rels/workbook.xml.rels', wbRels);
+
+  // 4. Update [Content_Types].xml
+  let ct = await zip.file('[Content_Types].xml')!.async('string');
+  others.forEach(s => {
+    ct = ct.replace(`<Override ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml" PartName="/${s.sheetPath}"/>`, '');
+    ct = ct.replace(`<Override ContentType="application/vnd.openxmlformats-officedocument.drawing+xml" PartName="/${s.drawPath}"/>`, '');
+  });
+  zip.file('[Content_Types].xml', ct);
+}
+
+/**
+ * Generate Single-Sheet XLSX for Section 1: PARTICIPANT COUNT
+ */
+export async function generateParticipantCountXlsxBlob(options: {
+  exportDate: string;
+  institutes: InstituteSummaryItem[];
+  includeAju: boolean;
+}): Promise<Blob> {
+  const zip = await JSZip.loadAsync(BASE_XLSX_TEMPLATE_B64, { base64: true });
+  const s3 = await zip.file('xl/worksheets/sheet3.xml')!.async('string');
+  const newS3 = buildSheet3Xml(s3, options.exportDate, options.institutes, options.includeAju);
+  zip.file('xl/worksheets/sheet3.xml', newS3);
+
+  await pruneToSingleSheet(zip, 3, 'PARTICIPANT COUNT');
+
+  return await zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    compression: 'DEFLATE'
+  });
+}
+
+/**
+ * Generate Single-Sheet XLSX for Section 2: Institute Wise Data
+ */
+export async function generateInstituteWiseXlsxBlob(options: {
+  instituteName: string;
+  exportDate: string;
+  participants: InstituteParticipantItem[];
+}): Promise<Blob> {
+  const zip = await JSZip.loadAsync(BASE_XLSX_TEMPLATE_B64, { base64: true });
+  const s1 = await zip.file('xl/worksheets/sheet1.xml')!.async('string');
+  const newS1 = buildSheet1Xml(s1, options.instituteName, options.exportDate, options.participants);
+  zip.file('xl/worksheets/sheet1.xml', newS1);
+
+  await pruneToSingleSheet(zip, 1, 'Institute Wise Data');
+
+  return await zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    compression: 'DEFLATE'
+  });
+}
+
+/**
+ * Generate Single-Sheet XLSX for Section 3: Event Wise Data
+ */
+export async function generateEventWiseXlsxBlob(options: {
+  eventName: string;
+  exportDate: string;
+  participants: EventParticipantItem[];
+}): Promise<Blob> {
+  const zip = await JSZip.loadAsync(BASE_XLSX_TEMPLATE_B64, { base64: true });
+  const s2 = await zip.file('xl/worksheets/sheet2.xml')!.async('string');
+  const newS2 = buildSheet2Xml(s2, options.eventName, options.exportDate, options.participants);
+  zip.file('xl/worksheets/sheet2.xml', newS2);
+
+  await pruneToSingleSheet(zip, 2, 'Event Wise Data');
+
+  return await zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    compression: 'DEFLATE'
+  });
+}
+
+/**
  * Generate Master XLSX with all 3 sheets populated!
  */
 export async function generateMasterXlsxBlob(options: {

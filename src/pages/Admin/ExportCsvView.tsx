@@ -8,15 +8,14 @@ import {
   CheckCircle2,
   Lock,
   Sparkles,
-  Search,
   Plus,
-  Check,
-  FolderArchive,
-  Layers
+  Check
 } from 'lucide-react';
 import { getAdminIdentity, fetchAdminApi } from '../../utils/adminAuth';
 import {
-  generateMasterXlsxBlob,
+  generateParticipantCountXlsxBlob,
+  generateInstituteWiseXlsxBlob,
+  generateEventWiseXlsxBlob,
   downloadXlsxBlob
 } from '../../utils/xlsxExportTemplates';
 import type {
@@ -49,11 +48,9 @@ export const ExportCsvView: React.FC = () => {
 
   // Section 2: Selected Institute filter
   const [selectedInstitute, setSelectedInstitute] = useState<string>('all');
-  const [instituteSearch, setInstituteSearch] = useState<string>('');
 
   // Section 3: Selected Event filter
   const [selectedEvent, setSelectedEvent] = useState<string>('all');
-  const [eventSearch, setEventSearch] = useState<string>('');
 
   const showToast = (message: string, type: 'success' | 'info' = 'success') => {
     setToast({ message, type });
@@ -172,13 +169,7 @@ export const ExportCsvView: React.FC = () => {
     return users.filter(u => isAjuInstitute(normalizeInstitute(u))).length;
   }, [allInstituteStats, users]);
 
-  // ── 2. Institute Filter Options & Matches ──
-  const filteredInstitutesForSelect = useMemo(() => {
-    if (!instituteSearch.trim()) return allInstituteStats;
-    const q = instituteSearch.toLowerCase().trim();
-    return allInstituteStats.filter(i => i.name.toLowerCase().includes(q));
-  }, [allInstituteStats, instituteSearch]);
-
+  // ── 2. Institute Filter Matches ──
   const section2Users = useMemo(() => {
     if (selectedInstitute === 'all') return users;
     return users.filter(u => normalizeInstitute(u) === selectedInstitute);
@@ -200,12 +191,6 @@ export const ExportCsvView: React.FC = () => {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }, [users]);
-
-  const filteredEventsForSelect = useMemo(() => {
-    if (!eventSearch.trim()) return eventStats;
-    const q = eventSearch.toLowerCase().trim();
-    return eventStats.filter(e => e.name.toLowerCase().includes(q));
-  }, [eventStats, eventSearch]);
 
   const section3Users = useMemo(() => {
     if (selectedEvent === 'all') return users;
@@ -242,40 +227,7 @@ export const ExportCsvView: React.FC = () => {
     }));
   };
 
-  // ── Master Export: All 3 Sheets in One XLSX Workbook ──
-  const handleExportMasterWorkbook = async () => {
-    if (users.length === 0) {
-      showToast('No participants available to export.', 'info');
-      return;
-    }
-    setExporting(true);
-    try {
-      const exportDate = getFormattedDate();
-      const today = new Date().toISOString().split('T')[0];
-      const filename = `technika_6.0_complete_master_${today}.xlsx`;
-
-      const blob = await generateMasterXlsxBlob({
-        exportDate,
-        institutes: allInstituteStats,
-        includeAju: true,
-        instituteParticipants: mapInstituteParticipants(users),
-        selectedInstituteName: 'ALL INSTITUTIONS',
-        eventParticipants: mapEventParticipants(users),
-        selectedEventName: 'ALL EVENTS',
-        activeSheetIndex: 2 // Opens on Participant Count
-      });
-
-      downloadXlsxBlob(filename, blob);
-      showToast(`✓ Exported Master Excel Workbook (3 Sheets with ${users.length} Records) to ${filename}`);
-    } catch (err) {
-      console.error('Failed to export master Excel:', err);
-      showToast('Error generating Excel file.', 'info');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  // ── Section 1 Handler: Participant Count Export ──
+  // ── Section 1 Handler: Participant Count Export (Single Sheet) ──
   const handleExportParticipantCountXlsx = async () => {
     if (section1Institutes.length === 0) {
       showToast('No institution data available to export.', 'info');
@@ -286,21 +238,13 @@ export const ExportCsvView: React.FC = () => {
       const exportDate = getFormattedDate();
       const today = new Date().toISOString().split('T')[0];
       const filename = includeAju
-        ? `technika_all_institutes_summary_${today}.xlsx`
-        : `technika_external_institutes_summary_${today}.xlsx`;
+        ? `technika_all_institutes_count_${today}.xlsx`
+        : `technika_external_institutes_count_${today}.xlsx`;
 
-      // Filter users to match inclusion toggle
-      const activeUsers = includeAju ? users : users.filter(u => !isAjuInstitute(normalizeInstitute(u)));
-
-      const blob = await generateMasterXlsxBlob({
+      const blob = await generateParticipantCountXlsxBlob({
         exportDate,
         institutes: section1Institutes,
-        includeAju,
-        instituteParticipants: mapInstituteParticipants(activeUsers),
-        selectedInstituteName: includeAju ? 'ALL INSTITUTIONS' : 'EXTERNAL INSTITUTES ONLY',
-        eventParticipants: mapEventParticipants(activeUsers),
-        selectedEventName: 'ALL EVENTS',
-        activeSheetIndex: 2 // Activates PARTICIPANT COUNT sheet
+        includeAju
       });
 
       downloadXlsxBlob(filename, blob);
@@ -313,7 +257,7 @@ export const ExportCsvView: React.FC = () => {
     }
   };
 
-  // ── Section 2 Handler: Institute Wise Data Export ──
+  // ── Section 2 Handler: Institute Wise Data Export (Single Sheet) ──
   const handleExportInstituteWiseXlsx = async () => {
     if (section2Users.length === 0) {
       showToast('No participants match the selected institution filter.', 'info');
@@ -329,15 +273,10 @@ export const ExportCsvView: React.FC = () => {
       const today = new Date().toISOString().split('T')[0];
       const filename = `technika_institute_${cleanInstName}_${today}.xlsx`;
 
-      const blob = await generateMasterXlsxBlob({
+      const blob = await generateInstituteWiseXlsxBlob({
+        instituteName: instTitle,
         exportDate,
-        institutes: allInstituteStats,
-        includeAju: true,
-        instituteParticipants: mapInstituteParticipants(section2Users),
-        selectedInstituteName: instTitle,
-        eventParticipants: mapEventParticipants(section2Users),
-        selectedEventName: instTitle,
-        activeSheetIndex: 0 // Activates Institute Wise Data sheet
+        participants: mapInstituteParticipants(section2Users)
       });
 
       downloadXlsxBlob(filename, blob);
@@ -350,7 +289,7 @@ export const ExportCsvView: React.FC = () => {
     }
   };
 
-  // ── Section 3 Handler: Event Wise Data Export ──
+  // ── Section 3 Handler: Event Wise Data Export (Single Sheet) ──
   const handleExportEventWiseXlsx = async () => {
     if (section3Users.length === 0) {
       showToast('No participants match the selected event filter.', 'info');
@@ -366,15 +305,10 @@ export const ExportCsvView: React.FC = () => {
       const today = new Date().toISOString().split('T')[0];
       const filename = `technika_event_${cleanEventName}_${today}.xlsx`;
 
-      const blob = await generateMasterXlsxBlob({
+      const blob = await generateEventWiseXlsxBlob({
+        eventName: eventTitle,
         exportDate,
-        institutes: allInstituteStats,
-        includeAju: true,
-        instituteParticipants: mapInstituteParticipants(section3Users),
-        selectedInstituteName: eventTitle,
-        eventParticipants: mapEventParticipants(section3Users),
-        selectedEventName: eventTitle,
-        activeSheetIndex: 1 // Activates Event Wise Data sheet
+        participants: mapEventParticipants(section3Users)
       });
 
       downloadXlsxBlob(filename, blob);
@@ -494,43 +428,13 @@ export const ExportCsvView: React.FC = () => {
             <FileSpreadsheet size={28} className="text-emerald-600" />
             <span>Export Excel Center</span>
           </h1>
-          <p className="clay-page-subtitle">
-            Generate official Microsoft Excel workbooks featuring all 3 template sheets (Institute Wise Data, Event Wise Data, and Participant Count) with official banners, borders, and bold headers.
-          </p>
         </div>
 
         <div className="clay-header-actions">
-          <button
-            type="button"
-            onClick={handleExportMasterWorkbook}
-            disabled={loading || exporting || users.length === 0}
-            className="clay-master-export-btn"
-            title="Download complete Excel file with all 3 sheets populated with live data"
-          >
-            <FolderArchive size={19} />
-            <div className="flex flex-col text-left">
-              <span className="text-xs uppercase font-extrabold tracking-wider opacity-90">Universal Workbook</span>
-              <span className="text-sm font-black">Export All 3 Sheets (.xlsx)</span>
-            </div>
-          </button>
           <div className="clay-access-pill">
             <span className="clay-access-dot" />
             <span>Admin Control Active</span>
           </div>
-        </div>
-      </div>
-
-      {/* ── 3 Sheets Overview Banner ── */}
-      <div className="clay-sheets-overview-card">
-        <div className="clay-overview-icon">
-          <Layers size={22} className="text-emerald-600" />
-        </div>
-        <div className="clay-overview-info">
-          <h3 className="clay-overview-title">Official 3-Sheet Excel Workbook Architecture</h3>
-          <p className="clay-overview-desc">
-            All exports are built using the official <strong>CSV EXPORT.xlsx</strong> template. Each downloaded workbook contains the complete 3-sheet structure:
-            {' '}<strong>Sheet 1: Institute Wise Data</strong>, <strong>Sheet 2: Event Wise Data</strong>, and <strong>Sheet 3: PARTICIPANT COUNT</strong>, automatically styled with official banners and grid lines.
-          </p>
         </div>
       </div>
 
@@ -541,16 +445,15 @@ export const ExportCsvView: React.FC = () => {
             <Building2 size={24} />
           </div>
           <div className="clay-section-text">
-            <div className="clay-sheet-tag">EXCEL SHEET 3: PARTICIPANT COUNT</div>
-            <h2 className="clay-section-title">All Institute Names &amp; Participant Counts</h2>
+            <h2 className="clay-section-title" style={{ color: '#2563eb' }}>All Institute Names &amp; Participant Counts</h2>
             <p className="clay-section-desc">
-              Export an aggregated summary table of every participating college/institution and the total number of registered students from each institution.
+              Generates <strong>PARTICIPANT COUNT</strong> sheet with official university banner, Avinya logo, and black grid borders.
             </p>
           </div>
         </div>
 
-        {/* Section 1 ARKA JAIN University Optional Include / Exclude Toggle */}
-        <div className="clay-aju-toggle-row">
+        {/* Section 1 ARKA JAIN University Small Toggle Button */}
+        <div style={{ margin: '2px 0 6px 0' }}>
           <button
             type="button"
             onClick={() => {
@@ -558,28 +461,25 @@ export const ExportCsvView: React.FC = () => {
               setIncludeAju(next);
               showToast(
                 next
-                  ? `✓ ARKA JAIN University (${ajuParticipantCount} participants) included in Institute List`
-                  : `✓ ARKA JAIN University excluded from Institute List (External Colleges only)`
+                  ? `✓ ARKA JAIN University (${ajuParticipantCount}) included`
+                  : `✓ ARKA JAIN University excluded`
               );
             }}
-            className={`clay-aju-btn ${includeAju ? 'included' : 'excluded'}`}
-            title={includeAju ? 'Click to exclude ARKA JAIN University' : 'Click to include ARKA JAIN University in this export'}
+            className={`clay-mini-aju-btn ${includeAju ? 'active' : ''}`}
+            title={includeAju ? 'Click to exclude ARKA JAIN University' : 'Click to include ARKA JAIN University'}
           >
-            <span className="clay-aju-btn-icon">
-              {includeAju ? <Check size={16} strokeWidth={2.5} /> : <Plus size={16} strokeWidth={2.5} />}
-            </span>
-            <span className="clay-aju-btn-text">
-              {includeAju ? 'ARKA JAIN University Included' : 'Include ARKA JAIN University'}
-            </span>
-            <span className="clay-aju-btn-pill">
-              {includeAju ? `${ajuParticipantCount} Students Active` : `Optional (+${ajuParticipantCount})`}
-            </span>
+            {includeAju ? (
+              <>
+                <Check size={14} strokeWidth={2.5} />
+                <span>ARKA JAIN Included ({ajuParticipantCount})</span>
+              </>
+            ) : (
+              <>
+                <Plus size={14} strokeWidth={2.5} />
+                <span>Include ARKA JAIN (+{ajuParticipantCount})</span>
+              </>
+            )}
           </button>
-          <span className="clay-aju-hint">
-            {includeAju
-              ? 'Showing all institutions including ARKA JAIN University.'
-              : 'ARKA JAIN University is excluded by default so you can focus on external colleges.'}
-          </span>
         </div>
 
         {/* Section 1 Meta & Summary */}
@@ -622,7 +522,7 @@ export const ExportCsvView: React.FC = () => {
             </span>
           </button>
           <span className="clay-action-hint">
-            Generates <strong>PARTICIPANT COUNT</strong> sheet with official university banner, Avinya logo, and black grid borders.
+            Generates a clean spreadsheet with <strong>Institute Name</strong> and <strong>Participant Count</strong>.
           </span>
         </div>
       </div>
@@ -634,10 +534,9 @@ export const ExportCsvView: React.FC = () => {
             <GraduationCap size={24} />
           </div>
           <div className="clay-section-text">
-            <div className="clay-sheet-tag purple">EXCEL SHEET 1: Institute Wise Data</div>
-            <h2 className="clay-section-title">Institute-Wise Participant Export</h2>
+            <h2 className="clay-section-title" style={{ color: '#7c3aed' }}>Institute-Wise Participant Export</h2>
             <p className="clay-section-desc">
-              Export detailed participant records for a specific institution (or all institutions) containing Participant Name, Payment Done / Not Done, and Class / Semester.
+              Generates <strong>Institute Wise Data</strong> sheet with official headers, institution title, payment status, and course details.
             </p>
           </div>
         </div>
@@ -654,26 +553,12 @@ export const ExportCsvView: React.FC = () => {
                   className="clay-select"
                 >
                   <option value="all">🌐 All Institutions ({users.length} participants)</option>
-                  {filteredInstitutesForSelect.map((inst, idx) => (
+                  {allInstituteStats.map((inst, idx) => (
                     <option key={idx} value={inst.name}>
                       {inst.name} ({inst.count} {inst.count === 1 ? 'participant' : 'participants'})
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-
-            <div className="clay-filter-field">
-              <label className="clay-field-label">Filter dropdown search:</label>
-              <div className="clay-input-wrapper">
-                <Search size={15} className="clay-input-icon" />
-                <input
-                  type="text"
-                  placeholder="Quick filter institutes..."
-                  value={instituteSearch}
-                  onChange={(e) => setInstituteSearch(e.target.value)}
-                  className="clay-text-input"
-                />
               </div>
             </div>
           </div>
@@ -700,7 +585,7 @@ export const ExportCsvView: React.FC = () => {
             <span>Export Institute Wise Data (.xlsx)</span>
           </button>
           <span className="clay-action-hint">
-            Generates <strong>Institute Wise Data</strong> sheet with official headers, institution title, payment status, and course details.
+            Generates a detailed spreadsheet with <strong>Registration ID</strong>, <strong>Name</strong>, <strong>Payment Status</strong>, and <strong>Semester</strong>.
           </span>
         </div>
       </div>
@@ -712,10 +597,9 @@ export const ExportCsvView: React.FC = () => {
             <Trophy size={24} />
           </div>
           <div className="clay-section-text">
-            <div className="clay-sheet-tag green">EXCEL SHEET 2: Event Wise Data</div>
-            <h2 className="clay-section-title">Event-Wise Participant Export (Complete Details)</h2>
+            <h2 className="clay-section-title" style={{ color: '#059669' }}>Event-Wise Participant Export (Complete Details)</h2>
             <p className="clay-section-desc">
-              Export participants filtered by specific event (or all events combined) with comprehensive records including gender, contact numbers, institution, class, payment status, and registration source.
+              Generates <strong>Event Wise Data</strong> sheet with event title, full participant records, gender, and contact details.
             </p>
           </div>
         </div>
@@ -732,26 +616,12 @@ export const ExportCsvView: React.FC = () => {
                   className="clay-select"
                 >
                   <option value="all">🏆 All Events (Full Database: {users.length} participants)</option>
-                  {filteredEventsForSelect.map((ev, idx) => (
+                  {eventStats.map((ev, idx) => (
                     <option key={idx} value={ev.name}>
                       {ev.name} ({ev.count} {ev.count === 1 ? 'registration' : 'registrations'})
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-
-            <div className="clay-filter-field">
-              <label className="clay-field-label">Filter dropdown search:</label>
-              <div className="clay-input-wrapper">
-                <Search size={15} className="clay-input-icon" />
-                <input
-                  type="text"
-                  placeholder="Quick filter events..."
-                  value={eventSearch}
-                  onChange={(e) => setEventSearch(e.target.value)}
-                  className="clay-text-input"
-                />
               </div>
             </div>
           </div>
@@ -778,7 +648,7 @@ export const ExportCsvView: React.FC = () => {
             <span>Export Event Wise Data (.xlsx)</span>
           </button>
           <span className="clay-action-hint">
-            Generates <strong>Event Wise Data</strong> sheet with event title, full participant records, gender, and contact details.
+            Generates a comprehensive event registration spreadsheet with <strong>Contact</strong>, <strong>Gender</strong>, and <strong>College</strong>.
           </span>
         </div>
       </div>
@@ -1018,73 +888,34 @@ export const ExportCsvView: React.FC = () => {
           line-height: 1.5;
         }
 
-        /* ── ARKA JAIN Toggle ── */
-        .clay-aju-toggle-row {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 14px 18px;
-          border-radius: 18px;
-          background: #f8fafc;
-          border: 1.5px solid #e2e8f0;
-          flex-wrap: wrap;
-        }
-        .clay-aju-btn {
+        /* ── ARKA JAIN Mini Button ── */
+        .clay-mini-aju-btn {
           display: inline-flex;
           align-items: center;
-          gap: 9px;
-          padding: 9px 18px;
-          border-radius: 14px;
-          font-size: 0.88rem;
-          font-weight: 800;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 9999px;
+          font-size: 0.82rem;
+          font-weight: 700;
           cursor: pointer;
-          border: 1.5px solid transparent;
-          font-family: 'Space Grotesk', sans-serif;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .clay-aju-btn.excluded {
+          border: 1.5px solid #cbd5e1;
           background: #ffffff;
           color: #475569;
-          border-color: #cbd5e1;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+          font-family: 'Space Grotesk', sans-serif;
+          transition: all 0.15s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
-        .clay-aju-btn.excluded:hover {
-          background: #f1f5f9;
-          color: #1e293b;
+        .clay-mini-aju-btn:hover {
+          background: #f8fafc;
           border-color: #94a3b8;
-          transform: translateY(-1px);
+          color: #1e293b;
         }
-        .clay-aju-btn.included {
-          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-          color: #ffffff;
-          border-color: #1d4ed8;
-          box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-        }
-        .clay-aju-btn.included:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
-        }
-        .clay-aju-btn-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .clay-aju-btn-pill {
-          padding: 2px 8px;
-          border-radius: 999px;
-          font-size: 0.72rem;
+        .clay-mini-aju-btn.active {
+          background: #eff6ff;
+          border-color: #3b82f6;
+          color: #1d4ed8;
           font-weight: 800;
-          background: rgba(255, 255, 255, 0.25);
-          color: inherit;
-        }
-        .clay-aju-btn.excluded .clay-aju-btn-pill {
-          background: #e2e8f0;
-          color: #475569;
-        }
-        .clay-aju-hint {
-          font-size: 0.82rem;
-          color: #64748b;
-          font-style: italic;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
         }
 
         /* ── Meta Row ── */
