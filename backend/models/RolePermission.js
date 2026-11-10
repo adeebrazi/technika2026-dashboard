@@ -24,6 +24,7 @@ const RolePermissionSchema = new mongoose.Schema({
   canEditTeams: { type: Boolean, default: false },
   canExportCSV: { type: Boolean, default: false },
   canCheckInParticipants: { type: Boolean, default: true },
+  canManageWhatsapp: { type: Boolean, default: false },
 
   // ── EVENT SCOPE ──
   assignedEvents: [{ type: String }], // empty = all events

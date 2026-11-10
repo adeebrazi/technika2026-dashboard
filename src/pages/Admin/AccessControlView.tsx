@@ -20,7 +20,8 @@ import {
   Search,
   Sparkles,
   Send,
-  UserCheck
+  UserCheck,
+  MessageSquare
 } from 'lucide-react';
 import { getAdminIdentity, fetchAdminApi, getAdminPhotoUrl } from '../../utils/adminAuth';
 
@@ -32,6 +33,7 @@ export interface StaffPermissions {
   canCheckIn: boolean;
   canExportCSV: boolean;
   canDelete: boolean;
+  canManageWhatsapp?: boolean;
   canViewContact?: boolean;
 }
 
@@ -226,6 +228,7 @@ export const AccessControlView: React.FC = () => {
       canCheckIn: true,
       canExportCSV: staff.role === 'faculty',
       canDelete: false,
+      canManageWhatsapp: false,
     };
 
     const nextVal = !currentPerms[permKey];
@@ -270,6 +273,7 @@ export const AccessControlView: React.FC = () => {
           canCheckIn: 'Check-In Desk',
           canExportCSV: 'Export CSV',
           canDelete: 'Delete Power',
+          canManageWhatsapp: 'WhatsApp Management',
           canViewContact: 'Contact (Phone)'
         };
         setSaveToast({
@@ -430,7 +434,8 @@ export const AccessControlView: React.FC = () => {
           <span className="legend-item"><Send size={13} /> Send Email</span>
           <span className="legend-item"><CreditCard size={13} /> Payment Details</span>
           <span className="legend-item"><QrCode size={13} /> Check-In Desk</span>
-          <span className="legend-item"><FileSpreadsheet size={13} /> Export CSV</span>
+          <span className="legend-item"><FileSpreadsheet size={13} /> Export Excel</span>
+          <span className="legend-item"><MessageSquare size={13} /> WhatsApp Management</span>
           <span className="legend-item"><Trash size={13} /> Delete Power</span>
         </div>
       </div>
@@ -640,13 +645,13 @@ export const AccessControlView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 6. Export CSV */}
+                    {/* 6. Export Excel */}
                     <div className={`perm-toggle-tile ${p.canExportCSV ? 'active' : ''}`}>
                       <div className="tile-info">
                         <FileSpreadsheet size={15} className="tile-icon" />
                         <div>
-                          <div className="tile-title">Export CSV</div>
-                          <div className="tile-desc">Download spreadsheets</div>
+                          <div className="tile-title">Export Excel</div>
+                          <div className="tile-desc">Download 3-sheet XLSX workbooks</div>
                         </div>
                       </div>
                       <div className="switch-wrap">
@@ -663,7 +668,30 @@ export const AccessControlView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 7. Delete Records */}
+                                        {/* 7. WhatsApp Management */}
+                    <div className={`perm-toggle-tile ${p.canManageWhatsapp ? 'active' : ''}`}>
+                      <div className="tile-info">
+                        <MessageSquare size={15} className="tile-icon" />
+                        <div>
+                          <div className="tile-title">WhatsApp Management</div>
+                          <div className="tile-desc">Group allocation &amp; rollover</div>
+                        </div>
+                      </div>
+                      <div className="switch-wrap">
+                        {savingKey === `${staff._id || staff.email}-canManageWhatsapp` && (
+                          <span className="saving-pulse">Saving...</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePermission(staff, 'canManageWhatsapp')}
+                          className={`switch-btn ${p.canManageWhatsapp ? 'on' : 'off'}`}
+                        >
+                          <span className="switch-thumb" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 8. Delete Records */}
                     <div className={`perm-toggle-tile ${p.canDelete ? 'active danger' : ''}`}>
                       <div className="tile-info">
                         <Trash size={15} className="tile-icon danger" />

@@ -7,6 +7,7 @@ import { ProfileView } from './pages/Admin/ProfileView';
 import { UsersView } from './pages/Admin/UsersView';
 import { AccessControlView } from './pages/Admin/AccessControlView';
 import { WhatsAppManagementView } from './pages/Admin/WhatsAppManagementView';
+import { ExportCsvView } from './pages/Admin/ExportCsvView';
 
 function App() {
   // Global Anti-Inspect & Security Protection
@@ -74,6 +75,8 @@ function App() {
           <Route path="access" element={<AccessControlView />} />
           <Route path="permissions" element={<Navigate to="/admin/access" replace />} />
           <Route path="whatsapp" element={<WhatsAppManagementView />} />
+          <Route path="export-csv" element={<ExportCsvView />} />
+          <Route path="export" element={<Navigate to="/admin/export-csv" replace />} />
           <Route path="analytics" element={<Navigate to="/" replace />} />
         </Route>
 

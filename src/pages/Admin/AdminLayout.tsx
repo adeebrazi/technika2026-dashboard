@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { BarChart3, Users, ShieldCheck, User, MessageSquare } from 'lucide-react';
+import { BarChart3, Users, ShieldCheck, User, MessageSquare, FileSpreadsheet } from 'lucide-react';
 import { getAdminIdentity, fetchAdminApi } from '../../utils/adminAuth';
 
 export const AdminLayout: React.FC = () => {
@@ -14,8 +14,19 @@ export const AdminLayout: React.FC = () => {
     name,
     designation,
     photoUrl,
+    isAdeeb,
+    isMamatha,
     canAccessAccessControl,
   } = getAdminIdentity();
+
+  const [userPerms, setUserPerms] = useState<any>(() => {
+    try {
+      const p = localStorage.getItem('adminPermissions');
+      return p ? JSON.parse(p) : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     if (!token) return;
@@ -26,10 +37,14 @@ export const AdminLayout: React.FC = () => {
       .then(d => {
         if (d.permissions) {
           localStorage.setItem('adminPermissions', JSON.stringify(d.permissions));
+          setUserPerms(d.permissions);
         }
       })
       .catch(() => {});
   }, [token]);
+
+  const canAccessWhatsapp = role === 'admin' || isAdeeb || isMamatha || Boolean(userPerms?.canManageWhatsapp);
+  const canAccessExport = role === 'admin' || isAdeeb || isMamatha || Boolean(userPerms?.canExportCSV);
 
   const isTokenExpired = (tokenStr: string | null) => {
     if (!tokenStr) return true;
@@ -74,12 +89,18 @@ export const AdminLayout: React.FC = () => {
       icon: <ShieldCheck size={19} strokeWidth={2.2} />, 
       desc: 'Faculty & coordinator permissions' 
     }] : []),
-    { 
+    ...(canAccessWhatsapp ? [{ 
       name: 'WhatsApp Management', 
       path: '/admin/whatsapp', 
       icon: <MessageSquare size={19} strokeWidth={2.2} />, 
       desc: 'Group allocation & rollover' 
-    },
+    }] : []),
+    ...(canAccessExport ? [{ 
+      name: 'Export Excel', 
+      path: '/admin/export-csv', 
+      icon: <FileSpreadsheet size={19} strokeWidth={2.2} />, 
+      desc: '3-Sheet official XLSX exports' 
+    }] : []),
   ];
 
   const getRoleBadgeColor = () => {
@@ -270,14 +291,27 @@ export const AdminLayout: React.FC = () => {
           </Link>
         )}
 
-        <Link 
-          to="/admin/whatsapp" 
-          className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/whatsapp') ? 'active' : ''}`}
-          title="WhatsApp Management"
-        >
-          <span className="clay-mob-icon"><MessageSquare size={19} strokeWidth={2.2} /></span>
-          <span className="clay-mob-label">WhatsApp</span>
-        </Link>
+        {canAccessWhatsapp && (
+          <Link 
+            to="/admin/whatsapp" 
+            className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/whatsapp') ? 'active' : ''}`}
+            title="WhatsApp Management"
+          >
+            <span className="clay-mob-icon"><MessageSquare size={19} strokeWidth={2.2} /></span>
+            <span className="clay-mob-label">WhatsApp</span>
+          </Link>
+        )}
+
+        {canAccessExport && (
+          <Link 
+            to="/admin/export-csv" 
+            className={`clay-mob-nav-btn ${location.pathname.startsWith('/admin/export-csv') ? 'active' : ''}`}
+            title="Export Excel"
+          >
+            <span className="clay-mob-icon"><FileSpreadsheet size={19} strokeWidth={2.2} /></span>
+            <span className="clay-mob-label">Export</span>
+          </Link>
+        )}
 
         <Link 
           to="/admin" 

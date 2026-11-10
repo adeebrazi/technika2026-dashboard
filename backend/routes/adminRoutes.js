@@ -24,6 +24,8 @@ const cloudinaryService = require('../services/cloudinaryService');
 
 const vercelService = require('../services/vercelService');
 
+const driveService = require('../services/driveService');
+
 const { sendRegistrationConfirmationEmail } = require('../utils/emailService');
 
 // Permanent Master Administrator definition (Undestroyable Root Admin)
@@ -148,6 +150,8 @@ const getDefaultStaffPermissions = (role) => {
 
       canDelete: true,
 
+      canManageWhatsapp: true,
+
       canViewContact: true,
 
     };
@@ -171,6 +175,8 @@ const getDefaultStaffPermissions = (role) => {
       canExportCSV: true,
 
       canDelete: false,
+
+      canManageWhatsapp: false,
 
       canViewContact: true,
 
@@ -196,6 +202,8 @@ const getDefaultStaffPermissions = (role) => {
 
     canDelete: false,
 
+    canManageWhatsapp: false,
+
     canViewContact: false,
 
   };
@@ -219,6 +227,8 @@ const formatFullPermissions = (role, staffName, staffEmail, p = {}) => {
   const canExport = isAdmin || Boolean(p.canExportCSV);
 
   const canDel = isAdmin || Boolean(p.canDelete);
+
+  const canWhatsapp = isAdmin || Boolean(p.canManageWhatsapp);
 
   return {
 
@@ -253,6 +263,8 @@ const formatFullPermissions = (role, staffName, staffEmail, p = {}) => {
     canDeleteParticipants: canDel,
 
     canDelete: canDel,
+
+    canManageWhatsapp: canWhatsapp,
 
     canViewTeams: true,
 
@@ -980,6 +992,8 @@ router.put('/staff/:id/permissions', verifyAdminToken, authorizeRoles('admin'), 
 
       canDelete: Boolean(permissions.canDelete),
 
+      canManageWhatsapp: Boolean(permissions.canManageWhatsapp),
+
       canViewContact: Boolean(permissions.canViewPhone !== undefined ? permissions.canViewPhone : permissions.canViewContact),
 
     };
@@ -1684,6 +1698,22 @@ router.get('/drive-proxy', async (req, res) => {
 
       } catch (err) {}
 
+    }
+
+    // Fallback: If public URLs fail, attempt authenticated download via Google Drive API stream
+    try {
+      const driveStream = await driveService.getDriveFileStream(fileId);
+      if (driveStream && driveStream.data) {
+        if (driveStream.headers && driveStream.headers['content-type']) {
+          res.setHeader('Content-Type', driveStream.headers['content-type']);
+        } else {
+          res.setHeader('Content-Type', 'image/jpeg');
+        }
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return driveStream.data.pipe(res);
+      }
+    } catch (streamErr) {
+      console.warn('Drive stream fallback failed:', streamErr.message);
     }
 
     return res.status(404).send('Image could not be retrieved from Google Drive');

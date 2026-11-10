@@ -2,7 +2,36 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 const WhatsAppState = require('../models/WhatsAppState');
+const AdminUser = require('../models/AdminUser');
+const { verifyAdminToken } = require('../middleware/role');
+
+// WhatsApp Management Authorization: Admin only, or staff with canManageWhatsapp
+const verifyWhatsappAccess = async (req, res, next) => {
+  if (!req.admin) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  const email = (req.admin.email || '').toLowerCase();
+  if (req.admin.role === 'admin' || email.includes('adeeb')) {
+    return next();
+  }
+
+  try {
+    const user = await AdminUser.findOne({ email });
+    if (user && user.permissions && user.permissions.canManageWhatsapp) {
+      return next();
+    }
+  } catch (err) {
+    console.error('WhatsApp authorization error:', err.message);
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied: WhatsApp Management is restricted to Administrators only.'
+  });
+};
 
 // Enable CORS on all WhatsApp routes
 router.use((req, res, next) => {
@@ -104,6 +133,15 @@ function recalculateState(state) {
 // Asynchronously load and initialize from MongoDB Atlas (Single Source of Truth)
 async function getOrSyncState() {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      if (fs.existsSync(DATA_FILE)) {
+        try {
+          const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+          return recalculateState(JSON.parse(raw));
+        } catch (e) {}
+      }
+      return recalculateState(memoryState);
+    }
     const doc = await WhatsAppState.findOne({ key: 'global_state' });
     if (doc && Array.isArray(doc.groups) && doc.groups.length > 0) {
       memoryState = recalculateState({
@@ -193,10 +231,18 @@ async function saveState(state) {
   return memoryState;
 }
 
-// Bootstrap MongoDB immediately on load
-getOrSyncState().then(st => {
-  if (st) broadcastToClients();
-}).catch(() => {});
+// Bootstrap MongoDB when connection opens or if already connected
+if (mongoose.connection.readyState === 1) {
+  getOrSyncState().then(st => {
+    if (st) broadcastToClients();
+  }).catch(() => {});
+} else {
+  mongoose.connection.once('open', () => {
+    getOrSyncState().then(st => {
+      if (st) broadcastToClients();
+    }).catch(() => {});
+  });
+}
 
 let sseClients = [];
 
@@ -265,7 +311,7 @@ router.post('/join', async (req, res) => {
 });
 
 // POST /config - Update invite links, names, counts or global limit
-router.post('/config', async (req, res) => {
+router.post('/config', verifyAdminToken, verifyWhatsappAccess, async (req, res) => {
   let state = await getOrSyncState();
   const { limit, groups } = req.body;
 
@@ -297,7 +343,7 @@ router.post('/config', async (req, res) => {
 });
 
 // POST /simulate - Adjust group member counts
-router.post('/simulate', async (req, res) => {
+router.post('/simulate', verifyAdminToken, verifyWhatsappAccess, async (req, res) => {
   let state = await getOrSyncState();
   const { groupId, action, value } = req.body;
   const group = state.groups.find(g => g.id === Number(groupId));
@@ -330,7 +376,7 @@ router.post('/simulate', async (req, res) => {
 });
 
 // POST /add-group - Add new squad
-router.post('/add-group', async (req, res) => {
+router.post('/add-group', verifyAdminToken, verifyWhatsappAccess, async (req, res) => {
   let state = await getOrSyncState();
   const { name, tag, link, accent } = req.body;
   const newId = state.groups.length > 0 
@@ -363,7 +409,7 @@ router.post('/add-group', async (req, res) => {
 });
 
 // POST /remove-group - Delete squad
-router.post('/remove-group', async (req, res) => {
+router.post('/remove-group', verifyAdminToken, verifyWhatsappAccess, async (req, res) => {
   let state = await getOrSyncState();
   const { groupId } = req.body;
   const idToRemove = Number(groupId);
@@ -394,12 +440,12 @@ router.post('/remove-group', async (req, res) => {
 });
 
 // GET /logs
-router.get('/logs', (req, res) => {
+router.get('/logs', verifyAdminToken, verifyWhatsappAccess, (req, res) => {
   res.json({ logs: auditLogs });
 });
 
 // GET /export-csv
-router.get('/export-csv', (req, res) => {
+router.get('/export-csv', verifyAdminToken, verifyWhatsappAccess, (req, res) => {
   let csv = "Timestamp,Type,Event\n";
   auditLogs.forEach(row => {
     csv += `"${row.timestamp}","${row.type}","${row.message.replace(/"/g, '""')}"\n`;

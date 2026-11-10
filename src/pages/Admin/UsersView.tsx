@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Mail, QrCode, CheckCircle2, Clock, Send, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { API_BASE_URL as API, fetchAdminApi } from '../../utils/adminAuth';
 
@@ -12,6 +12,11 @@ export const UsersView: React.FC = () => {
   const [filterEvent, setFilterEvent] = useState('all');
   const [filterSource, setFilterSource] = useState('all');
   const [filterPayment, setFilterPayment] = useState('all');
+  const [filterEmail, setFilterEmail] = useState<'all' | 'sent' | 'pending'>('all');
+  const [filterInstitute, setFilterInstitute] = useState('');
+  const [showInstituteDropdown, setShowInstituteDropdown] = useState(false);
+  const instituteRef = useRef<HTMLDivElement>(null);
+  const [sortBy, setSortBy] = useState<'default' | 'institute_asc' | 'institute_desc' | 'name_asc' | 'email_sent_first' | 'email_pending_first'>('default');
   const [_accessLevel, setAccessLevel] = useState<'full' | 'limited'>('limited');
   const [perms, setPerms] = useState<any>(() => {
     try {
@@ -373,6 +378,40 @@ export const UsersView: React.FC = () => {
     users.flatMap(u => u.registeredEvents?.map((r: any) => r.event?.name) || []).filter(Boolean)
   ));
 
+  // Click outside to dismiss institute dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (instituteRef.current && !instituteRef.current.contains(event.target as Node)) {
+        setShowInstituteDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Unique institutes list with participant counts
+  const allInstitutesList = useMemo(() => {
+    const map = new Map<string, number>();
+    users.forEach(u => {
+      const inst = (u.institution || '').trim();
+      if (inst) {
+        map.set(inst, (map.get(inst) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [users]);
+
+  // Filtered institutes dropdown list based on typed search
+  const filteredInstitutesList = useMemo(() => {
+    if (!filterInstitute.trim()) return allInstitutesList;
+    const q = filterInstitute.trim().toLowerCase();
+    return allInstitutesList.filter(item => item.name.toLowerCase().includes(q));
+  }, [allInstitutesList, filterInstitute]);
+
   // Filtered users
   const filteredUsers = users.filter(user => {
     const q = searchQuery.toLowerCase();
@@ -389,33 +428,62 @@ export const UsersView: React.FC = () => {
     const userSrc = user.source || 'website';
     const matchesSource = filterSource === 'all' || userSrc === filterSource;
 
-    const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-')) || isAjuBtechBcaDiploma(user);
-    const isGForm = user.source === 'google_form';
     const hasSS = isScreenshotUploaded(user);
 
     let matchesPayment = true;
-    if (filterPayment === 'portal_image') {
-      matchesPayment = !isGForm && hasSS;
-    } else if (filterPayment === 'form_image') {
-      matchesPayment = isGForm && hasSS;
-    } else if (filterPayment === 'form_no_image') {
-      matchesPayment = isGForm && !hasSS;
-    } else if (filterPayment === 'has_screenshot') {
+    if (filterPayment === 'attached' || filterPayment === 'has_screenshot' || filterPayment === 'online_paid' || filterPayment === 'portal_image' || filterPayment === 'form_image') {
       matchesPayment = hasSS;
-    } else if (filterPayment === 'no_screenshot') {
-      matchesPayment = !hasSS;
-    } else if (filterPayment === 'aju_exempt') {
-      matchesPayment = isExempt;
-    } else if (filterPayment === 'online_paid') {
-      matchesPayment = !isExempt && hasSS;
-    } else if (filterPayment === 'payment_pending') {
+    } else if (filterPayment === 'not_attached' || filterPayment === 'no_screenshot' || filterPayment === 'payment_pending' || filterPayment === 'form_no_image') {
       matchesPayment = !hasSS;
     }
 
-    return matchesSearch && matchesEvent && matchesSource && matchesPayment;
+    const matchesEmail = 
+      filterEmail === 'all' ||
+      (filterEmail === 'sent' && Boolean(user.confirmationEmailSent)) ||
+      (filterEmail === 'pending' && !user.confirmationEmailSent);
+
+    const instQ = filterInstitute.trim().toLowerCase();
+    const matchesInstitute = !instQ || (user.institution || '').toLowerCase().includes(instQ);
+
+    return matchesSearch && matchesEvent && matchesSource && matchesPayment && matchesEmail && matchesInstitute;
   });
 
-  const sortedUsers = [...filteredUsers];
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (sortBy === 'institute_asc') {
+      const instA = (a.institution || '').trim().toLowerCase();
+      const instB = (b.institution || '').trim().toLowerCase();
+      if (!instA && !instB) return 0;
+      if (!instA) return 1;
+      if (!instB) return -1;
+      const cmp = instA.localeCompare(instB);
+      return cmp !== 0 ? cmp : (a.name || '').localeCompare(b.name || '');
+    }
+    if (sortBy === 'institute_desc') {
+      const instA = (a.institution || '').trim().toLowerCase();
+      const instB = (b.institution || '').trim().toLowerCase();
+      if (!instA && !instB) return 0;
+      if (!instA) return 1;
+      if (!instB) return -1;
+      const cmp = instB.localeCompare(instA);
+      return cmp !== 0 ? cmp : (a.name || '').localeCompare(b.name || '');
+    }
+    if (sortBy === 'email_sent_first') {
+      const aSent = a.confirmationEmailSent ? 1 : 0;
+      const bSent = b.confirmationEmailSent ? 1 : 0;
+      if (aSent !== bSent) return bSent - aSent;
+      return (a.name || '').localeCompare(b.name || '');
+    }
+    if (sortBy === 'email_pending_first') {
+      const aSent = a.confirmationEmailSent ? 1 : 0;
+      const bSent = b.confirmationEmailSent ? 1 : 0;
+      if (aSent !== bSent) return aSent - bSent;
+      return (a.name || '').localeCompare(b.name || '');
+    }
+    if (sortBy === 'name_asc') {
+      return (a.name || '').localeCompare(b.name || '');
+    }
+    return 0;
+  });
 
   const isAdmin = role === 'admin';
   const canViewParticipants = isAdmin || perms?.canViewParticipants !== false;
@@ -424,76 +492,7 @@ export const UsersView: React.FC = () => {
   const canSendEmail = isAdmin || Boolean(perms?.canSendEmail);
   const canViewFinancials = isAdmin || Boolean(perms?.canViewFinancials || perms?.canVerifyPayments);
   const canViewDocuments = isAdmin || Boolean(perms?.canViewDocuments || perms?.canVerifyPayments);
-  const canExportCSV = isAdmin || Boolean(perms?.canExportCSV);
   const canDelete = isAdmin;
-
-  const handleExportCSV = () => {
-    if (!canExportCSV || filteredUsers.length === 0) return;
-
-    const headers = ['Registration ID', 'Name', 'Institution', 'Course', 'Semester', 'Source', 'Events'];
-    if (canViewEmail) {
-      headers.push('Email');
-    }
-    if (canViewPhone) {
-      headers.push('WhatsApp');
-    }
-    if (canViewFinancials) {
-      headers.push('Payment Type', 'UTR', 'Clearance Status');
-    }
-
-    const rows = filteredUsers.map(user => {
-      const isExempt = user.isAjuExempt || (user.paymentUTR && user.paymentUTR.startsWith('NODUES-'));
-      const eventsStr = (user.registeredEvents || []).map((r: any) => r.event?.name || r.eventId).filter(Boolean).join('; ');
-
-      const row = [
-        `"${user.registrationId || ''}"`,
-        `"${(user.name || '').replace(/"/g, '""')}"`,
-        `"${(user.institution || '').replace(/"/g, '""')}"`,
-        `"${(user.course || '').replace(/"/g, '""')}"`,
-        `"${(user.semester || '').replace(/"/g, '""')}"`,
-        `"${user.source || 'website'}"`,
-        `"${eventsStr.replace(/"/g, '""')}"`
-      ];
-
-      if (canViewEmail) {
-        row.push(
-          `"${(user.email || '').replace(/"/g, '""')}"`
-        );
-      }
-      if (canViewPhone) {
-        row.push(
-          `"${(user.whatsapp || '').replace(/"/g, '""')}"`
-        );
-      }
-
-      if (canViewFinancials) {
-        const amount = getUserAmount(user);
-        const validUtr = getValidUTR(user);
-        const hasSS = isScreenshotUploaded(user);
-        const statusText = isExempt
-          ? `AJU (₹600 Clearance${user.noDuesSlipUrl || hasSS ? '' : ' - Missing Slip'})`
-          : (hasSS ? `Online Paid (₹${amount})` : `Payment Pending (₹${amount})`);
-        row.push(
-          `"${statusText}"`,
-          `"${(validUtr || '').replace(/"/g, '""')}"`,
-          `"${isExempt || hasSS ? 'Clearance Verified' : 'Pending Screenshot'}"`
-        );
-      }
-
-      return row.join(',');
-    });
-
-    const csvContent = [headers.join(','), ...rows].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `technika_participants_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
 
   if (loading) {
     return (
@@ -645,15 +644,6 @@ export const UsersView: React.FC = () => {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {canExportCSV && (
-            <button
-              onClick={handleExportCSV}
-              className="clay-export-csv-btn"
-              title="Export filtered participant records to CSV"
-            >
-              📥 Export CSV
-            </button>
-          )}
           <div className="clay-count-badge">
             <span className="clay-count-num">{filteredUsers.length}</span>
             <span className="clay-count-label">{filteredUsers.length === users.length ? 'Total' : `of ${users.length}`}</span>
@@ -709,18 +699,180 @@ export const UsersView: React.FC = () => {
               value={filterPayment} 
               onChange={(e) => setFilterPayment(e.target.value)}
               className="clay-filter-select"
-              title="Filter by clearance and screenshot submission type"
+              title="Filter by payment screenshot status"
             >
-              <option value="all">All Clearances</option>
-              <option value="online_paid">💳 Online Paid (Screenshot Uploaded)</option>
-              <option value="payment_pending">⚠️ Payment Pending (No Screenshot)</option>
-              <option value="aju_exempt">🎓 AJU (₹600 Clearance)</option>
-              <option value="portal_image">📸 Uploaded Screenshot (Website)</option>
-              <option value="form_image">📁 Uploaded Screenshot (Form)</option>
-              <option value="form_no_image">⚠️ Missing Screenshot (Form)</option>
+              <option value="all">Payment Filter (All)</option>
+              <option value="attached">Payment Screenshot Attached</option>
+              <option value="not_attached">Payment Screenshot Not Attached</option>
             </select>
           </div>
         )}
+
+        {/* Email Status Filter */}
+        <div className="clay-filter-box">
+          <span className="clay-filter-icon">✉️</span>
+          <select 
+            value={filterEmail} 
+            onChange={(e) => setFilterEmail(e.target.value as any)}
+            className="clay-filter-select"
+            title="Filter by Confirmation Email status"
+          >
+            <option value="all">Email Filter (All)</option>
+            <option value="sent">✉️ Confirmation Email Sent</option>
+            <option value="pending">⏳ Confirmation Pending</option>
+          </select>
+        </div>
+
+                {/* Manual Institute Search Filter */}
+        <div 
+          ref={instituteRef}
+          className="clay-filter-box" 
+          style={{ position: 'relative', minWidth: '220px', cursor: 'text' }}
+          onClick={() => setShowInstituteDropdown(true)}
+        >
+          <span className="clay-filter-icon">🏫</span>
+          <input
+            type="text"
+            placeholder="Search Institute..."
+            value={filterInstitute}
+            onChange={(e) => {
+              setFilterInstitute(e.target.value);
+              setShowInstituteDropdown(true);
+            }}
+            onFocus={() => setShowInstituteDropdown(true)}
+            className="clay-filter-select"
+            style={{ 
+              minWidth: '150px', 
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              color: '#1e293b'
+            }}
+            title="Type manually to filter by Institute name"
+          />
+          {filterInstitute ? (
+            <button
+              type="button"
+              className="clay-search-clear"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFilterInstitute('');
+                setShowInstituteDropdown(false);
+              }}
+              title="Clear Institute filter"
+              style={{ width: '20px', height: '20px', fontSize: '0.65rem' }}
+            >
+              ✕
+            </button>
+          ) : (
+            <span 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowInstituteDropdown(prev => !prev);
+              }}
+              style={{ fontSize: '0.65rem', color: '#64748b', cursor: 'pointer', padding: '2px 4px', userSelect: 'none' }}
+              title="Toggle institute list"
+            >
+              {showInstituteDropdown ? '▲' : '▼'}
+            </span>
+          )}
+
+          {/* Floating dropdown suggestions with participant counts */}
+          {showInstituteDropdown && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                minWidth: '300px',
+                maxWidth: '420px',
+                maxHeight: '280px',
+                overflowY: 'auto',
+                background: '#ffffff',
+                borderRadius: '14px',
+                padding: '6px',
+                boxShadow: '0 12px 30px -4px rgba(0, 0, 0, 0.18), 0 6px 12px -4px rgba(0, 0, 0, 0.08)',
+                border: '1.5px solid #cbd5e1',
+                zIndex: 1000,
+              }}
+            >
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFilterInstitute('');
+                  setShowInstituteDropdown(false);
+                }}
+                style={{
+                  padding: '7px 10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: !filterInstitute ? '#2563eb' : '#475569',
+                  background: !filterInstitute ? '#eff6ff' : 'transparent',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '4px'
+                }}
+              >
+                <span>🏫 All Institutes (Clear Filter)</span>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{users.length}</span>
+              </div>
+              {filteredInstitutesList.length === 0 ? (
+                <div style={{ padding: '8px 10px', fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                  No institute found matching "{filterInstitute}".
+                  <div style={{ fontSize: '0.72rem', marginTop: '2px', color: '#64748b' }}>
+                    (Filtered table by this text)
+                  </div>
+                </div>
+              ) : (
+                filteredInstitutesList.map(({ name, count }) => {
+                  const isSelected = filterInstitute.trim().toLowerCase() === name.toLowerCase();
+                  return (
+                    <div
+                      key={name}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterInstitute(name);
+                        setShowInstituteDropdown(false);
+                      }}
+                      style={{
+                        padding: '7px 10px',
+                        fontSize: '0.78rem',
+                        fontWeight: isSelected ? 700 : 500,
+                        color: isSelected ? '#2563eb' : '#1e293b',
+                        background: isSelected ? '#eff6ff' : 'transparent',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        transition: 'background 0.12s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) e.currentTarget.style.background = '#f1f5f9';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '280px' }} title={name}>
+                        {name}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', background: '#e2e8f0', borderRadius: '10px', padding: '1px 7px', flexShrink: 0 }}>
+                        {count}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Data Table ── */}
@@ -734,10 +886,24 @@ export const UsersView: React.FC = () => {
               <tr>
                 <th>ID</th>
                 <th>{(canViewPhone || canViewEmail) ? 'Name & Contact' : 'Name'}</th>
-                <th>Institution</th>
+                <th 
+                  onClick={() => setSortBy(prev => prev === 'institute_asc' ? 'institute_desc' : 'institute_asc')}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                  title="Click to sort by Institution Name"
+                >
+                  Institution {sortBy === 'institute_asc' ? '▲' : sortBy === 'institute_desc' ? '▼' : '↕'}
+                </th>
                 <th>Registered Events</th>
                 {canViewFinancials && <th>Payment Status</th>}
-                {(canSendEmail || canDelete) && <th>Actions</th>}
+                {(canSendEmail || canDelete) && (
+                  <th 
+                    onClick={() => setSortBy(prev => prev === 'email_sent_first' ? 'email_pending_first' : 'email_sent_first')}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    title="Click to sort by Email Sent status"
+                  >
+                    Actions & Email {sortBy === 'email_sent_first' ? '▲ (Sent)' : sortBy === 'email_pending_first' ? '▼ (Pending)' : '↕'}
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -1107,6 +1273,15 @@ export const UsersView: React.FC = () => {
                               >
                                 Open in Drive ↗
                               </a>
+                              <a
+                                href="https://drive.google.com/drive/folders/1K9bYP7P00iFkoSO4yjddVMweGB_f5pGcm2WRDUbhQtffVzWCTsW60uzTF7woXIBtGqJAlp9j?usp=sharing"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="clay-drive-open-btn"
+                                style={{ padding: '5px 12px', fontSize: '0.75rem', background: '#f59e0b', borderColor: '#d97706' }}
+                              >
+                                📁 Responses Folder
+                              </a>
                             </div>
                           </div>
                         ) : (
@@ -1204,12 +1379,21 @@ export const UsersView: React.FC = () => {
                               >
                                 ↗ Open File in Google Drive
                               </a>
+                              <a
+                                href="https://drive.google.com/drive/folders/1K9bYP7P00iFkoSO4yjddVMweGB_f5pGcm2WRDUbhQtffVzWCTsW60uzTF7woXIBtGqJAlp9j?usp=sharing"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="clay-drive-open-btn"
+                                style={{ background: '#f59e0b', borderColor: '#d97706' }}
+                              >
+                                📁 Open Responses Folder
+                              </a>
                             </div>
                             <div className="clay-drive-guide-card">
                               <div className="clay-guide-head">💡 How to enable instant previews for all coordinators:</div>
                               <ol className="clay-guide-steps">
                                 <li>Open Google Drive using the account that created the Google Form.</li>
-                                <li>Locate the <strong>(File responses)</strong> folder for this form.</li>
+                                <li>Open the <a href="https://drive.google.com/drive/folders/1K9bYP7P00iFkoSO4yjddVMweGB_f5pGcm2WRDUbhQtffVzWCTsW60uzTF7woXIBtGqJAlp9j?usp=sharing" target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}>Responses Folder in Google Drive ↗</a>.</li>
                                 <li>Right click &rarr; <strong>Share</strong> &rarr; change General access to <strong>"Anyone with the link (Viewer)"</strong>.</li>
                               </ol>
                             </div>

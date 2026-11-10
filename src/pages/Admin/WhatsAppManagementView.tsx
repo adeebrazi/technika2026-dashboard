@@ -14,7 +14,7 @@ import {
   Sliders,
   Check
 } from 'lucide-react';
-import { API_BASE_URL as API } from '../../utils/adminAuth';
+import { API_BASE_URL as API, getAdminIdentity } from '../../utils/adminAuth';
 
 interface WhatsAppGroup {
   id: number;
@@ -66,6 +66,17 @@ const DEFAULT_STATE: WhatsAppState = {
 };
 
 export const WhatsAppManagementView: React.FC = () => {
+  const { role, isAdeeb, isMamatha } = getAdminIdentity();
+  const perms = (() => {
+    try {
+      const p = localStorage.getItem('adminPermissions');
+      return p ? JSON.parse(p) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const canAccess = role === 'admin' || isAdeeb || isMamatha || Boolean(perms?.canManageWhatsapp);
+
   const [state, setState] = useState<WhatsAppState>(DEFAULT_STATE);
   const [loading, setLoading] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -103,6 +114,16 @@ export const WhatsAppManagementView: React.FC = () => {
   const fetchWhatsAppApi = async (endpoint: string, options?: RequestInit): Promise<Response | null> => {
     const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('dashboardToken');
+    const headers = new Headers(options?.headers || {});
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    const finalOptions: RequestInit = {
+      ...options,
+      headers,
+    };
+
     const urls = isLocal
       ? [
           `/api/whatsapp${endpoint}`,
@@ -120,7 +141,7 @@ export const WhatsAppManagementView: React.FC = () => {
 
     for (const url of urls) {
       try {
-        const res = await fetch(url, options);
+        const res = await fetch(url, finalOptions);
         if (res && res.ok) {
           const ct = res.headers.get('content-type') || '';
           if (ct.includes('application/json') || endpoint === '/export-csv') {
@@ -302,6 +323,46 @@ export const WhatsAppManagementView: React.FC = () => {
       showToast("Error removing group", "error");
     }
   };
+
+  if (!canAccess) {
+    return (
+      <div className="clay-access-denied" style={{ padding: '4rem 1rem', display: 'flex', justifyContent: 'center' }}>
+        <div style={{
+          maxWidth: '480px',
+          width: '100%',
+          background: '#ffffff',
+          borderRadius: '24px',
+          padding: '2.5rem 2rem',
+          textAlign: 'center',
+          boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)',
+          border: '1px solid #e2e8f0'
+        }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🔒</div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.6rem' }}>Access Restricted</h2>
+          <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.6, marginBottom: '1.75rem' }}>
+            WhatsApp Management is restricted to <strong>Administrators only</strong>. Access requires administrative permission granted via Access Control.
+          </p>
+          <button 
+            type="button"
+            onClick={() => window.location.href = '/admin/participants'}
+            style={{
+              padding: '11px 26px',
+              borderRadius: '12px',
+              background: '#2563eb',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+            }}
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && !state) {
     return (

@@ -86,7 +86,25 @@ const uploadToDrive = async (fileName, buffer) => {
   return `https://drive.google.com/uc?export=view&id=${fileId}`;
 };
 
+/**
+ * Fetch a file stream from Google Drive using Service Account credentials
+ * @param {string} fileId
+ */
+const getDriveFileStream = async (fileId) => {
+  if (!isConfigured || !driveClient) return null;
+  try {
+    const res = await driveClient.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'stream' }
+    );
+    return res;
+  } catch (err) {
+    return null;
+  }
+};
+
 module.exports = {
   uploadToDrive,
+  getDriveFileStream,
   isConfigured: !!(isConfigured && driveClient),
 };

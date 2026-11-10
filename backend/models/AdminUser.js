@@ -38,6 +38,7 @@ const AdminUserSchema = new mongoose.Schema(
       canCheckIn: { type: Boolean, default: true },
       canExportCSV: { type: Boolean, default: false },
       canDelete: { type: Boolean, default: false },
+      canManageWhatsapp: { type: Boolean, default: false },
       canViewContact: { type: Boolean, default: false }, // backward compat
     },
     isPermanent: {
