@@ -120,6 +120,47 @@ const normalizeStr = (str) => {
     .trim();
 };
 
+const IGNORED_EVENT_TOKENS = new Set([
+  'NONE OF THE ABOVE',
+  'NONE',
+  'N/A',
+  'NA',
+  'NIL',
+  '-',
+]);
+
+// Canonical aliases for Google Form option variations/typos
+const EVENT_ALIAS_MAP = {
+  aiquizzathon: 'TECH_AQ',
+  aiquizathon: 'TECH_AQ',
+  robopickandplace: 'TECH_RP',
+  robopicknplace: 'TECH_RP',
+  robopickplace: 'TECH_RP',
+  ecoai: 'TECH_EA',
+  ecoaichallenge: 'TECH_EA',
+  bgmi: 'CRE_BG',
+  battlegroundmobileindia: 'CRE_BG',
+  battlegroundmobileindiabgmi: 'CRE_BG',
+  nfs: 'CRE_NF',
+  needforspeed: 'CRE_NF',
+  needforspeednfs: 'CRE_NF',
+};
+
+const appendCategoryEvents = (targetList, rawColValue, bulkToken) => {
+  if (!rawColValue || typeof rawColValue !== 'string') return;
+  const parts = rawColValue.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+  for (const part of parts) {
+    const upper = part.toUpperCase();
+    if (IGNORED_EVENT_TOKENS.has(upper)) continue;
+    // Map category-scoped "ALL EVENTS" only to that column's category
+    if (upper === 'ALL EVENTS' || upper === bulkToken) {
+      targetList.push(bulkToken);
+    } else {
+      targetList.push(part);
+    }
+  }
+};
+
 /**
  * Resolves event string/array into array of DB Event documents
  */
@@ -137,12 +178,14 @@ const resolveEvents = async (rawEventsInput, allEvents) => {
   const matchedEvents = [];
 
   for (const item of candidates) {
-    const rawClean = item.trim();
+    const rawClean = String(item || '').trim();
     if (!rawClean) continue;
+    const rawUpper = rawClean.toUpperCase();
+    if (IGNORED_EVENT_TOKENS.has(rawUpper)) continue;
     const cleanNorm = normalizeStr(rawClean);
 
     // Special category bulk matches:
-    if (rawClean.toUpperCase() === 'ALL_TECHNICAL' || rawClean.toUpperCase() === 'ALL TECHNICAL EVENTS') {
+    if (rawUpper === 'ALL_TECHNICAL' || rawUpper === 'ALL TECHNICAL EVENTS') {
       const techEvs = allEvents.filter(e => e.eventId.startsWith('TECH_') || (e.category && e.category.toLowerCase().includes('tech')));
       techEvs.forEach(e => {
         if (!matchedEventIds.has(e.eventId)) {
@@ -153,7 +196,7 @@ const resolveEvents = async (rawEventsInput, allEvents) => {
       continue;
     }
 
-    if (rawClean.toUpperCase() === 'ALL_CULTURAL' || rawClean.toUpperCase() === 'ALL CULTURAL EVENTS') {
+    if (rawUpper === 'ALL_CULTURAL' || rawUpper === 'ALL CULTURAL EVENTS') {
       const culEvs = allEvents.filter(e => e.eventId.startsWith('CUL_') || (e.category && e.category.toLowerCase().includes('cult')));
       culEvs.forEach(e => {
         if (!matchedEventIds.has(e.eventId)) {
@@ -164,7 +207,7 @@ const resolveEvents = async (rawEventsInput, allEvents) => {
       continue;
     }
 
-    if (rawClean.toUpperCase() === 'ALL_CREATIVE' || rawClean.toUpperCase() === 'ALL CREATIVE EVENTS') {
+    if (rawUpper === 'ALL_CREATIVE' || rawUpper === 'ALL CREATIVE EVENTS') {
       const creEvs = allEvents.filter(e => e.eventId.startsWith('CRE_') || (e.category && e.category.toLowerCase().includes('creat')));
       creEvs.forEach(e => {
         if (!matchedEventIds.has(e.eventId)) {
@@ -175,7 +218,7 @@ const resolveEvents = async (rawEventsInput, allEvents) => {
       continue;
     }
 
-    if (rawClean.toUpperCase() === 'ALL EVENTS') {
+    if (rawUpper === 'ALL EVENTS') {
       allEvents.forEach(e => {
         if (!matchedEventIds.has(e.eventId)) {
           matchedEventIds.add(e.eventId);
@@ -186,7 +229,7 @@ const resolveEvents = async (rawEventsInput, allEvents) => {
     }
 
     // 1. Direct match by Event ID
-    let found = allEvents.find(e => e.eventId.toUpperCase() === rawClean.toUpperCase());
+    let found = allEvents.find(e => e.eventId.toUpperCase() === rawUpper);
 
     // 2. Slug match via EVENT_ID_MAP
     if (!found && EVENT_ID_MAP[rawClean.toLowerCase()]) {
@@ -194,29 +237,40 @@ const resolveEvents = async (rawEventsInput, allEvents) => {
       found = allEvents.find(e => e.eventId === mappedId);
     }
 
-    // 3. Exact Name match (case-insensitive)
+    // 3. Explicit alias match (handles Google Form spelling / connector variants)
+    if (!found && EVENT_ALIAS_MAP[cleanNorm]) {
+      const aliasId = EVENT_ALIAS_MAP[cleanNorm];
+      found = allEvents.find(e => e.eventId === aliasId);
+    }
+
+    // 4. Exact Name match (case-insensitive)
     if (!found) {
       found = allEvents.find(e => e.name.toLowerCase() === rawClean.toLowerCase());
     }
 
-    // 4. Normalized substring / acronym match
-    if (!found) {
+    // 5. Normalized exact match (including '&' <-> 'and')
+    if (!found && cleanNorm) {
+      found = allEvents.find(e => {
+        const eventNorm = normalizeStr(e.name);
+        const eventAmpNorm = normalizeStr(e.name.replace(/&/g, ' and '));
+        return eventNorm === cleanNorm || eventAmpNorm === cleanNorm;
+      });
+    }
+
+    // 6. Normalized substring match (guarded by minimum length to prevent accidental matches)
+    if (!found && cleanNorm.length >= 4) {
       found = allEvents.find(e => {
         const eventNorm = normalizeStr(e.name);
         return eventNorm.includes(cleanNorm) || cleanNorm.includes(eventNorm);
       });
     }
 
-    if (found && !matchedEventIds.has(found.eventId)) {
+    if (!found) {
+      console.warn(`[GOOGLE FORM EVENT WARNING] Unrecognized event token "${rawClean}" (norm: "${cleanNorm}")`);
+    } else if (!matchedEventIds.has(found.eventId)) {
       matchedEventIds.add(found.eventId);
       matchedEvents.push(found);
     }
-  }
-
-  // Fallback default event if none matched (e.g. general quiz)
-  if (matchedEvents.length === 0 && allEvents.length > 0) {
-    const defaultEv = allEvents.find(e => e.eventId === 'TECH_IQ') || allEvents[0];
-    matchedEvents.push(defaultEv);
   }
 
   return matchedEvents;
@@ -260,6 +314,43 @@ const getField = (obj, candidateKeys, defaultValue = '') => {
   }
 
   return defaultValue;
+};
+
+/**
+ * Extracts raw event tokens across generic event fields and category-scoped form columns
+ */
+const extractEventsInput = (payload) => {
+  let eventsInput = payload.events || payload.Events || payload.EVENTS || payload['Selected Events'] || payload['Event Name'] || [];
+  if (typeof eventsInput === 'string' && eventsInput.trim()) {
+    eventsInput = eventsInput.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+  } else if (!Array.isArray(eventsInput)) {
+    eventsInput = [];
+  } else {
+    eventsInput = [...eventsInput];
+  }
+
+  const techCol = getField(payload, ['technicalevents', 'techevents', 'technical']);
+  appendCategoryEvents(eventsInput, techCol, 'ALL_TECHNICAL');
+
+  const cultCol = getField(payload, ['culturalevents', 'cultevents', 'cultural']);
+  appendCategoryEvents(eventsInput, cultCol, 'ALL_CULTURAL');
+
+  const creatCol = getField(payload, ['creativeevents', 'creaevents', 'creative']);
+  appendCategoryEvents(eventsInput, creatCol, 'ALL_CREATIVE');
+
+  const hasEventColumnsInPayload = Boolean(
+    techCol ||
+    cultCol ||
+    creatCol ||
+    payload.events !== undefined ||
+    payload.Events !== undefined ||
+    payload.EVENTS !== undefined ||
+    payload['Selected Events'] !== undefined ||
+    payload['Event Name'] !== undefined ||
+    Object.keys(payload).some(k => /(technical|cultural|creative)\s*events?/i.test(k))
+  );
+
+  return { eventsInput, hasEventColumnsInPayload };
 };
 
 /**
@@ -333,39 +424,7 @@ const processGoogleFormSubmission = async (payload, cache = null) => {
     const screenshotUrl = getField(payload, ['uploadpaymentscreenshot', 'paymentscreenshoturl', 'screenshoturl', 'screenshot', 'paymentscreenshot', 'receipt'], '');
     
     // Events can be array, string, or split across Technical, Cultural, Creative columns
-    let eventsInput = payload.events || payload.Events || payload.EVENTS || payload['Selected Events'] || payload['Event Name'] || [];
-    if (typeof eventsInput === 'string' && eventsInput.trim()) {
-      eventsInput = eventsInput.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
-    } else if (!Array.isArray(eventsInput)) {
-      eventsInput = [];
-    }
-
-    const techCol = getField(payload, ['technicalevents', 'techevents', 'technical']);
-    if (techCol) {
-      if (techCol.trim().toUpperCase() === 'ALL EVENTS') {
-        eventsInput.push('ALL_TECHNICAL');
-      } else {
-        eventsInput.push(...techCol.split(/[,;\n]/).map(s => s.trim()).filter(Boolean));
-      }
-    }
-
-    const cultCol = getField(payload, ['culturalevents', 'cultevents', 'cultural']);
-    if (cultCol) {
-      if (cultCol.trim().toUpperCase() === 'ALL EVENTS') {
-        eventsInput.push('ALL_CULTURAL');
-      } else {
-        eventsInput.push(...cultCol.split(/[,;\n]/).map(s => s.trim()).filter(Boolean));
-      }
-    }
-
-    const creatCol = getField(payload, ['creativeevents', 'creaevents', 'creative']);
-    if (creatCol) {
-      if (creatCol.trim().toUpperCase() === 'ALL EVENTS') {
-        eventsInput.push('ALL_CREATIVE');
-      } else {
-        eventsInput.push(...creatCol.split(/[,;\n]/).map(s => s.trim()).filter(Boolean));
-      }
-    }
+    const { eventsInput, hasEventColumnsInPayload } = extractEventsInput(payload);
     
     const rawGender = getField(payload, ['gender', 'sex'], '');
     let gender = 'Other';
@@ -535,15 +594,74 @@ const processGoogleFormSubmission = async (payload, cache = null) => {
           updateFields.verifiedAmount = expectedVerifiedAmount;
         }
 
+        let eventsChanged = false;
+        let eventChanges = null;
+
+        if (hasEventColumnsInPayload && targetUser.source === 'google_form') {
+          let allEvents = (cache && cache.allEvents) ? cache.allEvents : null;
+          if (!allEvents) {
+            allEvents = await Event.find({ isActive: true });
+            if (cache) cache.allEvents = allEvents;
+          }
+          const expectedEvents = await resolveEvents(eventsInput, allEvents);
+          const expectedIds = new Set(expectedEvents.map(e => e.eventId));
+
+          const existingRegs = (cache && cache.regsByRegId)
+            ? (cache.regsByRegId.get(targetUser.registrationId) || [])
+            : await Registration.find({ registrationId: targetUser.registrationId }).lean();
+          const actualIds = new Set(existingRegs.map(r => r.eventId));
+          const teamedIds = new Set(existingRegs.filter(r => r.teamId).map(r => r.eventId));
+
+          const missingEvents = expectedEvents.filter(e => !actualIds.has(e.eventId));
+          const extraEventIds = [...actualIds].filter(id => !expectedIds.has(id) && !teamedIds.has(id));
+
+          if (missingEvents.length > 0 || extraEventIds.length > 0) {
+            if (extraEventIds.length > 0) {
+              await Registration.deleteMany({
+                registrationId: targetUser.registrationId,
+                eventId: { $in: extraEventIds },
+                teamId: null,
+              });
+            }
+            for (const ev of missingEvents) {
+              try {
+                await Registration.create({
+                  registrationId: targetUser.registrationId,
+                  eventId: ev.eventId,
+                  registrationType: ev.teamAllowed ? 'TEAM' : 'INDIVIDUAL',
+                  status: 'CONFIRMED',
+                });
+              } catch (dupErr) {
+                if (dupErr.code !== 11000) throw dupErr;
+              }
+            }
+            if (cache && cache.regsByRegId) {
+              cache.regsByRegId.set(
+                targetUser.registrationId,
+                expectedEvents.map(e => ({ registrationId: targetUser.registrationId, eventId: e.eventId }))
+              );
+            }
+            eventsChanged = true;
+            eventChanges = {
+              added: missingEvents.map(e => e.eventId),
+              removed: extraEventIds,
+            };
+          }
+        }
+
         if (Object.keys(updateFields).length > 0) {
           await User.updateOne({ _id: targetUser._id }, { $set: updateFields });
-          console.log(`[GOOGLE FORM SYNC] Reconciled existing user ${targetUser.registrationId} (${targetUser.name}):`, Object.keys(updateFields).join(', '));
+        }
+
+        if (Object.keys(updateFields).length > 0 || eventsChanged) {
+          const allChanges = eventsChanged ? { ...updateFields, events: eventChanges } : updateFields;
+          console.log(`[GOOGLE FORM SYNC] Reconciled existing user ${targetUser.registrationId} (${targetUser.name}):`, Object.keys(allChanges).join(', '));
           return {
             success: true,
             updated: true,
             registrationId: targetUser.registrationId,
             name: targetUser.name,
-            changes: updateFields,
+            changes: allChanges,
           };
         }
       }
@@ -666,12 +784,23 @@ const processGoogleFormSubmission = async (payload, cache = null) => {
 
     // Create event registrations
     for (const ev of resolvedEvents) {
-      await Registration.create({
+      try {
+        await Registration.create({
+          registrationId,
+          eventId: ev.eventId,
+          registrationType: ev.teamAllowed ? 'TEAM' : 'INDIVIDUAL',
+          status: 'CONFIRMED',
+        });
+      } catch (dupErr) {
+        if (dupErr.code !== 11000) throw dupErr;
+      }
+    }
+
+    if (cache && cache.regsByRegId) {
+      cache.regsByRegId.set(
         registrationId,
-        eventId: ev.eventId,
-        registrationType: ev.teamAllowed ? 'TEAM' : 'INDIVIDUAL',
-        status: 'CONFIRMED',
-      });
+        resolvedEvents.map(ev => ({ registrationId, eventId: ev.eventId }))
+      );
     }
 
     // Synchronous write to Google_Form_Allotted sheet was removed to eliminate
@@ -736,4 +865,6 @@ const batchProcessGoogleForms = async (rows) => {
 module.exports = {
   processGoogleFormSubmission,
   batchProcessGoogleForms,
+  extractEventsInput,
+  resolveEvents,
 };

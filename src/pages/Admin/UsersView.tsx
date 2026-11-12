@@ -3240,6 +3240,33 @@ export const UsersView: React.FC = () => {
           .clay-filter-select {
             width: 100%;
           }
+
+          .clay-table-card {
+            max-width: 100% !important;
+            border-radius: 18px !important;
+            box-sizing: border-box !important;
+          }
+
+          .clay-table-wrapper {
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+
+          .clay-modal-overlay {
+            padding: 8px !important;
+          }
+
+          .clay-modal-card {
+            border-radius: 16px !important;
+            max-width: 96vw !important;
+            max-height: 94vh !important;
+          }
+
+          .clay-modal-header {
+            padding: 0.85rem 1rem !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
         }
       `}</style>
     </div>

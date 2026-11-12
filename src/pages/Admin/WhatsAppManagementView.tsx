@@ -753,6 +753,8 @@ export const WhatsAppManagementView: React.FC = () => {
           max-width: 1400px;
           margin: 0 auto;
           font-family: inherit;
+          box-sizing: border-box;
+          width: 100%;
         }
 
         /* Loading */
@@ -1340,6 +1342,32 @@ export const WhatsAppManagementView: React.FC = () => {
         .clay-modal-actions {
           display: flex;
           gap: 0.75rem;
+        }
+
+        @media (max-width: 640px) {
+          .clay-whatsapp-view {
+            padding: 0.5rem 0 2rem 0 !important;
+            width: 100% !important;
+          }
+          .clay-page-title {
+            font-size: 1.25rem !important;
+          }
+          .clay-page-header {
+            gap: 0.85rem !important;
+            margin-bottom: 1.25rem !important;
+          }
+          .clay-header-actions {
+            width: 100% !important;
+            justify-content: flex-start !important;
+          }
+          .clay-metrics-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0.85rem !important;
+          }
+          .clay-modal-card {
+            padding: 1.25rem !important;
+            max-width: 95vw !important;
+          }
         }
       `}</style>
     </div>

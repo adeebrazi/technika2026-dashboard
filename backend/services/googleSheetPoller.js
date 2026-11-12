@@ -3,6 +3,7 @@ const http = require('http');
 const { URL } = require('url');
 const User = require('../models/User');
 const Event = require('../models/Event');
+const Registration = require('../models/Registration');
 const SyncLock = require('../models/SyncLock');
 const { processGoogleFormSubmission } = require('./googleFormService');
 
@@ -216,12 +217,23 @@ const syncGoogleSheetNow = async (customSheetUrl = null) => {
 
     const allEvents = await Event.find({ isActive: true });
 
+    const gRegIds = existingGFormUsers.map(u => u.registrationId).filter(Boolean);
+    const existingRegs = gRegIds.length > 0
+      ? await Registration.find({ registrationId: { $in: gRegIds } }).lean()
+      : [];
+    const regsByRegId = new Map();
+    for (const reg of existingRegs) {
+      if (!regsByRegId.has(reg.registrationId)) regsByRegId.set(reg.registrationId, []);
+      regsByRegId.get(reg.registrationId).push(reg);
+    }
+
     const cache = {
       existingKeySet: new Set(),
       existingScreenshotSet: new Set(),
       usersByKey: new Map(),
       usersByTimestamp: new Map(),
       usersByScreenshot: new Map(),
+      regsByRegId,
       allEvents,
     };
 

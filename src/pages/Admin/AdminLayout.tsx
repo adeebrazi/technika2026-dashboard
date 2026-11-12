@@ -1009,8 +1009,10 @@ export const AdminLayout: React.FC = () => {
             margin-left: 0 !important;
             width: 100% !important;
             max-width: 100vw !important;
+            min-width: 0 !important;
             padding: 0.85rem 0.85rem 85px 0.85rem !important;
             box-sizing: border-box;
+            overflow-x: hidden !important;
           }
 
           /* Mobile Bottom Navigation Bar */

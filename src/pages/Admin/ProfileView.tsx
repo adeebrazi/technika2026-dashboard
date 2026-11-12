@@ -597,6 +597,7 @@ export const ProfileView: React.FC = () => {
           width: 100%;
           position: relative;
           overflow: hidden;
+          contain: paint;
         }
 
         .clay-hero-banner-orb {
@@ -605,7 +606,7 @@ export const ProfileView: React.FC = () => {
           height: 160px;
           border-radius: 50%;
           top: -40px;
-          right: -20px;
+          right: 0px;
           background: rgba(255, 255, 255, 0.15);
           filter: blur(10px);
         }
@@ -1227,6 +1228,33 @@ export const ProfileView: React.FC = () => {
 
         .clay-modal-confirm-btn:hover {
           background: #dc2626;
+        }
+
+        @media (max-width: 640px) {
+          .clay-profile-page {
+            gap: 1rem;
+          }
+          .clay-profile-header {
+            padding: 1rem 1.1rem;
+            border-radius: 16px;
+            gap: 0.75rem;
+          }
+          .clay-page-title {
+            font-size: 1.1rem;
+          }
+          .clay-page-subtitle {
+            font-size: 0.72rem;
+          }
+          .clay-status-chip {
+            padding: 4px 10px;
+            font-size: 0.65rem;
+          }
+          .clay-card {
+            border-radius: 16px;
+          }
+          .clay-hero-body {
+            padding: 0 1rem 1.25rem 1rem;
+          }
         }
       `}</style>
     </div>

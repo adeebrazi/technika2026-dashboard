@@ -865,6 +865,8 @@ export const AccessControlView: React.FC = () => {
           padding: 1.5rem 1rem 3rem 1rem;
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           color: #0f172a;
+          box-sizing: border-box;
+          width: 100%;
         }
 
         /* Top Header Card */
@@ -1177,8 +1179,103 @@ export const AccessControlView: React.FC = () => {
         }
 
         @media (max-width: 640px) {
+          .fresh-access-wrap {
+            padding: 0.5rem 0 2rem 0 !important;
+            width: 100% !important;
+          }
+          .fresh-header-card {
+            padding: 1rem !important;
+            border-radius: 16px !important;
+            gap: 0.85rem !important;
+          }
+          .header-left-col {
+            gap: 0.75rem !important;
+            width: 100% !important;
+          }
+          .header-icon-badge {
+            width: 42px !important;
+            height: 42px !important;
+            border-radius: 12px !important;
+            flex-shrink: 0 !important;
+          }
+          .icon-main {
+            width: 22px !important;
+            height: 22px !important;
+          }
+          .header-title {
+            font-size: 1.15rem !important;
+          }
+          .header-sub {
+            font-size: 0.78rem !important;
+          }
+          .btn-create-staff {
+            width: 100% !important;
+            justify-content: center !important;
+            font-size: 0.82rem !important;
+            padding: 0.65rem 1rem !important;
+          }
+          .fresh-toolbar {
+            gap: 8px !important;
+            width: 100% !important;
+          }
+          .fresh-stats-bar {
+            gap: 6px !important;
+            width: 100% !important;
+          }
+          .stat-chip {
+            padding: 0.4rem 0.7rem !important;
+            font-size: 0.75rem !important;
+            border-radius: 10px !important;
+          }
+          .search-box-wrap {
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .limited-legend-bar {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.72rem !important;
+          }
           .fresh-cards-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr) !important;
+            width: 100% !important;
+            gap: 1rem !important;
+          }
+          .fresh-staff-card {
+            padding: 1rem !important;
+            border-radius: 16px !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+          }
+          .card-header-area {
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .card-permissions-area {
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .perm-section-title {
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .profile-name {
+            font-size: 0.95rem !important;
+            word-break: break-word !important;
+          }
+          .profile-email {
+            font-size: 0.72rem !important;
+            display: flex !important;
+            align-items: center !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            overflow: hidden !important;
+          }
+          .profile-email span {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            min-width: 0 !important;
           }
         }
 
@@ -1193,6 +1290,9 @@ export const AccessControlView: React.FC = () => {
           flex-direction: column;
           gap: 1.15rem;
           transition: all 0.2s ease;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .fresh-staff-card:hover {
@@ -1322,9 +1422,17 @@ export const AccessControlView: React.FC = () => {
           font-size: 0.76rem;
           color: #94a3b8;
           margin-top: 3px;
+          display: flex;
+          align-items: center;
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .profile-email span {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          min-width: 0;
         }
 
         .card-action-side {

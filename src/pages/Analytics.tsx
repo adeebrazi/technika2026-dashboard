@@ -883,7 +883,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <div className="clay-card-header-row" style={{ alignItems: 'center', gap: '12px' }}>
+            <div className="clay-card-header-row clay-table-card-header">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <h2 className="clay-card-serif-title" style={{ margin: 0 }}>Institute participation</h2>
@@ -906,7 +906,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 <p className="clay-card-subtitle" style={{ margin: '3px 0 0 0' }}>Representation from participating institutions</p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <div className="clay-table-header-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={() => setIsInstExpanded(!isInstExpanded)}
@@ -1058,7 +1058,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
               transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
-            <div className="clay-card-header-row" style={{ alignItems: 'center', gap: '12px' }}>
+            <div className="clay-card-header-row clay-table-card-header">
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <h2 className="clay-card-serif-title" style={{ margin: 0 }}>Course participation</h2>
@@ -1081,7 +1081,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
                 <p className="clay-card-subtitle" style={{ margin: '3px 0 0 0' }}>Registrations by academic discipline</p>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <div className="clay-table-header-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={() => setIsCourseExpanded(!isCourseExpanded)}
@@ -2084,6 +2084,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             inset -2px -2px 4px rgba(162, 178, 201, 0.18);
           position: relative;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .clay-card:hover {
@@ -3502,11 +3504,106 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
             font-size: 12px;
             padding: 10px 12px;
           }
-          .clay-kpi-grid {
-            grid-template-columns: 1fr;
+          .clay-card {
+            padding: 18px 14px !important;
+            border-radius: 18px !important;
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+          }
+          .clay-card-serif-title {
+            font-size: 17px !important;
+          }
+          .clay-card-header-row {
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+          }
+          .clay-kpi-grid,
+          .clay-categories-grid,
+          .clay-mid-grid,
+          .clay-tables-grid,
+          .clay-bottom-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+            width: 100% !important;
+            max-width: 100% !important;
           }
           .clay-cat-tiles-row {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr !important;
+          }
+          .clay-ranked-bar-row {
+            grid-template-columns: minmax(0, 1.2fr) minmax(50px, 1fr) 45px !important;
+            gap: 6px !important;
+            padding: 6px 8px !important;
+            box-sizing: border-box !important;
+          }
+          .clay-ranked-bars-list {
+            padding-right: 2px !important;
+          }
+          .clay-ranked-name {
+            font-size: 11px !important;
+          }
+          .clay-event-header-controls {
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+          }
+          .clay-table-card {
+            max-width: 100% !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+          }
+          .clay-table-wrap {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            box-sizing: border-box !important;
+          }
+          .clay-data-table {
+            width: 100% !important;
+            min-width: 300px !important;
+          }
+          .clay-data-table th, 
+          .clay-data-table td {
+            padding: 10px 8px !important;
+            font-size: 12px !important;
+          }
+          .clay-initial-badge {
+            width: 26px !important;
+            height: 26px !important;
+            font-size: 10px !important;
+            flex-shrink: 0 !important;
+          }
+          .clay-popular-card {
+            padding: 16px 14px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .clay-popular-name {
+            font-size: 18px !important;
+            word-break: break-word !important;
+          }
+          .clay-table-card-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+          }
+          .clay-table-header-controls {
+            width: 100% !important;
+            justify-content: space-between !important;
+          }
+          .clay-entity-name {
+            max-width: 140px !important;
+            font-size: 11px !important;
+          }
+          .clay-bar-trough {
+            display: none !important;
+          }
+          .clay-share-col {
+            justify-content: flex-end !important;
+            gap: 0 !important;
+          }
+          .clay-img-frame {
+            height: 150px !important;
           }
         }
       `}</style>

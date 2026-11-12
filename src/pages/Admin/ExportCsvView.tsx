@@ -1127,13 +1127,34 @@ export const ExportCsvView: React.FC = () => {
 
         @media (max-width: 768px) {
           .clay-export-view {
-            padding: 18px 16px 40px 16px;
+            padding: 12px 0 40px 0;
+            width: 100%;
           }
           .clay-card {
-            padding: 20px 18px;
+            padding: 18px 14px;
+            border-radius: 18px;
           }
           .clay-page-title {
-            font-size: 1.5rem;
+            font-size: 1.35rem;
+          }
+          .clay-section-action-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .clay-select {
+            width: 100% !important;
+          }
+          .clay-filter-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .clay-filter-field {
+            width: 100%;
+          }
+          .clay-meta-chip {
+            width: 100%;
+            min-width: unset;
           }
           .clay-text-input {
             min-width: 100%;
@@ -1141,6 +1162,9 @@ export const ExportCsvView: React.FC = () => {
           .clay-action-btn {
             width: 100%;
             justify-content: center;
+          }
+          .clay-action-hint {
+            text-align: center;
           }
         }
       `}</style>
