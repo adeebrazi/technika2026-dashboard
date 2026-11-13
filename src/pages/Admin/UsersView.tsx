@@ -143,6 +143,44 @@ export const UsersView: React.FC = () => {
   } | null>(null);
 
   const [imgLoadErrors, setImgLoadErrors] = useState<Record<string, boolean>>({});
+  const [imgAttemptIndex, setImgAttemptIndex] = useState<Record<string, number>>({});
+
+  const getDriveCandidates = (url?: string): string[] => {
+    if (!url) return [];
+    if (url.includes('drive.google.com')) {
+      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) {
+        const id = idMatch[1];
+        return [
+          `https://lh3.googleusercontent.com/d/${id}`,
+          `https://dashboard.technika2026.online/api/admin/drive-proxy?id=${id}`,
+          `/api/admin/drive-proxy?id=${id}`,
+          `https://drive.google.com/thumbnail?id=${id}&sz=w1600`
+        ];
+      }
+    }
+    const full = (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:'))
+      ? url
+      : `${API}${url.startsWith('/') ? '' : '/'}${url}`;
+    return [full];
+  };
+
+  const getFullImageUrl = (url?: string) => {
+    if (!url) return '';
+    const candidates = getDriveCandidates(url);
+    const attempt = imgAttemptIndex[url] || 0;
+    return candidates[attempt] || candidates[0] || url;
+  };
+
+  const handleImageError = (url: string) => {
+    const candidates = getDriveCandidates(url);
+    const currentAttempt = imgAttemptIndex[url] || 0;
+    if (currentAttempt + 1 < candidates.length) {
+      setImgAttemptIndex(prev => ({ ...prev, [url]: currentAttempt + 1 }));
+    } else {
+      setImgLoadErrors(prev => ({ ...prev, [url]: true }));
+    }
+  };
 
   const getUserDocuments = (user: any): UserDocument[] => {
     const docs: UserDocument[] = [];
@@ -204,24 +242,13 @@ export const UsersView: React.FC = () => {
     const docs = getUserDocuments(user);
     if (docs.length === 0) return;
     setImgLoadErrors({});
+    setImgAttemptIndex({});
     setActiveDocModal({
       user,
       docs,
       activeIdx: Math.min(initialIndex, docs.length - 1),
       viewMode: 'tabs'
     });
-  };
-
-  const getFullImageUrl = (url?: string) => {
-    if (!url) return '';
-    if (url.includes('drive.google.com')) {
-      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if (idMatch && idMatch[1]) {
-        return `${API}/api/admin/drive-proxy?id=${idMatch[1]}`;
-      }
-    }
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
-    return `${API}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
   const getOriginalFileUrl = (url?: string) => {
@@ -1258,7 +1285,7 @@ export const UsersView: React.FC = () => {
                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
                               <button
                                 type="button"
-                                onClick={() => setImgLoadErrors({})}
+                                onClick={() => { setImgLoadErrors({}); setImgAttemptIndex({}); }}
                                 className="clay-drive-retry-btn"
                                 style={{ padding: '5px 12px', fontSize: '0.75rem' }}
                               >
@@ -1291,7 +1318,7 @@ export const UsersView: React.FC = () => {
                             className="clay-modal-img"
                             loading="lazy"
                             referrerPolicy="no-referrer"
-                            onError={() => setImgLoadErrors(prev => ({ ...prev, [doc.url]: true }))}
+                            onError={() => handleImageError(doc.url)}
                           />
                         )}
                       </div>
@@ -1366,7 +1393,7 @@ export const UsersView: React.FC = () => {
                             <div className="clay-drive-notice-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
                               <button
                                 type="button"
-                                onClick={() => setImgLoadErrors({})}
+                                onClick={() => { setImgLoadErrors({}); setImgAttemptIndex({}); }}
                                 className="clay-drive-retry-btn"
                               >
                                 🔄 Reload Preview
@@ -1404,7 +1431,7 @@ export const UsersView: React.FC = () => {
                             alt={currentDoc.title}
                             className="clay-modal-img"
                             referrerPolicy="no-referrer"
-                            onError={() => setImgLoadErrors(prev => ({ ...prev, [currentDoc.url]: true }))}
+                            onError={() => handleImageError(currentDoc.url)}
                           />
                         )}
                       </div>
