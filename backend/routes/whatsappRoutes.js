@@ -63,17 +63,17 @@ const DEFAULT_STATE = {
       id: 2,
       name: "Group Beta",
       tag: "Beta",
-      link: "https://chat.whatsapp.com/Byt0h7SkQzX7kLuNLgDPeW",
-      count: 36,
+      link: "https://chat.whatsapp.com/L9YVg7LL45zATGI0T13C0b?s=cl&p=a&iam=2",
+      count: 38,
       status: "OPEN",
       accent: "#FFE600"
     }
   ],
   allFull: false,
   activeGroupId: 2,
-  totalJoined: 1036,
+  totalJoined: 1038,
   totalCapacity: 2000,
-  totalRemaining: 964
+  totalRemaining: 962
 };
 
 // In-memory cache for fast zero-latency response

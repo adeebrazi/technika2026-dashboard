@@ -52,16 +52,16 @@ const DEFAULT_STATE: WhatsAppState = {
       id: 2,
       name: "Group Beta",
       tag: "Beta",
-      link: "https://chat.whatsapp.com/Byt0h7SkQzX7kLuNLgDPeW",
-      count: 36,
+      link: "https://chat.whatsapp.com/L9YVg7LL45zATGI0T13C0b?s=cl&p=a&iam=2",
+      count: 38,
       status: "OPEN",
       accent: "#FFE600",
     },
   ],
   activeGroupId: 2,
-  totalJoined: 1036,
+  totalJoined: 1038,
   totalCapacity: 2000,
-  totalRemaining: 964,
+  totalRemaining: 962,
   allFull: false,
 };
 
@@ -128,15 +128,15 @@ export const WhatsAppManagementView: React.FC = () => {
       ? [
           `/api/whatsapp${endpoint}`,
           `http://localhost:5000/api/whatsapp${endpoint}`,
-          `https://technika2026.online/api/whatsapp${endpoint}`,
-          `https://www.technika2026.online/api/whatsapp${endpoint}`
+          `https://dashboard.technika2026.online/api/whatsapp${endpoint}`,
+          `https://technika2026.online/api/whatsapp${endpoint}`
         ]
       : [
+          `https://dashboard.technika2026.online/api/whatsapp${endpoint}`,
           `/api/whatsapp${endpoint}`,
-          `https://technika2026.online/api/whatsapp${endpoint}`,
-          `https://www.technika2026.online/api/whatsapp${endpoint}`,
           `${API}/api/whatsapp${endpoint}`,
-          `https://dashboard.technika2026.online/api/whatsapp${endpoint}`
+          `https://technika2026.online/api/whatsapp${endpoint}`,
+          `https://www.technika2026.online/api/whatsapp${endpoint}`
         ];
 
     for (const url of urls) {
@@ -215,6 +215,13 @@ export const WhatsAppManagementView: React.FC = () => {
         if (data.success) {
           showToast(`Group #${groupId} WhatsApp invite link saved!`, "success");
           if (data.state) setState(data.state);
+
+          // Asynchronously replicate to public website endpoint for instantaneous multi-domain sync
+          fetch("https://technika2026.online/api/whatsapp/config", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ groups: [{ id: groupId, link }] })
+          }).catch(() => {});
         } else {
           showToast(data.message || "Failed to update link", "error");
         }
