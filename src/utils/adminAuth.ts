@@ -227,3 +227,24 @@ export const getAdminIdentity = (): AdminIdentity => {
     canAccessAccessControl,
   };
 };
+
+// In-memory shared participant directory cache across dashboard views (instant tab switching)
+let sharedUsersPayload: any = null;
+let sharedUsersTimestamp = 0;
+
+export const getSharedUsersCache = (): any | null => {
+  if (sharedUsersPayload && (Date.now() - sharedUsersTimestamp < 60000)) {
+    return sharedUsersPayload;
+  }
+  return null;
+};
+
+export const setSharedUsersCache = (data: any) => {
+  sharedUsersPayload = data;
+  sharedUsersTimestamp = Date.now();
+};
+
+export const clearSharedUsersCache = () => {
+  sharedUsersPayload = null;
+  sharedUsersTimestamp = 0;
+};

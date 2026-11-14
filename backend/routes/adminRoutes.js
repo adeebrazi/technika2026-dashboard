@@ -1138,133 +1138,93 @@ router.post('/dashboard-login', (req, res) => {
 
 // @access  Private (All Admin Roles)
 
+// In-memory cache for users directory to eliminate repetitive 2,700+ document queries
+let cachedUsersPayload = null;
+let lastUsersCacheTimestamp = 0;
+const USERS_CACHE_TTL = 30000; // 30 seconds TTL
+
 router.get('/users', verifyAdminToken, async (req, res) => {
-
   try {
-
-    if (req.query.sync === '1' || req.query.sync === 'true') {
-
+    const forceSync = req.query.sync === '1' || req.query.sync === 'true';
+    if (forceSync) {
+      cachedUsersPayload = null;
       await triggerLiveSyncIfNeeded(true);
-
     }
 
     const requestingRole = req.admin?.role; // 'admin' | 'faculty' | 'coordinator'
-
     const requestingEmail = req.admin?.email;
-
     const perms = await getActivePermissions(requestingRole, requestingEmail);
 
     // Permission Enforcement: If canViewParticipants is false for non-admin, deny access
-
     if (requestingRole !== 'admin' && perms.canViewParticipants === false) {
-
       return res.status(403).json({
-
         message: 'Access Restricted: You do not have permission to view registered participants.',
-
         accessLevel: 'none',
-
         permissions: perms,
-
         users: []
-
       });
-
     }
 
-    const users = await User.find().select('-passwordHash').sort({ createdAt: -1 });
+    // Fast-path: return cached response if valid and role is admin (full access)
+    if (requestingRole === 'admin' && !forceSync && cachedUsersPayload && (Date.now() - lastUsersCacheTimestamp < USERS_CACHE_TTL)) {
+      return res.json({ ...cachedUsersPayload, permissions: perms });
+    }
 
-    
+    const users = await User.find()
+      .select('-passwordHash -formData -rawPayload')
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Fetch all events to construct an in-memory mapping
-
-    const events = await Event.find();
-
+    const events = await Event.find().lean();
     const eventMap = {};
-
     events.forEach(e => {
-
       eventMap[e.eventId] = e;
-
     });
 
-    // Batch fetch all registered events for users in a single performant query
-
-    const regIds = users.map(u => u.registrationId).filter(Boolean);
-
-    const allRegistrations = await Registration.find({ registrationId: { $in: regIds } });
+    // Streamlined query selecting only needed registration fields
+    const allRegistrations = await Registration.find({}, 'registrationId eventId').lean();
 
     const regMap = {};
-
     allRegistrations.forEach(reg => {
-
       if (!regMap[reg.registrationId]) regMap[reg.registrationId] = [];
-
       regMap[reg.registrationId].push(reg);
-
     });
 
     // Map registered events for each user in memory without N+1 roundtrips
-
     const usersWithEvents = users.map((user) => {
-
       const registrations = regMap[user.registrationId] || [];
 
-      
-
       const registeredEvents = registrations.map(reg => {
-
         const eventDoc = eventMap[reg.eventId];
-
         return {
-
-          ...reg.toObject(),
-
+          ...reg,
           event: eventDoc ? {
-
             name: eventDoc.name,
-
             category: eventDoc.category,
-
             type: eventDoc.teamAllowed ? 'TEAM' : 'INDIVIDUAL'
-
           } : null
-
         };
-
       });
 
       // Filter by assigned events if restricted
-
       if (perms.assignedEvents && perms.assignedEvents.length > 0) {
-
         const hasAssignedEvent = registeredEvents.some(re => 
-
           re.event && perms.assignedEvents.includes(re.event.name)
-
         );
-
         if (!hasAssignedEvent) return null;
-
       }
 
       // Root Admin has full unfiltered access
-
       if (requestingRole === 'admin') {
-
         return {
-
-          ...user.toObject(),
-
+          ...user,
           registeredEvents
-
         };
-
       }
 
       // Dynamic permission filtering based on what Admin configured for Faculty/Coordinator
-
-      const uObj = user.toObject();
+      const uObj = user;
 
       const filteredUser = {
 
@@ -1393,6 +1353,10 @@ router.get('/users', verifyAdminToken, async (req, res) => {
     const finalUsers = usersWithEvents.filter(Boolean);
 
     const accessLevel = perms.canViewFinancials && perms.canViewDocuments ? 'full' : 'limited';
+    if (requestingRole === 'admin') {
+      cachedUsersPayload = { users: finalUsers, accessLevel };
+      lastUsersCacheTimestamp = Date.now();
+    }
 
     res.json({ users: finalUsers, accessLevel, permissions: perms });
 

@@ -11,7 +11,7 @@ import {
   Plus,
   Check
 } from 'lucide-react';
-import { getAdminIdentity, fetchAdminApi } from '../../utils/adminAuth';
+import { getAdminIdentity, fetchAdminApi, getSharedUsersCache, setSharedUsersCache } from '../../utils/adminAuth';
 import {
   generateParticipantCountXlsxBlob,
   generateInstituteWiseXlsxBlob,
@@ -59,6 +59,18 @@ export const ExportCsvView: React.FC = () => {
 
   useEffect(() => {
     if (!canAccessExport) return;
+
+    // Check shared cache first for instantaneous tab switching without network wait
+    const cached = getSharedUsersCache();
+    if (cached && (cached.users || Array.isArray(cached))) {
+      const list = cached.users || cached || [];
+      if (Array.isArray(list) && list.length > 0) {
+        setUsers(list);
+        setLoading(false);
+        return;
+      }
+    }
+
     const token = localStorage.getItem('adminToken') || localStorage.getItem('dashboardToken');
     setLoading(true);
     fetchAdminApi('/api/admin/users', {
@@ -68,8 +80,10 @@ export const ExportCsvView: React.FC = () => {
       .then(data => {
         if (data.users && Array.isArray(data.users)) {
           setUsers(data.users);
+          setSharedUsersCache(data);
         } else if (Array.isArray(data)) {
           setUsers(data);
+          setSharedUsersCache({ users: data });
         }
       })
       .catch((err) => {

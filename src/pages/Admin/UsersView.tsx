@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Mail, QrCode, CheckCircle2, Clock, Send, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
-import { API_BASE_URL as API, fetchAdminApi } from '../../utils/adminAuth';
+import { API_BASE_URL as API, fetchAdminApi, getSharedUsersCache, setSharedUsersCache, clearSharedUsersCache } from '../../utils/adminAuth';
 
 export const UsersView: React.FC = () => {
   const role = localStorage.getItem('adminRole');
@@ -13,6 +13,8 @@ export const UsersView: React.FC = () => {
   const [filterSource, setFilterSource] = useState('all');
   const [filterPayment, setFilterPayment] = useState('all');
   const [filterEmail, setFilterEmail] = useState<'all' | 'sent' | 'pending'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number | 'all'>(50);
   const [filterInstitute, setFilterInstitute] = useState('');
   const [showInstituteDropdown, setShowInstituteDropdown] = useState(false);
   const instituteRef = useRef<HTMLDivElement>(null);
@@ -266,14 +268,31 @@ export const UsersView: React.FC = () => {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (force = false) => {
     try {
       const token = localStorage.getItem('adminToken');
       if (!token) {
         setError('No active session found. Please log in.');
         return;
       }
-      const res = await fetchAdminApi('/api/admin/users');
+
+      if (!force) {
+        const cached = getSharedUsersCache();
+        if (cached && (cached.users || Array.isArray(cached))) {
+          const list = cached.users || cached || [];
+          setUsers(list);
+          if (cached.permissions) {
+            setPerms(cached.permissions);
+          }
+          setAccessLevel(cached.accessLevel || (role === 'admin' ? 'full' : 'limited'));
+          setLoading(false);
+          setError('');
+          return;
+        }
+      }
+
+      setLoading(true);
+      const res = await fetchAdminApi(force ? '/api/admin/users?sync=1' : '/api/admin/users');
       const text = await res.text();
       let data: any = {};
       try {
@@ -283,7 +302,9 @@ export const UsersView: React.FC = () => {
       }
 
       if (res.ok) {
-        setUsers(data.users || data || []);
+        const userList = data.users || data || [];
+        setUsers(userList);
+        setSharedUsersCache(data);
         if (data.permissions) {
           setPerms(data.permissions);
           localStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
@@ -512,6 +533,16 @@ export const UsersView: React.FC = () => {
     return 0;
   });
 
+  // Reset pagination to page 1 whenever any search or filter criteria change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterEvent, filterSource, filterPayment, filterEmail, filterInstitute, sortBy]);
+
+  const totalPages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(sortedUsers.length / (typeof pageSize === 'number' ? pageSize : 50)));
+  const paginatedUsers = pageSize === 'all'
+    ? sortedUsers
+    : sortedUsers.slice((currentPage - 1) * Number(pageSize), currentPage * Number(pageSize));
+
   const isAdmin = role === 'admin';
   const canViewParticipants = isAdmin || perms?.canViewParticipants !== false;
   const canViewPhone = isAdmin || Boolean(perms?.canViewPhone || perms?.canViewContact);
@@ -671,6 +702,30 @@ export const UsersView: React.FC = () => {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={() => {
+              clearSharedUsersCache();
+              fetchUsers(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              background: '#ffffff',
+              color: '#334155',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+            }}
+            title="Force refresh participant directory from server"
+          >
+            <RefreshCw size={14} />
+            <span>Sync</span>
+          </button>
           <div className="clay-count-badge">
             <span className="clay-count-num">{filteredUsers.length}</span>
             <span className="clay-count-label">{filteredUsers.length === users.length ? 'Total' : `of ${users.length}`}</span>
@@ -945,7 +1000,7 @@ export const UsersView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                sortedUsers.map((user, idx) => (
+                paginatedUsers.map((user, idx) => (
                   <tr key={user._id} className={idx % 2 === 0 ? 'row-even' : 'row-odd'}>
                     <td>
                       <span className="clay-id-badge">{user.registrationId}</span>
@@ -1183,6 +1238,121 @@ export const UsersView: React.FC = () => {
               )}
             </tbody>
           </table>
+
+          {/* Claymorphic Pagination Bar */}
+          {sortedUsers.length > 0 && (
+            <div className="clay-pagination-bar" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 20px',
+              borderTop: '1px solid rgba(226, 232, 240, 0.8)',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+                <span>Showing {pageSize === 'all' ? 1 : Math.min(sortedUsers.length, (currentPage - 1) * Number(pageSize) + 1)}–{pageSize === 'all' ? sortedUsers.length : Math.min(sortedUsers.length, currentPage * Number(pageSize))} of {sortedUsers.length}</span>
+                <span style={{ color: '#cbd5e1' }}>|</span>
+                <span>Per Page:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.84rem',
+                    color: '#334155',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                  <option value="all">All ({sortedUsers.length})</option>
+                </select>
+              </div>
+
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      background: currentPage === 1 ? '#f8fafc' : '#ffffff',
+                      color: currentPage === 1 ? '#94a3b8' : '#1e293b',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    « First
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      background: currentPage === 1 ? '#f8fafc' : '#ffffff',
+                      color: currentPage === 1 ? '#94a3b8' : '#1e293b',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    ‹ Prev
+                  </button>
+                  <span style={{ fontSize: '0.86rem', fontWeight: 700, color: '#2563eb', padding: '0 6px' }}>
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      background: currentPage === totalPages ? '#f8fafc' : '#ffffff',
+                      color: currentPage === totalPages ? '#94a3b8' : '#1e293b',
+                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    Next ›
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      background: currentPage === totalPages ? '#f8fafc' : '#ffffff',
+                      color: currentPage === totalPages ? '#94a3b8' : '#1e293b',
+                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    Last »
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
