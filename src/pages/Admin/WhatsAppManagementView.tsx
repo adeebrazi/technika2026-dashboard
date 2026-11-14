@@ -182,10 +182,10 @@ export const WhatsAppManagementView: React.FC = () => {
   useEffect(() => {
     fetchStatus();
 
-    // Auto polling every 2.5 seconds for instantaneous 2-way live sync
+    // Gentle polling every 30 seconds to conserve serverless CPU
     const interval = setInterval(() => {
       fetchStatus();
-    }, 2500);
+    }, 30000);
 
     return () => {
       clearInterval(interval);

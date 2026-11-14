@@ -2064,9 +2064,9 @@ const triggerLiveSyncIfNeeded = async (force = false) => {
 
       const lockDoc = await SyncLock.findOne({ lockName: 'google_form_sync' }).lean();
 
-      if (lockDoc && lockDoc.lastSyncedAt && (now.getTime() - new Date(lockDoc.lastSyncedAt).getTime() < 45000)) {
+      if (lockDoc && lockDoc.lastSyncedAt && (now.getTime() - new Date(lockDoc.lastSyncedAt).getTime() < 300000)) {
 
-        // Cooldown active: synced less than 45s ago across all serverless containers
+        // Cooldown active: synced less than 5 minutes ago across all serverless containers
 
         return;
 
@@ -2118,7 +2118,10 @@ router.get('/analytics', async (req, res) => {
 
     const forceSync = req.query.sync === '1' || req.query.sync === 'true';
 
-    await triggerLiveSyncIfNeeded(forceSync);
+    // Only run expensive Google Sheet CSV download & reconciliation when manually triggered
+    if (forceSync) {
+      await triggerLiveSyncIfNeeded(true);
+    }
 
     // ── 1. Total number of registrations (unique users) ──
 

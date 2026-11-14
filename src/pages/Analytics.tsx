@@ -134,10 +134,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onLogout }) => {
 
   useEffect(() => {
     fetchAnalytics();
-    // Live periodic polling: refresh analytics every 25 seconds so new Google Form submissions appear automatically
+    // Gentle polling: refresh analytics every 60 seconds to conserve compute
     const pollTimer = setInterval(() => {
       fetchAnalytics(false);
-    }, 25000);
+    }, 60000);
     return () => clearInterval(pollTimer);
   }, []);
 

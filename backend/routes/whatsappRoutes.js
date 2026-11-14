@@ -255,21 +255,13 @@ function broadcastToClients() {
   } catch (err) {}
 }
 
-// SSE stream for real-time live synchronization
+// SSE stream for real-time live synchronization (serverless-safe)
 router.get('/events', async (req, res) => {
+  const state = await getOrSyncState();
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  const state = await getOrSyncState();
   res.write(`data: ${JSON.stringify(state)}\n\n`);
-
-  const id = Date.now() + Math.random();
-  sseClients.push({ id, res });
-  req.on('close', () => {
-    sseClients = sseClients.filter(c => c.id !== id);
-  });
+  res.end();
 });
 
 // GET status
