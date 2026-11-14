@@ -1141,13 +1141,20 @@ router.post('/dashboard-login', (req, res) => {
 // In-memory cache for users directory to eliminate repetitive 2,700+ document queries
 let cachedUsersPayload = null;
 let lastUsersCacheTimestamp = 0;
-const USERS_CACHE_TTL = 30000; // 30 seconds TTL
+const USERS_CACHE_TTL = 300000; // 5 minutes TTL
+
+const invalidateUsersCache = () => {
+  cachedUsersPayload = null;
+  lastUsersCacheTimestamp = 0;
+};
+
+const USER_PROJECTION = 'registrationId name age gender email whatsapp institution course semester paymentUTR utrEnteredManually expectedAmount verifiedAmount verificationStatus isAjuExempt paymentScreenshotUrl noDuesSlipUrl collegeIdCardUrl source confirmationEmailSent confirmationEmailSentAt confirmationEmailSentBy qrEmailSent qrEmailSentAt qrEmailSentBy createdAt';
 
 router.get('/users', verifyAdminToken, async (req, res) => {
   try {
     const forceSync = req.query.sync === '1' || req.query.sync === 'true';
     if (forceSync) {
-      cachedUsersPayload = null;
+      invalidateUsersCache();
       await triggerLiveSyncIfNeeded(true);
     }
 
@@ -1167,11 +1174,10 @@ router.get('/users', verifyAdminToken, async (req, res) => {
 
     // Fast-path: return cached response if valid and role is admin (full access)
     if (requestingRole === 'admin' && !forceSync && cachedUsersPayload && (Date.now() - lastUsersCacheTimestamp < USERS_CACHE_TTL)) {
-      return res.json({ ...cachedUsersPayload, permissions: perms });
+      return res.json({ ...cachedUsersPayload, permissions: perms, cached: true });
     }
 
-    const users = await User.find()
-      .select('-passwordHash -formData -rawPayload')
+    const users = await User.find({}, USER_PROJECTION)
       .sort({ createdAt: -1 })
       .lean();
 
@@ -1827,8 +1833,9 @@ router.post('/send-email', verifyAdminToken, async (req, res) => {
         confirmationEmailSentBy: user.confirmationEmailSentBy,
 
       }
-
     });
+
+    invalidateUsersCache();
 
   } catch (err) {
 
@@ -2002,6 +2009,8 @@ router.delete('/users/:id', verifyAdminToken, authorizeRoles('admin'), async (re
 
     await User.findByIdAndDelete(userId);
 
+    invalidateUsersCache();
+
     res.json({ success: true, message: 'User and registrations deleted successfully' });
 
   } catch (err) {
@@ -2118,8 +2127,9 @@ router.get('/analytics', async (req, res) => {
         internalRegistrations += i.count;
 
       }
-
     });
+
+    invalidateUsersCache();
 
     const externalRegistrations = Math.max(0, totalRegistrations - internalRegistrations);
 
