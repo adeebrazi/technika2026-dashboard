@@ -46,8 +46,9 @@ export const ExportCsvView: React.FC = () => {
   // Section 1: Include ARKA JAIN University toggle (Default: false / Excluded)
   const [includeAju, setIncludeAju] = useState<boolean>(false);
 
-  // Section 2: Selected Institute filter
+  // Section 2: Selected Institute filter & Payment Status filter
   const [selectedInstitute, setSelectedInstitute] = useState<string>('all');
+  const [institutePaymentFilter, setInstitutePaymentFilter] = useState<'all' | 'done' | 'not_done'>('all');
 
   // Section 3: Selected Event filter
   const [selectedEvent, setSelectedEvent] = useState<string>('all');
@@ -126,8 +127,11 @@ export const ExportCsvView: React.FC = () => {
   };
 
   const isPaymentDone = (u: any): boolean => {
-    const isExempt = u.isAjuExempt || (u.paymentUTR && u.paymentUTR.startsWith('NODUES-'));
-    return Boolean(isExempt || isScreenshotUploaded(u));
+    if (u.isAjuExempt) return true;
+    if (u.paymentUTR && typeof u.paymentUTR === 'string' && u.paymentUTR.startsWith('NODUES-')) return true;
+    if (u.paymentStatus && ['SUCCESS', 'PAID', 'VERIFIED'].includes(String(u.paymentStatus).toUpperCase())) return true;
+    if (typeof u.verifiedAmount === 'number' && u.verifiedAmount > 0) return true;
+    return isScreenshotUploaded(u);
   };
 
   const formatSource = (source?: string): string => {
@@ -183,11 +187,29 @@ export const ExportCsvView: React.FC = () => {
     return users.filter(u => isAjuInstitute(normalizeInstitute(u))).length;
   }, [allInstituteStats, users]);
 
-  // ── 2. Institute Filter Matches ──
-  const section2Users = useMemo(() => {
+  // ── 2. Institute Filter Matches & Payment Filter ──
+  const section2BaseUsers = useMemo(() => {
     if (selectedInstitute === 'all') return users;
     return users.filter(u => normalizeInstitute(u) === selectedInstitute);
   }, [users, selectedInstitute]);
+
+  const section2PaidCount = useMemo(() => {
+    return section2BaseUsers.filter(u => isPaymentDone(u)).length;
+  }, [section2BaseUsers]);
+
+  const section2NotDoneCount = useMemo(() => {
+    return section2BaseUsers.filter(u => !isPaymentDone(u)).length;
+  }, [section2BaseUsers]);
+
+  const section2Users = useMemo(() => {
+    if (institutePaymentFilter === 'done') {
+      return section2BaseUsers.filter(u => isPaymentDone(u));
+    }
+    if (institutePaymentFilter === 'not_done') {
+      return section2BaseUsers.filter(u => !isPaymentDone(u));
+    }
+    return section2BaseUsers;
+  }, [section2BaseUsers, institutePaymentFilter]);
 
   // ── 3. Event List & Matches ──
   const eventStats = useMemo(() => {
@@ -221,6 +243,7 @@ export const ExportCsvView: React.FC = () => {
     return list.map(u => ({
       regId: u.registrationId || '',
       name: u.name || '',
+      contact: u.whatsapp || u.phone || u.contactNumber || '',
       paymentStatus: isPaymentDone(u) ? 'Payment Done' : 'Payment Not Done',
       course: u.course || 'N/A',
       semester: u.semester || 'N/A',
@@ -274,18 +297,28 @@ export const ExportCsvView: React.FC = () => {
   // ── Section 2 Handler: Institute Wise Data Export (Single Sheet) ──
   const handleExportInstituteWiseXlsx = async () => {
     if (section2Users.length === 0) {
-      showToast('No participants match the selected institution filter.', 'info');
+      showToast('No participants match the selected filters.', 'info');
       return;
     }
     setExporting(true);
     try {
       const exportDate = getFormattedDate();
-      const instTitle = selectedInstitute === 'all' ? 'ALL INSTITUTIONS' : selectedInstitute;
+      let paymentSuffix = '';
+      let paymentTitleSuffix = '';
+      if (institutePaymentFilter === 'done') {
+        paymentSuffix = '_payment_done';
+        paymentTitleSuffix = ' (PAYMENT DONE ONLY)';
+      } else if (institutePaymentFilter === 'not_done') {
+        paymentSuffix = '_payment_pending';
+        paymentTitleSuffix = ' (PAYMENT PENDING / NOT DONE ONLY)';
+      }
+
+      const instTitle = (selectedInstitute === 'all' ? 'ALL INSTITUTIONS' : selectedInstitute) + paymentTitleSuffix;
       const cleanInstName = selectedInstitute === 'all'
         ? 'all_institutes'
         : selectedInstitute.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 30);
       const today = new Date().toISOString().split('T')[0];
-      const filename = `technika_institute_${cleanInstName}_${today}.xlsx`;
+      const filename = `technika_institute_${cleanInstName}${paymentSuffix}_${today}.xlsx`;
 
       const blob = await generateInstituteWiseXlsxBlob({
         instituteName: instTitle,
@@ -577,10 +610,48 @@ export const ExportCsvView: React.FC = () => {
             </div>
           </div>
 
+          {/* Payment Status Filter Pills */}
+          <div className="clay-filter-row" style={{ marginTop: '4px' }}>
+            <div className="clay-filter-field flex-1">
+              <label className="clay-field-label">Filter by Payment Status:</label>
+              <div className="clay-payment-pills">
+                <button
+                  type="button"
+                  onClick={() => setInstitutePaymentFilter('all')}
+                  className={`clay-pill-filter ${institutePaymentFilter === 'all' ? 'active-all' : ''}`}
+                >
+                  <span>🌐 All Payments</span>
+                  <span className="clay-pill-count">{section2BaseUsers.length}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInstitutePaymentFilter('done')}
+                  className={`clay-pill-filter ${institutePaymentFilter === 'done' ? 'active-done' : ''}`}
+                >
+                  <span>✓ Payment Done Only</span>
+                  <span className="clay-pill-count">{section2PaidCount}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInstitutePaymentFilter('not_done')}
+                  className={`clay-pill-filter ${institutePaymentFilter === 'not_done' ? 'active-not-done' : ''}`}
+                >
+                  <span>✕ Payment Not Done Only</span>
+                  <span className="clay-pill-count">{section2NotDoneCount}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="clay-filter-summary">
-            <span className="clay-filter-badge">
-              {selectedInstitute === 'all' ? 'All Institutions Selected' : selectedInstitute}
-            </span>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="clay-filter-badge">
+                {selectedInstitute === 'all' ? 'All Institutions Selected' : selectedInstitute}
+              </span>
+              <span className={`clay-filter-badge ${institutePaymentFilter === 'done' ? 'badge-paid' : institutePaymentFilter === 'not_done' ? 'badge-unpaid' : ''}`}>
+                {institutePaymentFilter === 'all' ? 'All Payments' : institutePaymentFilter === 'done' ? '✓ Payment Done Only' : '✕ Payment Not Done Only'}
+              </span>
+            </div>
             <span className="clay-filter-count">
               Matched: <strong>{section2Users.length}</strong> participants
             </span>
@@ -596,10 +667,16 @@ export const ExportCsvView: React.FC = () => {
             className="clay-action-btn purple"
           >
             <Download size={18} />
-            <span>Export Institute Wise Data (.xlsx)</span>
+            <span>
+              {institutePaymentFilter === 'done'
+                ? 'Export Paid Participants (.xlsx)'
+                : institutePaymentFilter === 'not_done'
+                ? 'Export Unpaid Participants (.xlsx)'
+                : 'Export Institute Wise Data (.xlsx)'}
+            </span>
           </button>
           <span className="clay-action-hint">
-            Generates a detailed spreadsheet with <strong>Registration ID</strong>, <strong>Name</strong>, <strong>Payment Status</strong>, and <strong>Semester</strong>.
+            Generates a detailed spreadsheet with <strong>Registration ID</strong>, <strong>Name</strong>, <strong>Contact Number</strong>, <strong>Payment Status</strong>, and <strong>Semester</strong>.
           </span>
         </div>
       </div>
@@ -1082,6 +1159,70 @@ export const ExportCsvView: React.FC = () => {
           background: #ecfdf5;
           color: #059669;
           border-color: #a7f3d0;
+        }
+        .clay-filter-badge.badge-paid {
+          background: #ecfdf5;
+          color: #047857;
+          border-color: #a7f3d0;
+        }
+        .clay-filter-badge.badge-unpaid {
+          background: #fff1f2;
+          color: #be123c;
+          border-color: #fecdd3;
+        }
+        .clay-payment-pills {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-top: 4px;
+        }
+        .clay-pill-filter {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 14px;
+          border-radius: 10px;
+          font-size: 0.82rem;
+          font-weight: 700;
+          cursor: pointer;
+          border: 1.5px solid #cbd5e1;
+          background: #ffffff;
+          color: #475569;
+          font-family: 'Space Grotesk', sans-serif;
+          transition: all 0.15s ease;
+        }
+        .clay-pill-filter:hover {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+          color: #1e293b;
+        }
+        .clay-pill-filter.active-all {
+          background: #f5f3ff;
+          border-color: #7c3aed;
+          color: #6d28d9;
+          font-weight: 800;
+          box-shadow: 0 2px 8px rgba(124, 58, 237, 0.18);
+        }
+        .clay-pill-filter.active-done {
+          background: #ecfdf5;
+          border-color: #10b981;
+          color: #047857;
+          font-weight: 800;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
+        }
+        .clay-pill-filter.active-not-done {
+          background: #fff1f2;
+          border-color: #f43f5e;
+          color: #be123c;
+          font-weight: 800;
+          box-shadow: 0 2px 8px rgba(244, 63, 94, 0.18);
+        }
+        .clay-pill-count {
+          display: inline-block;
+          padding: 1px 7px;
+          border-radius: 9999px;
+          font-size: 0.74rem;
+          background: rgba(0, 0, 0, 0.06);
         }
         .clay-filter-count strong {
           color: #0f172a;

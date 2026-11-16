@@ -33,6 +33,7 @@ export interface InstituteSummaryItem {
 export interface InstituteParticipantItem {
   regId: string;
   name: string;
+  contact?: string;
   paymentStatus: string;
   course: string;
   semester: string;
@@ -66,11 +67,16 @@ function buildSheet1Xml(
   exportDate: string,
   participants: InstituteParticipantItem[]
 ): string {
+  const newCols = '<cols><col customWidth="1" min="1" max="1" width="7.5"/><col customWidth="1" min="2" max="2" width="18.5"/><col customWidth="1" min="3" max="3" width="22"/><col customWidth="1" min="4" max="4" width="18"/><col customWidth="1" min="5" max="5" width="18"/><col customWidth="1" min="6" max="6" width="18"/><col customWidth="1" min="7" max="7" width="14"/><col customWidth="1" min="8" max="8" width="22"/></cols>';
+  if (baseXml.includes('<cols>')) {
+    baseXml = baseXml.replace(/<cols>[\s\S]*?<\/cols>/, newCols);
+  }
+
   let rows = '';
-  rows += '<row r="1" ht="56.25" customHeight="1"><c r="A1" s="1"/><c r="B1" s="2"/><c r="C1" s="2"/><c r="D1" s="2"/><c r="E1" s="2"/><c r="F1" s="2"/><c r="G1" s="3"/></row>';
-  rows += '<row r="2" ht="38.25" customHeight="1"><c r="A2" s="1"/><c r="B2" s="2"/><c r="C2" s="2"/><c r="D2" s="2"/><c r="E2" s="2"/><c r="F2" s="2"/><c r="G2" s="3"/></row>';
-  rows += '<row r="3"><c r="A3" s="7" t="inlineStr"><is><t>INSTITUTE NAME : ' + escapeXml(instituteName) + '</t></is></c><c r="B3" s="2"/><c r="C3" s="2"/><c r="D3" s="2"/><c r="E3" s="3"/><c r="F3" s="7" t="inlineStr"><is><t>EXPORT DATE : ' + escapeXml(exportDate) + '</t></is></c><c r="G3" s="3"/></row>';
-  rows += '<row r="4"><c r="A4" s="6" t="inlineStr"><is><t>S No.</t></is></c><c r="B4" s="6" t="inlineStr"><is><t>REGISTRATION ID</t></is></c><c r="C4" s="6" t="inlineStr"><is><t>NAME</t></is></c><c r="D4" s="6" t="inlineStr"><is><t>PAYMENT STATUS</t></is></c><c r="E4" s="6" t="inlineStr"><is><t>CLASS/COURSE</t></is></c><c r="F4" s="6" t="inlineStr"><is><t>SEMESTER</t></is></c><c r="G4" s="6" t="inlineStr"><is><t>REGISTRATION SOURCE</t></is></c></row>';
+  rows += '<row r="1" ht="56.25" customHeight="1"><c r="A1" s="1"/><c r="B1" s="2"/><c r="C1" s="2"/><c r="D1" s="2"/><c r="E1" s="2"/><c r="F1" s="2"/><c r="G1" s="2"/><c r="H1" s="3"/></row>';
+  rows += '<row r="2" ht="38.25" customHeight="1"><c r="A2" s="1"/><c r="B2" s="2"/><c r="C2" s="2"/><c r="D2" s="2"/><c r="E2" s="2"/><c r="F2" s="2"/><c r="G2" s="2"/><c r="H2" s="3"/></row>';
+  rows += '<row r="3"><c r="A3" s="7" t="inlineStr"><is><t>INSTITUTE NAME : ' + escapeXml(instituteName) + '</t></is></c><c r="B3" s="2"/><c r="C3" s="2"/><c r="D3" s="2"/><c r="E3" s="2"/><c r="F3" s="2"/><c r="G3" s="7" t="inlineStr"><is><t>EXPORT DATE : ' + escapeXml(exportDate) + '</t></is></c><c r="H3" s="3"/></row>';
+  rows += '<row r="4"><c r="A4" s="6" t="inlineStr"><is><t>S No.</t></is></c><c r="B4" s="6" t="inlineStr"><is><t>REGISTRATION ID</t></is></c><c r="C4" s="6" t="inlineStr"><is><t>NAME</t></is></c><c r="D4" s="6" t="inlineStr"><is><t>CONTACT NUMBER</t></is></c><c r="E4" s="6" t="inlineStr"><is><t>PAYMENT STATUS</t></is></c><c r="F4" s="6" t="inlineStr"><is><t>CLASS/COURSE</t></is></c><c r="G4" s="6" t="inlineStr"><is><t>SEMESTER</t></is></c><c r="H4" s="6" t="inlineStr"><is><t>REGISTRATION SOURCE</t></is></c></row>';
 
   participants.forEach((st, idx) => {
     const r = idx + 5;
@@ -78,10 +84,11 @@ function buildSheet1Xml(
     rows += '<c r="A' + r + '" s="6"><v>' + (idx + 1) + '</v></c>';
     rows += '<c r="B' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.regId) + '</t></is></c>';
     rows += '<c r="C' + r + '" s="8" t="inlineStr"><is><t>' + escapeXml(st.name) + '</t></is></c>';
-    rows += '<c r="D' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.paymentStatus) + '</t></is></c>';
-    rows += '<c r="E' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.course) + '</t></is></c>';
-    rows += '<c r="F' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.semester) + '</t></is></c>';
-    rows += '<c r="G' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.source) + '</t></is></c>';
+    rows += '<c r="D' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.contact || '') + '</t></is></c>';
+    rows += '<c r="E' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.paymentStatus) + '</t></is></c>';
+    rows += '<c r="F' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.course) + '</t></is></c>';
+    rows += '<c r="G' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.semester) + '</t></is></c>';
+    rows += '<c r="H' + r + '" s="6" t="inlineStr"><is><t>' + escapeXml(st.source) + '</t></is></c>';
     rows += '</row>';
   });
 
