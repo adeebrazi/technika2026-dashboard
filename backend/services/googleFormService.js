@@ -69,7 +69,8 @@ const getCanonicalInstitution = (raw, otherRaw = '', email = '') => {
   if (lower.includes('dbms career')) return 'DBMS CAREER ACADEMY';
   if (lower.includes('dbms')) return 'DBMS ENGLISH SCHOOL';
   if (lower.includes('polytechnic') && lower.includes('adityapur')) return 'GOVERNMENT POLYTECHNIC, ADITYAPUR';
-  if (lower.includes('govind')) return 'GOVIND VIDYALAYA, TAMULIA';
+  if (lower.includes('vivek')) return 'VIVEK VIDYALAYA, GOVINDPUR';
+  if (lower.includes('tamulia') || (lower.includes('govind') && !lower.includes('govindpur'))) return 'GOVIND VIDYALAYA, TAMULIA';
   if (lower.includes('gulmohar')) return 'GULMOHAR HIGH SCHOOL';
   if (lower.includes('danish') || lower.includes('idtr')) return 'INDO DANISH TOOL ROOM, JAMSHEDPUR';
   if (lower.includes('nit') || lower.includes('national institute of technology')) return 'NATIONAL INSTITUTE OF TECHNOLOGY (NIT), JAMSHEDPUR';
