@@ -1153,6 +1153,10 @@ const USER_PROJECTION = 'registrationId name age gender email whatsapp instituti
 router.get('/users', verifyAdminToken, async (req, res) => {
   try {
     const forceSync = req.query.sync === '1' || req.query.sync === 'true';
+    const forceRefresh = req.query.refresh === '1' || req.query.clearCache === '1';
+    if (forceRefresh) {
+      invalidateUsersCache();
+    }
     if (forceSync) {
       invalidateUsersCache();
       await triggerLiveSyncIfNeeded(true);
