@@ -270,16 +270,16 @@ const sendRegistrationConfirmationEmail = async ({ user, events = [], senderName
                 </table>
               </div>
 
-              <!-- WhatsApp Group -->
+              <!-- WhatsApp Channel -->
               <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;">
                 <div style="color: #065f46; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">
-                  💬 Join the Official Technika 6.0 WhatsApp Group:
+                  💬 Join the Official Technika 6.0 WhatsApp Channel:
                 </div>
                 <p style="color: #047857; font-size: 12px; line-height: 1.5; margin: 0 0 10px 0;">
                   Stay updated with important announcements, event schedules, and other fest-related information.
                 </p>
-                <a href="https://technika2026.online/whatsapp" target="_blank" style="display: inline-block; background: #16a34a; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 10px 16px; border-radius: 6px;">
-                  Join WhatsApp Group
+                <a href="https://whatsapp.com/channel/0029VbDvONz9RZAOObeJHv45" target="_blank" style="display: inline-block; background: #16a34a; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 10px 16px; border-radius: 6px;">
+                  Join WhatsApp Channel
                 </a>
               </div>
 
