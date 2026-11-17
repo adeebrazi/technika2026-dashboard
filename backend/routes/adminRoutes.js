@@ -211,109 +211,73 @@ const getDefaultStaffPermissions = (role) => {
 };
 
 const formatFullPermissions = (role, staffName, staffEmail, p = {}) => {
-
   const isAdmin = role === 'admin' || (staffEmail && staffEmail.toLowerCase() === MASTER_ADMIN.email.toLowerCase());
-
   const canPhone = isAdmin || Boolean(p.canViewPhone || p.canViewContact);
-
   const canEmail = isAdmin || Boolean(p.canViewEmail);
-
   const canSend = isAdmin || Boolean(p.canSendEmail);
-
   const canPay = isAdmin || Boolean(p.canVerifyPayments);
-
   const canCheckIn = isAdmin || (p.canCheckIn !== undefined ? Boolean(p.canCheckIn) : true);
-
   const canExport = isAdmin || Boolean(p.canExportCSV);
-
   const canDel = isAdmin || Boolean(p.canDelete);
-
   const canWhatsapp = isAdmin || Boolean(p.canManageWhatsapp);
 
+  const assignedEvents = p.assignedEvents && Array.isArray(p.assignedEvents) && p.assignedEvents.length > 0
+    ? p.assignedEvents
+    : (p.assignedEvent ? [p.assignedEvent] : []);
+
   return {
-
     targetKey: staffEmail || role,
-
     title: staffName || role,
-
     canViewParticipants: true,
-
     canViewPhone: canPhone,
-
     canViewEmail: canEmail,
-
     canSendEmail: canSend,
-
     canViewContactInfo: canPhone || canEmail,
-
     canViewContact: canPhone,
-
     canViewFinancials: canPay,
-
     canViewDocuments: canPay,
-
     canVerifyPayments: canPay,
-
     canCheckInParticipants: canCheckIn,
-
     canCheckIn: canCheckIn,
-
     canExportCSV: canExport,
-
     canDeleteParticipants: canDel,
-
     canDelete: canDel,
-
     canManageWhatsapp: canWhatsapp,
-
     canViewTeams: true,
-
     canViewAnalytics: isAdmin || canPay || role === 'faculty',
-
-    assignedEvents: [],
-
+    assignedEvents,
+    assignedEvent: assignedEvents[0] || '',
   };
-
 };
 
 const getActivePermissions = async (role, email) => {
-
   if (role === 'admin' || (email && email.toLowerCase() === MASTER_ADMIN.email.toLowerCase())) {
-
     return formatFullPermissions('admin', 'Administrator', email, getDefaultStaffPermissions('admin'));
-
   }
-
   if (email) {
-
     try {
-
       const dbStaff = await AdminUser.findOne({ email: email.toLowerCase() });
-
       if (dbStaff) {
-
         const staffPerms = dbStaff.permissions && typeof dbStaff.permissions === 'object'
-
           ? (dbStaff.permissions.toObject ? dbStaff.permissions.toObject() : dbStaff.permissions)
-
           : {};
+        const assignedEvents = dbStaff.assignedEvents && dbStaff.assignedEvents.length > 0
+          ? dbStaff.assignedEvents
+          : (dbStaff.assignedEvent ? [dbStaff.assignedEvent] : []);
 
-        const merged = { ...getDefaultStaffPermissions(dbStaff.role), ...staffPerms };
-
+        const merged = { 
+          ...getDefaultStaffPermissions(dbStaff.role), 
+          ...staffPerms,
+          assignedEvents,
+          assignedEvent: dbStaff.assignedEvent || assignedEvents[0] || ''
+        };
         return formatFullPermissions(dbStaff.role, dbStaff.name, dbStaff.email, merged);
-
       }
-
     } catch (err) {
-
       console.error('Error in getActivePermissions:', err.message);
-
     }
-
   }
-
   return formatFullPermissions(role, role, email, getDefaultStaffPermissions(role));
-
 };
 
 // Parse env users string: supports both "Name:email:password" and "email:password"
@@ -405,23 +369,18 @@ const formatNameFromEmail = (email) => {
 };
 
 const ROLE_NAME_TO_KEY = {
-
-  'Faculty Coordinator': 'faculty',
-
   'Administration': 'admin',
-
-  'Student Coordinator': 'coordinator'
-
+  'Faculty Coordinator': 'faculty',
+  'Student Coordinator': 'coordinator',
+  'Event Coordinator': 'event_coordinator',
 };
 
 const ROLE_KEY_TO_TITLE = {
-
-  'faculty': 'Faculty Coordinator',
-
   'admin': 'Administration',
-
-  'coordinator': 'Student Coordinator'
-
+  'faculty': 'Faculty Coordinator',
+  'coordinator': 'Student Coordinator',
+  'event_coordinator': 'Event Coordinator',
+  'volunteer': 'Volunteer',
 };
 
 // @route   POST /api/admin/login
@@ -467,147 +426,94 @@ router.post('/login', async (req, res) => {
       if (isPasswordValid) {
 
         matchedUser = {
-
           _id: dbUser._id,
-
           name: dbUser.name,
-
           email: dbUser.email,
-
           role: dbUser.role,
-
           designation: dbUser.designation,
-
+          assignedEvent: dbUser.assignedEvent || '',
+          assignedEvents: dbUser.assignedEvents && dbUser.assignedEvents.length > 0 ? dbUser.assignedEvents : (dbUser.assignedEvent ? [dbUser.assignedEvent] : []),
           isPermanent: Boolean(dbUser.isPermanent) || cleanEmail === MASTER_ADMIN.email,
-
         };
-
       }
-
     }
-
   } catch (dbErr) {
-
     console.error('Database lookup error in login:', dbErr.message);
-
   }
 
   // 2. Fallback for Master Admin emergency login (e.g. cold start)
-
   if (!matchedUser && cleanEmail === MASTER_ADMIN.email && cleanPass === MASTER_ADMIN.password) {
-
     await ensureMasterAdmin();
-
     matchedUser = {
-
       name: MASTER_ADMIN.name,
-
       email: MASTER_ADMIN.email,
-
       role: MASTER_ADMIN.role,
-
       designation: MASTER_ADMIN.designation,
-
+      assignedEvent: '',
+      assignedEvents: [],
       isPermanent: true,
-
     };
-
   }
 
   // If no credentials matched in database or master admin
-
   if (!matchedUser) {
-
     return res.status(401).json({ message: 'Invalid email or password' });
-
   }
 
   // STRICT ROLE ENFORCEMENT:
-
   // If user selected a specific role on frontend, verify compatibility
-
   const requestedRoleKey = role ? ROLE_NAME_TO_KEY[role] : null;
-
   if (requestedRoleKey && requestedRoleKey !== matchedUser.role) {
-
-    // Special exception: volunteer can log in under coordinator portal
-
     if (!(matchedUser.role === 'volunteer' && requestedRoleKey === 'coordinator')) {
-
       const actualTitle = ROLE_KEY_TO_TITLE[matchedUser.role] || matchedUser.role;
-
       const requestedTitle = role;
-
       return res.status(403).json({
-
         message: `Access Denied: Your account is registered as ${actualTitle}. You cannot log in as ${requestedTitle}.`
-
       });
-
     }
-
   }
 
   const finalRoleKey = matchedUser.role;
-
   const finalDesignation = matchedUser.designation || ROLE_KEY_TO_TITLE[finalRoleKey] || 'Staff Member';
-
   const displayName = matchedUser.name;
+  const assignedEvent = matchedUser.assignedEvent || (matchedUser.assignedEvents && matchedUser.assignedEvents[0]) || '';
+  const assignedEvents = matchedUser.assignedEvents && matchedUser.assignedEvents.length > 0
+    ? matchedUser.assignedEvents
+    : (assignedEvent ? [assignedEvent] : []);
 
   // Create JWT token
-
   const payload = {
-
     id: matchedUser._id,
-
     email: cleanEmail,
-
     role: finalRoleKey,
-
     name: displayName,
-
     designation: finalDesignation,
-
+    assignedEvent,
+    assignedEvents,
     isAdmin: true,
-
     isPermanent: Boolean(matchedUser.isPermanent)
-
   };
 
   const userPerms = await getActivePermissions(finalRoleKey, cleanEmail);
 
   jwt.sign(
-
     payload,
-
     process.env.JWT_SECRET,
-
     { expiresIn: '12h' },
-
     (err, token) => {
-
       if (err) throw err;
-
       res.json({
-
         success: true,
-
         token,
-
         role: finalRoleKey,
-
         name: displayName,
-
         designation: finalDesignation,
-
+        assignedEvent,
+        assignedEvents,
         isPermanent: Boolean(matchedUser.isPermanent),
-
         permissions: userPerms
-
       });
-
     }
-
   );
 
 });
@@ -696,46 +602,36 @@ router.post('/staff', verifyAdminToken, authorizeRoles('admin'), async (req, res
 
     }
 
-    const allowedRoles = ['admin', 'faculty', 'coordinator', 'volunteer'];
-
+    const allowedRoles = ['admin', 'faculty', 'coordinator', 'volunteer', 'event_coordinator'];
     if (!allowedRoles.includes(role)) {
-
       return res.status(400).json({ message: `Invalid role. Allowed roles: ${allowedRoles.join(', ')}` });
-
     }
 
     const existingUser = await AdminUser.findOne({ email: cleanEmail });
-
     if (existingUser) {
-
       return res.status(400).json({ message: 'A staff account with this email already exists.' });
-
     }
 
     const passwordHash = await bcrypt.hash(cleanPass, 10);
-
     const resolvedDesignation = designation?.trim() || ROLE_KEY_TO_TITLE[role] || 'Staff Member';
-
     const resolvedPermissions = req.body.permissions && typeof req.body.permissions === 'object'
-
       ? { ...getDefaultStaffPermissions(role), ...req.body.permissions }
-
       : getDefaultStaffPermissions(role);
 
+    const assignedEvent = req.body.assignedEvent ? req.body.assignedEvent.trim() : '';
+    const assignedEvents = req.body.assignedEvents && Array.isArray(req.body.assignedEvents)
+      ? req.body.assignedEvents
+      : (assignedEvent ? [assignedEvent] : []);
+
     const newStaff = await AdminUser.create({
-
       name: name.trim(),
-
       email: cleanEmail,
-
       passwordHash,
-
       role,
-
       designation: resolvedDesignation,
-
+      assignedEvent,
+      assignedEvents,
       permissions: resolvedPermissions,
-
       isPermanent: false,
 
       isActive: true,
@@ -851,21 +747,23 @@ router.put('/staff/:id', verifyAdminToken, authorizeRoles('admin'), async (req, 
     }
 
     // Regular staff update:
-
     if (name) staff.name = name.trim();
-
     if (designation) staff.designation = designation.trim();
-
-    if (role && ['admin', 'faculty', 'coordinator', 'volunteer'].includes(role)) {
-
+    if (role && ['admin', 'faculty', 'coordinator', 'volunteer', 'event_coordinator'].includes(role)) {
       staff.role = role;
-
     }
-
+    if (req.body.assignedEvent !== undefined) {
+      staff.assignedEvent = req.body.assignedEvent ? req.body.assignedEvent.trim() : '';
+      staff.assignedEvents = staff.assignedEvent ? [staff.assignedEvent] : [];
+    }
+    if (req.body.assignedEvents !== undefined && Array.isArray(req.body.assignedEvents)) {
+      staff.assignedEvents = req.body.assignedEvents;
+      if (staff.assignedEvents.length > 0 && !staff.assignedEvent) {
+        staff.assignedEvent = staff.assignedEvents[0];
+      }
+    }
     if (typeof isActive === 'boolean') {
-
       staff.isActive = isActive;
-
     }
 
     if (req.body.permissions && typeof req.body.permissions === 'object') {
@@ -905,29 +803,51 @@ router.put('/staff/:id', verifyAdminToken, authorizeRoles('admin'), async (req, 
     }
 
     await staff.save();
-
     const staffObj = staff.toObject();
-
     delete staffObj.passwordHash;
-
     res.json({
-
       success: true,
-
       message: `Staff member ${staff.name} updated successfully.`,
-
       staff: staffObj,
-
     });
-
   } catch (err) {
-
     console.error('Error updating staff member:', err);
-
     res.status(500).json({ message: 'Server error updating staff member' });
-
   }
+});
 
+// @route   PUT /api/admin/staff/:id/event
+// @desc    Assign or update event for an Event Coordinator
+// @access  Private (Administrator Only)
+router.put('/staff/:id/event', verifyAdminToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedEvent } = req.body;
+    let staff = null;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      staff = await AdminUser.findById(id);
+    }
+    if (!staff) {
+      staff = await AdminUser.findOne({ email: id.toLowerCase() });
+    }
+    if (!staff) {
+      return res.status(404).json({ message: 'Staff member not found.' });
+    }
+    const cleanEvent = assignedEvent ? String(assignedEvent).trim() : '';
+    staff.assignedEvent = cleanEvent;
+    staff.assignedEvents = cleanEvent ? [cleanEvent] : [];
+    await staff.save();
+    const staffObj = staff.toObject();
+    delete staffObj.passwordHash;
+    res.json({
+      success: true,
+      message: cleanEvent ? `Assigned event "${cleanEvent}" to ${staff.name}.` : `Event assignment cleared for ${staff.name}.`,
+      staff: staffObj,
+    });
+  } catch (err) {
+    console.error('Error updating staff event:', err);
+    res.status(500).json({ message: err.message || 'Server error updating event' });
+  }
 });
 
 // @route   PUT /api/admin/staff/:id/permissions
@@ -1217,19 +1137,29 @@ router.get('/users', verifyAdminToken, async (req, res) => {
         };
       });
 
-      // Filter by assigned events if restricted
-      if (perms.assignedEvents && perms.assignedEvents.length > 0) {
+      // Filter by assigned events if restricted (Event Coordinator)
+      const isRestrictedByEvent = perms.assignedEvents && perms.assignedEvents.length > 0;
+      if (isRestrictedByEvent) {
         const hasAssignedEvent = registeredEvents.some(re => 
-          re.event && perms.assignedEvents.includes(re.event.name)
+          (re.eventId && perms.assignedEvents.some(ae => ae.toLowerCase().trim() === re.eventId.toLowerCase().trim())) ||
+          (re.event && re.event.name && perms.assignedEvents.some(ae => ae.toLowerCase().trim() === re.event.name.toLowerCase().trim()))
         );
         if (!hasAssignedEvent) return null;
       }
+
+      // If restricted by event, only show the assigned events in registeredEvents
+      const visibleRegisteredEvents = isRestrictedByEvent
+        ? registeredEvents.filter(re => 
+            (re.eventId && perms.assignedEvents.some(ae => ae.toLowerCase().trim() === re.eventId.toLowerCase().trim())) ||
+            (re.event && re.event.name && perms.assignedEvents.some(ae => ae.toLowerCase().trim() === re.event.name.toLowerCase().trim()))
+          )
+        : registeredEvents;
 
       // Root Admin has full unfiltered access
       if (requestingRole === 'admin') {
         return {
           ...user,
-          registeredEvents
+          registeredEvents: visibleRegisteredEvents
         };
       }
 
@@ -1237,47 +1167,26 @@ router.get('/users', verifyAdminToken, async (req, res) => {
       const uObj = user;
 
       const filteredUser = {
-
         _id: uObj._id,
-
         name: uObj.name,
-
         registrationId: uObj.registrationId,
-
         institution: uObj.institution,
-
         course: uObj.course,
-
         semester: uObj.semester,
-
         gender: uObj.gender,
-
         source: uObj.source || 'website',
-
         createdAt: uObj.createdAt,
-
         confirmationEmailSent: Boolean(uObj.confirmationEmailSent),
-
         confirmationEmailSentAt: uObj.confirmationEmailSentAt || null,
-
         confirmationEmailSentBy: uObj.confirmationEmailSentBy || null,
-
         qrEmailSent: Boolean(uObj.qrEmailSent),
-
         qrEmailSentAt: uObj.qrEmailSentAt || null,
-
         qrEmailSentBy: uObj.qrEmailSentBy || null,
-
-        registeredEvents: registeredEvents.map(re => ({
-
+        registeredEvents: visibleRegisteredEvents.map(re => ({
           _id: re._id,
-
           eventId: re.eventId,
-
           event: re.event
-
         }))
-
       };
 
       // SEPARATE EMAIL AND PHONE / CONTACT:
@@ -1966,10 +1875,17 @@ router.get('/teams', verifyAdminToken, async (req, res) => {
       });
 
       return teamObj;
-
     }));
 
-    res.json(teamsWithDetails);
+    let finalTeams = teamsWithDetails;
+    if (perms.assignedEvents && perms.assignedEvents.length > 0) {
+      finalTeams = teamsWithDetails.filter(t => 
+        (t.eventId && t.eventId.eventId && perms.assignedEvents.some(ae => ae.toLowerCase().trim() === t.eventId.eventId.toLowerCase().trim())) ||
+        (t.eventId && t.eventId.name && perms.assignedEvents.some(ae => ae.toLowerCase().trim() === t.eventId.name.toLowerCase().trim()))
+      );
+    }
+
+    res.json(finalTeams);
 
   } catch (err) {
 

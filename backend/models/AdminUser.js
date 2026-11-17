@@ -20,7 +20,7 @@ const AdminUserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'faculty', 'coordinator', 'volunteer'],
+      enum: ['admin', 'faculty', 'coordinator', 'volunteer', 'event_coordinator'],
       default: 'coordinator',
       required: true,
     },
@@ -29,6 +29,15 @@ const AdminUserSchema = new mongoose.Schema(
       default: 'Staff Member',
       trim: true,
     },
+    assignedEvent: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    assignedEvents: [{
+      type: String,
+      trim: true,
+    }],
     // Granular permissions stored directly in database:
     permissions: {
       canViewPhone: { type: Boolean, default: false },

@@ -21,9 +21,58 @@ import {
   Sparkles,
   Send,
   UserCheck,
-  MessageSquare
+  MessageSquare,
+  Target
 } from 'lucide-react';
 import { getAdminIdentity, fetchAdminApi, getAdminPhotoUrl } from '../../utils/adminAuth';
+
+const DEFAULT_EVENTS = [
+  { eventId: 'TECH_CB', name: 'Code Buster', category: 'Technical' },
+  { eventId: 'TECH_RT', name: 'Red Tech', category: 'Technical' },
+  { eventId: 'TECH_RW', name: 'Robo Wars', category: 'Technical' },
+  { eventId: 'TECH_RR', name: 'Robo Race', category: 'Technical' },
+  { eventId: 'TECH_RP', name: 'Robo Pick & Place', category: 'Technical' },
+  { eventId: 'TECH_IQ', name: 'IntelliQuest', category: 'Technical' },
+  { eventId: 'TECH_BS', name: 'BrainStorm Battle', category: 'Technical' },
+  { eventId: 'TECH_CC', name: 'Circuit Crafter', category: 'Technical' },
+  { eventId: 'TECH_EC', name: 'Electrofix Challenge', category: 'Technical' },
+  { eventId: 'TECH_JW', name: 'Junkyard Wars', category: 'Technical' },
+  { eventId: 'TECH_AQ', name: 'AI Quizathon', category: 'Technical' },
+  { eventId: 'TECH_EA', name: 'EcoAI Challenge', category: 'Technical' },
+  { eventId: 'TECH_PM', name: 'Project Model Exhibition', category: 'Technical' },
+  { eventId: 'TECH_CL', name: 'Coding Ladder', category: 'Technical' },
+  { eventId: 'TECH_WW', name: 'Web Wizard', category: 'Technical' },
+  { eventId: 'TECH_CS', name: 'Cyber Shield', category: 'Technical' },
+  { eventId: 'TECH_AA', name: 'App Attack', category: 'Technical' },
+  { eventId: 'TECH_DD', name: 'Data Dash', category: 'Technical' },
+  { eventId: 'TECH_DS', name: 'Design Dash', category: 'Technical' },
+  { eventId: 'TECH_LB', name: 'Load Bridging', category: 'Technical' },
+  { eventId: 'CRE_PP', name: 'Poster Presentation', category: 'Creative' },
+  { eventId: 'CRE_FP', name: 'Face Painting', category: 'Creative' },
+  { eventId: 'CRE_PT', name: 'Pot Painting', category: 'Creative' },
+  { eventId: 'CRE_PH', name: 'Photography', category: 'Creative' },
+  { eventId: 'CRE_GE', name: 'Green Earth Challenge', category: 'Creative' },
+  { eventId: 'CRE_CR', name: 'Cricket', category: 'Creative' },
+  { eventId: 'CRE_NF', name: 'Need For Speed', category: 'Creative' },
+  { eventId: 'CRE_BG', name: 'Battle Ground Mobile India', category: 'Creative' },
+  { eventId: 'CRE_FF', name: 'Free Fire', category: 'Creative' },
+  { eventId: 'CRE_TD', name: 'Technical Debate', category: 'Creative' },
+  { eventId: 'CUL_GW', name: 'Group Ramp Walk', category: 'Cultural' },
+  { eventId: 'CUL_SW', name: 'Solo Ramp Walk', category: 'Cultural' },
+  { eventId: 'CUL_TH', name: 'Treasure Hunt', category: 'Cultural' },
+  { eventId: 'CUL_TW', name: 'Tug Of War', category: 'Cultural' },
+  { eventId: 'CUL_SD', name: 'Sudoku', category: 'Cultural' },
+  { eventId: 'CUL_FC', name: 'Fire Free Cooking', category: 'Cultural' },
+  { eventId: 'CUL_SS', name: 'Solo Singing', category: 'Cultural' },
+  { eventId: 'CUL_SDN', name: 'Solo Dance', category: 'Cultural' },
+  { eventId: 'CUL_GS', name: 'Group Singing', category: 'Cultural' },
+  { eventId: 'CUL_GD', name: 'Group Dance', category: 'Cultural' },
+  { eventId: 'CUL_RP', name: 'Rap', category: 'Cultural' },
+  { eventId: 'CUL_BB', name: 'Beat Boxing', category: 'Cultural' },
+  { eventId: 'CUL_PT', name: 'Poetry', category: 'Cultural' },
+  { eventId: 'CUL_ST', name: 'Story Telling', category: 'Cultural' },
+  { eventId: 'CUL_AA', name: 'Art Attack', category: 'Cultural' }
+];
 
 export interface StaffPermissions {
   canViewPhone: boolean;
@@ -41,8 +90,10 @@ export interface StaffUser {
   _id?: string;
   name: string;
   email: string;
-  role: 'admin' | 'faculty' | 'coordinator' | 'volunteer';
+  role: 'admin' | 'faculty' | 'coordinator' | 'event_coordinator' | 'volunteer';
   designation: string;
+  assignedEvent?: string;
+  assignedEvents?: string[];
   permissions?: StaffPermissions;
   isPermanent?: boolean;
   isActive?: boolean;
@@ -72,9 +123,10 @@ export const AccessControlView: React.FC = () => {
   }
 
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
+  const [availableEvents, setAvailableEvents] = useState<{ eventId: string; name: string; category?: string }[]>(DEFAULT_EVENTS);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'faculty' | 'coordinator' | 'volunteer'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'faculty' | 'coordinator' | 'event_coordinator' | 'volunteer'>('all');
   const [saveToast, setSaveToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
@@ -84,14 +136,16 @@ export const AccessControlView: React.FC = () => {
     name: string;
     email: string;
     password: string;
-    role: 'admin' | 'faculty' | 'coordinator' | 'volunteer';
+    role: 'admin' | 'faculty' | 'coordinator' | 'event_coordinator' | 'volunteer';
     designation: string;
+    assignedEvent: string;
   }>({
     name: '',
     email: '',
     password: '',
-    role: 'coordinator',
+    role: 'event_coordinator',
     designation: 'Event Coordinator',
+    assignedEvent: '',
   });
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string>('');
@@ -120,20 +174,76 @@ export const AccessControlView: React.FC = () => {
 
   useEffect(() => {
     fetchStaffUsers();
+
+    // Fetch active events list from backend
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableEvents(data);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const handleRoleSelectionInModal = (selectedRole: 'admin' | 'faculty' | 'coordinator' | 'volunteer') => {
+  const handleRoleSelectionInModal = (selectedRole: 'admin' | 'faculty' | 'coordinator' | 'event_coordinator' | 'volunteer') => {
     const defaultDesignations: Record<string, string> = {
       admin: 'Administrator',
       faculty: 'Faculty Coordinator',
       coordinator: 'Student Coordinator',
+      event_coordinator: 'Event Coordinator',
       volunteer: 'Desk Volunteer'
     };
     setNewStaffData(prev => ({
       ...prev,
       role: selectedRole,
-      designation: defaultDesignations[selectedRole] || 'Staff Member'
+      designation: defaultDesignations[selectedRole] || 'Staff Member',
+      assignedEvent: selectedRole === 'event_coordinator' ? prev.assignedEvent : ''
     }));
+  };
+
+  const handleAssignEvent = async (staff: StaffUser, eventName: string) => {
+    const cleanEvent = eventName.trim();
+    // Optimistic local update
+    setStaffUsers(prev => prev.map(s => {
+      if ((staff._id && s._id === staff._id) || s.email.toLowerCase() === staff.email.toLowerCase()) {
+        return {
+          ...s,
+          assignedEvent: cleanEvent,
+          assignedEvents: cleanEvent ? [cleanEvent] : [],
+        };
+      }
+      return s;
+    }));
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const staffId = staff._id || staff.email;
+      const res = await fetchAdminApi(`/api/admin/staff/${encodeURIComponent(staffId)}/event`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ assignedEvent: cleanEvent })
+      });
+
+      if (res.ok) {
+        setSaveToast({
+          message: cleanEvent
+            ? `✓ Assigned "${cleanEvent}" to ${staff.name} (Saved in MongoDB)`
+            : `✓ Cleared event assignment for ${staff.name}`,
+          type: 'success'
+        });
+        setTimeout(() => setSaveToast(null), 3000);
+      } else {
+        throw new Error('Database update failed');
+      }
+    } catch {
+      await fetchStaffUsers();
+      setSaveToast({ message: '⚠️ Failed to save event assignment.', type: 'error' });
+      setTimeout(() => setSaveToast(null), 3000);
+    }
   };
 
   const handleCreateStaff = async (e: React.FormEvent) => {
@@ -170,8 +280,9 @@ export const AccessControlView: React.FC = () => {
           name: '',
           email: '',
           password: '',
-          role: 'coordinator',
+          role: 'event_coordinator',
           designation: 'Event Coordinator',
+          assignedEvent: '',
         });
         await fetchStaffUsers();
         setTimeout(() => setSaveToast(null), 3500);
@@ -299,22 +410,29 @@ export const AccessControlView: React.FC = () => {
     }
   };
 
+  const adminCount = staffUsers.filter(s => s.role === 'admin').length;
+  const facultyCount = staffUsers.filter(s => s.role === 'faculty').length;
+  const studentCoordinatorCount = staffUsers.filter(s => s.role === 'coordinator').length;
+  const eventCoordinatorCount = staffUsers.filter(s => s.role === 'event_coordinator').length;
+  const volunteerCount = staffUsers.filter(s => s.role === 'volunteer').length;
+
   // Filter staff list
   const filteredStaff = staffUsers.filter(s => {
-    if (roleFilter !== 'all' && s.role !== roleFilter) return false;
+    if (roleFilter === 'admin' && s.role !== 'admin') return false;
+    if (roleFilter === 'faculty' && s.role !== 'faculty') return false;
+    if (roleFilter === 'coordinator' && s.role !== 'coordinator') return false;
+    if (roleFilter === 'event_coordinator' && s.role !== 'event_coordinator') return false;
+    if (roleFilter === 'volunteer' && s.role !== 'volunteer') return false;
+
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       s.name?.toLowerCase().includes(q) ||
       s.email?.toLowerCase().includes(q) ||
-      s.designation?.toLowerCase().includes(q)
+      s.designation?.toLowerCase().includes(q) ||
+      s.assignedEvent?.toLowerCase().includes(q)
     );
   });
-
-  const adminCount = staffUsers.filter(s => s.role === 'admin').length;
-  const facultyCount = staffUsers.filter(s => s.role === 'faculty').length;
-  const coordinatorCount = staffUsers.filter(s => s.role === 'coordinator').length;
-  const volunteerCount = staffUsers.filter(s => s.role === 'volunteer').length;
 
   return (
     <div className="fresh-access-wrap">
@@ -379,7 +497,7 @@ export const AccessControlView: React.FC = () => {
             title="Filter Administrators"
           >
             <Shield size={16} />
-            <span>Administrators: <strong>{adminCount}</strong></span>
+            <span>Administration: <strong>{adminCount}</strong></span>
           </button>
           <button
             type="button"
@@ -388,7 +506,7 @@ export const AccessControlView: React.FC = () => {
             title="Filter Faculty Coordinators"
           >
             <Sparkles size={16} />
-            <span>Faculty: <strong>{facultyCount}</strong></span>
+            <span>Faculty Coordinator: <strong>{facultyCount}</strong></span>
           </button>
           <button
             type="button"
@@ -397,17 +515,28 @@ export const AccessControlView: React.FC = () => {
             title="Filter Student Coordinators"
           >
             <QrCode size={16} />
-            <span>Coordinators: <strong>{coordinatorCount}</strong></span>
+            <span>Student Coordinator: <strong>{studentCoordinatorCount}</strong></span>
           </button>
           <button
             type="button"
-            className={`stat-chip volunteer ${roleFilter === 'volunteer' ? 'active' : ''}`}
-            onClick={() => setRoleFilter('volunteer')}
-            title="Filter Desk Volunteers"
+            className={`stat-chip event-coordinator ${roleFilter === 'event_coordinator' ? 'active' : ''}`}
+            onClick={() => setRoleFilter('event_coordinator')}
+            title="Filter Event Coordinators"
           >
-            <UserCheck size={16} />
-            <span>Volunteers: <strong>{volunteerCount}</strong></span>
+            <Target size={16} />
+            <span>Event Coordinator: <strong>{eventCoordinatorCount}</strong></span>
           </button>
+          {volunteerCount > 0 && (
+            <button
+              type="button"
+              className={`stat-chip volunteer ${roleFilter === 'volunteer' ? 'active' : ''}`}
+              onClick={() => setRoleFilter('volunteer')}
+              title="Filter Desk Volunteers"
+            >
+              <UserCheck size={16} />
+              <span>Volunteers: <strong>{volunteerCount}</strong></span>
+            </button>
+          )}
         </div>
 
         <div className="search-box-wrap">
@@ -486,9 +615,11 @@ export const AccessControlView: React.FC = () => {
                         ? 'Admin'
                         : staff.role === 'faculty'
                         ? 'Faculty'
+                        : staff.role === 'event_coordinator'
+                        ? 'Event Coordinator'
                         : staff.role === 'volunteer'
                         ? 'Volunteer'
-                        : 'Coordinator'}
+                        : 'Student Coordinator'}
                     </span>
                   </div>
                   <div className="profile-designation">{staff.designation || 'Staff Member'}</div>
@@ -496,6 +627,38 @@ export const AccessControlView: React.FC = () => {
                     <Mail size={12} style={{ display: 'inline', marginRight: '4px' }} />
                     <span>{staff.email}</span>
                   </div>
+
+                  {/* Dedicated Event Assignment Box ONLY for Event Coordinators */}
+                  {staff.role === 'event_coordinator' && (
+                    <div className="card-event-badge-row">
+                      <div className="event-badge-meta">
+                        <Target size={13} className="event-badge-icon" />
+                        <span className="event-badge-title">Assigned Event:</span>
+                        {staff.assignedEvent ? (
+                          <span className="event-pill-active" title="Only participants of this event will be visible">
+                            ✓ {staff.assignedEvent}
+                          </span>
+                        ) : (
+                          <span className="event-pill-unassigned" title="Please assign an event">
+                            ⚠️ None Assigned
+                          </span>
+                        )}
+                      </div>
+                      <select
+                        value={staff.assignedEvent || ''}
+                        onChange={(e) => handleAssignEvent(staff, e.target.value)}
+                        className="card-event-select"
+                        title="Change or assign event for this coordinator"
+                      >
+                        <option value="">-- Assign / Change Event --</option>
+                        {availableEvents.map(ev => (
+                          <option key={ev.eventId} value={ev.name}>
+                            {ev.name} {ev.category ? `(${ev.category})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="card-action-side">
@@ -817,12 +980,44 @@ export const AccessControlView: React.FC = () => {
                   onChange={(e) => handleRoleSelectionInModal(e.target.value as any)}
                   className="select-input"
                 >
-                  <option value="coordinator">Student Coordinator</option>
+                  <option value="admin">Administration</option>
                   <option value="faculty">Faculty Coordinator</option>
-                  <option value="admin">Administrator</option>
+                  <option value="coordinator">Student Coordinator</option>
+                  <option value="event_coordinator">Event Coordinator</option>
                   <option value="volunteer">Volunteer</option>
                 </select>
               </div>
+
+              {newStaffData.role === 'event_coordinator' && (
+                <div className="form-row highlight-event-field">
+                  <label className="form-label">
+                    <span>🎯 Assign Event (Visible Exclusively To This Coordinator)</span>
+                  </label>
+                  <select
+                    required
+                    value={newStaffData.assignedEvent}
+                    onChange={(e) => {
+                      const evName = e.target.value;
+                      setNewStaffData({
+                        ...newStaffData,
+                        assignedEvent: evName,
+                        designation: evName ? `Event Coordinator - ${evName}` : 'Event Coordinator'
+                      });
+                    }}
+                    className="select-input event-selector"
+                  >
+                    <option value="">-- Select Event to Assign --</option>
+                    {availableEvents.map(e => (
+                      <option key={e.eventId} value={e.name}>
+                        {e.name} {e.category ? `(${e.category})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="field-hint">
+                    This coordinator will only see participants and teams registered for this specific event.
+                  </span>
+                </div>
+              )}
 
               <div className="form-row">
                 <label className="form-label">Designation / Title</label>
@@ -1076,7 +1271,7 @@ export const AccessControlView: React.FC = () => {
           box-shadow: 0 4px 12px rgba(180, 83, 9, 0.25);
         }
 
-        /* Coordinators */
+        /* Student Coordinators */
         .stat-chip.coordinator {
           color: #0284c7;
         }
@@ -1085,6 +1280,17 @@ export const AccessControlView: React.FC = () => {
           color: #ffffff;
           border-color: #0284c7;
           box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+        }
+
+        /* Event Coordinators */
+        .stat-chip.event-coordinator {
+          color: #d97706;
+        }
+        .stat-chip.event-coordinator.active {
+          background: #d97706;
+          color: #ffffff;
+          border-color: #d97706;
+          box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
         }
 
         /* Volunteers */
@@ -1406,9 +1612,112 @@ export const AccessControlView: React.FC = () => {
           color: #0369a1;
         }
 
+        .role-tag.event_coordinator {
+          background: #fef3c7;
+          color: #b45309;
+          border: 1px solid #fde68a;
+        }
+
         .role-tag.volunteer {
           background: #d1fae5;
           color: #065f46;
+        }
+
+        /* Assigned Event Box on Staff Card */
+        .card-event-badge-row {
+          margin-top: 8px;
+          padding: 8px 10px;
+          background: #f8fafc;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .event-badge-meta {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .event-badge-icon {
+          color: #d97706;
+          flex-shrink: 0;
+        }
+
+        .event-badge-title {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .event-pill-active {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #b45309;
+          background: #fef3c7;
+          border: 1px solid #fde68a;
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+
+        .event-pill-unassigned {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #64748b;
+          background: #f1f5f9;
+          padding: 2px 7px;
+          border-radius: 6px;
+        }
+
+        .card-event-select {
+          width: 100%;
+          padding: 5px 8px;
+          border-radius: 8px;
+          border: 1.5px solid #cbd5e1;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #1e293b;
+          background: #ffffff;
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.15s ease;
+        }
+
+        .card-event-select:focus {
+          border-color: #d97706;
+        }
+
+        /* Modal Highlight Event Field */
+        .highlight-event-field {
+          background: #fffbeb;
+          border: 1.5px solid #fde68a;
+          border-radius: 10px;
+          padding: 10px 12px;
+          margin-top: 4px;
+        }
+
+        .highlight-event-field .form-label {
+          color: #92400e !important;
+          font-weight: 700 !important;
+        }
+
+        .event-selector {
+          border-color: #f59e0b !important;
+          background-color: #ffffff !important;
+          font-weight: 600;
+        }
+
+        .field-hint {
+          display: block;
+          margin-top: 5px;
+          font-size: 0.72rem;
+          color: #b45309;
+          line-height: 1.3;
         }
 
         .profile-designation {

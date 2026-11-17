@@ -28,6 +28,8 @@ export const UsersView: React.FC = () => {
       return null;
     }
   });
+  const assignedEvent = localStorage.getItem('adminAssignedEvent') || perms?.assignedEvents?.[0] || perms?.assignedEvent || '';
+  const isEventCoord = role === 'event_coordinator' || Boolean(assignedEvent);
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
 
   // Email sending state & modals
@@ -695,10 +697,16 @@ export const UsersView: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="clay-page-header">
         <div className="clay-header-left">
-          <div className="clay-header-emblem">👤</div>
+          <div className="clay-header-emblem">{isEventCoord ? '🎯' : '👤'}</div>
           <div>
-            <h2 className="clay-page-title">REGISTERED PARTICIPANTS</h2>
-            <p className="clay-page-subtitle">All registrations across Technika 6.0 events</p>
+            <h2 className="clay-page-title">
+              {isEventCoord && assignedEvent ? `${assignedEvent.toUpperCase()} PARTICIPANTS` : 'REGISTERED PARTICIPANTS'}
+            </h2>
+            <p className="clay-page-subtitle">
+              {isEventCoord && assignedEvent
+                ? `Exclusive Event Coordinator portal — displaying participants registered for ${assignedEvent}`
+                : 'All registrations across Technika 6.0 events'}
+            </p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL as API } from '../../utils/adminAuth';
 
-type AdminRoleOption = 'Administration' | 'Faculty Coordinator' | 'Student Coordinator';
+type AdminRoleOption = 'Administration' | 'Faculty Coordinator' | 'Student Coordinator' | 'Event Coordinator';
 
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -16,9 +16,10 @@ export const AdminLogin: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const roleOptions: { key: AdminRoleOption; label: string; icon: string; desc: string }[] = [
-    { key: 'Faculty Coordinator', label: 'Faculty Coordinator', icon: '🎓', desc: 'Faculty event advisors' },
     { key: 'Administration', label: 'Administration', icon: '🛡️', desc: 'Core organizing committee' },
-    { key: 'Student Coordinator', label: 'Student Coordinator', icon: '⚡', desc: 'Event heads & coordinators' },
+    { key: 'Faculty Coordinator', label: 'Faculty Coordinator', icon: '🎓', desc: 'Faculty event advisors' },
+    { key: 'Student Coordinator', label: 'Student Coordinator', icon: '⚡', desc: 'Student organizing leads' },
+    { key: 'Event Coordinator', label: 'Event Coordinator', icon: '🎯', desc: 'Specific event management' },
   ];
 
   const currentRoleObj = roleOptions.find((r) => r.key === selectedRole) || roleOptions[0];
@@ -116,6 +117,11 @@ export const AdminLogin: React.FC = () => {
           localStorage.setItem('adminName', data.name || 'Administrator');
           localStorage.setItem('adminDesignation', data.designation || selectedRole);
           localStorage.setItem('adminEmail', formData.email.trim().toLowerCase());
+          if (data.assignedEvent) {
+            localStorage.setItem('adminAssignedEvent', data.assignedEvent);
+          } else {
+            localStorage.removeItem('adminAssignedEvent');
+          }
           if (data.permissions) {
             localStorage.setItem('adminPermissions', JSON.stringify(data.permissions));
           }

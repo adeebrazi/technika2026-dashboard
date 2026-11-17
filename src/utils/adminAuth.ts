@@ -173,6 +173,7 @@ export interface AdminIdentity {
   name: string;
   email: string;
   designation: string;
+  assignedEvent?: string;
   photoUrl: string | null;
   isAdeeb: boolean;
   isSanchit: boolean;
@@ -186,6 +187,7 @@ export const getAdminIdentity = (): AdminIdentity => {
   let name = localStorage.getItem('adminName') || 'Administrator';
   let email = localStorage.getItem('adminEmail') || '';
   const designation = localStorage.getItem('adminDesignation') || (role === 'admin' ? 'Administration' : 'Coordinator');
+  let assignedEvent = localStorage.getItem('adminAssignedEvent') || '';
 
   if (token) {
     try {
@@ -194,6 +196,7 @@ export const getAdminIdentity = (): AdminIdentity => {
         const payload = JSON.parse(atob(parts[1]));
         if (!email && payload.email) email = payload.email;
         if ((!name || name === 'Administrator') && payload.name) name = payload.name;
+        if (!assignedEvent && payload.assignedEvent) assignedEvent = payload.assignedEvent;
       }
     } catch {
       // fallback to localStorage values
@@ -220,6 +223,7 @@ export const getAdminIdentity = (): AdminIdentity => {
     name,
     email,
     designation,
+    assignedEvent,
     photoUrl,
     isAdeeb,
     isSanchit,

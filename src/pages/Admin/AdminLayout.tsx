@@ -108,6 +108,7 @@ export const AdminLayout: React.FC = () => {
       case 'admin': return { bg: '#dbeafe', color: '#2563eb', shadow: 'rgba(37, 99, 235, 0.15)' };
       case 'faculty': return { bg: '#ede9fe', color: '#7c3aed', shadow: 'rgba(124, 58, 237, 0.15)' };
       case 'coordinator': return { bg: '#d1fae5', color: '#059669', shadow: 'rgba(5, 150, 105, 0.15)' };
+      case 'event_coordinator': return { bg: '#fef3c7', color: '#d97706', shadow: 'rgba(217, 119, 6, 0.15)' };
       default: return { bg: '#dbeafe', color: '#2563eb', shadow: 'rgba(37, 99, 235, 0.15)' };
     }
   };
