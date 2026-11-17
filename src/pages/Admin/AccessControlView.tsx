@@ -123,6 +123,13 @@ export const AccessControlView: React.FC = () => {
   }
 
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
+
+  // Set of events already permanently assigned to active Event Coordinators
+  const assignedEventsSet = new Set(
+    staffUsers
+      .filter(s => s.role === 'event_coordinator' && s.assignedEvent)
+      .map(s => s.assignedEvent!.trim().toLowerCase())
+  );
   const [availableEvents, setAvailableEvents] = useState<{ eventId: string; name: string; category?: string }[]>(DEFAULT_EVENTS);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -202,50 +209,6 @@ export const AccessControlView: React.FC = () => {
     }));
   };
 
-  const handleAssignEvent = async (staff: StaffUser, eventName: string) => {
-    const cleanEvent = eventName.trim();
-    // Optimistic local update
-    setStaffUsers(prev => prev.map(s => {
-      if ((staff._id && s._id === staff._id) || s.email.toLowerCase() === staff.email.toLowerCase()) {
-        return {
-          ...s,
-          assignedEvent: cleanEvent,
-          assignedEvents: cleanEvent ? [cleanEvent] : [],
-        };
-      }
-      return s;
-    }));
-
-    try {
-      const token = localStorage.getItem('adminToken');
-      const staffId = staff._id || staff.email;
-      const res = await fetchAdminApi(`/api/admin/staff/${encodeURIComponent(staffId)}/event`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ assignedEvent: cleanEvent })
-      });
-
-      if (res.ok) {
-        setSaveToast({
-          message: cleanEvent
-            ? `✓ Assigned "${cleanEvent}" to ${staff.name} (Saved in MongoDB)`
-            : `✓ Cleared event assignment for ${staff.name}`,
-          type: 'success'
-        });
-        setTimeout(() => setSaveToast(null), 3000);
-      } else {
-        throw new Error('Database update failed');
-      }
-    } catch {
-      await fetchStaffUsers();
-      setSaveToast({ message: '⚠️ Failed to save event assignment.', type: 'error' });
-      setTimeout(() => setSaveToast(null), 3000);
-    }
-  };
-
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError('');
@@ -258,6 +221,21 @@ export const AccessControlView: React.FC = () => {
     if (newStaffData.password.trim().length < 6) {
       setModalError('Password must be at least 6 characters long.');
       return;
+    }
+
+    if (newStaffData.role === 'event_coordinator') {
+      const cleanEvent = newStaffData.assignedEvent.trim();
+      if (!cleanEvent) {
+        setModalError('Please select an event to assign to this Event Coordinator.');
+        return;
+      }
+      if (assignedEventsSet.has(cleanEvent.toLowerCase())) {
+        const existing = staffUsers.find(
+          s => s.role === 'event_coordinator' && s.assignedEvent?.trim().toLowerCase() === cleanEvent.toLowerCase()
+        );
+        setModalError(`The event "${cleanEvent}" already has an assigned coordinator (${existing?.name || 'Assigned'}). Each event can only have one coordinator.`);
+        return;
+      }
     }
 
     setModalSubmitting(true);
@@ -628,14 +606,14 @@ export const AccessControlView: React.FC = () => {
                     <span>{staff.email}</span>
                   </div>
 
-                  {/* Dedicated Event Assignment Box ONLY for Event Coordinators */}
+                  {/* Dedicated Permanent Event Assignment Box ONLY for Event Coordinators */}
                   {staff.role === 'event_coordinator' && (
                     <div className="card-event-badge-row">
                       <div className="event-badge-meta">
-                        <Target size={13} className="event-badge-icon" />
+                        <Target size={14} className="event-badge-icon" />
                         <span className="event-badge-title">Assigned Event:</span>
                         {staff.assignedEvent ? (
-                          <span className="event-pill-active" title="Only participants of this event will be visible">
+                          <span className="event-pill-active" title="Permanently assigned to this event">
                             ✓ {staff.assignedEvent}
                           </span>
                         ) : (
@@ -644,19 +622,11 @@ export const AccessControlView: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <select
-                        value={staff.assignedEvent || ''}
-                        onChange={(e) => handleAssignEvent(staff, e.target.value)}
-                        className="card-event-select"
-                        title="Change or assign event for this coordinator"
-                      >
-                        <option value="">-- Assign / Change Event --</option>
-                        {availableEvents.map(ev => (
-                          <option key={ev.eventId} value={ev.name}>
-                            {ev.name} {ev.category ? `(${ev.category})` : ''}
-                          </option>
-                        ))}
-                      </select>
+                      {staff.assignedEvent && (
+                        <span className="event-pill-locked" title="Permanently assigned upon creation and cannot be changed">
+                          🔒 Permanent
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -991,7 +961,7 @@ export const AccessControlView: React.FC = () => {
               {newStaffData.role === 'event_coordinator' && (
                 <div className="form-row highlight-event-field">
                   <label className="form-label">
-                    <span>🎯 Assign Event (Visible Exclusively To This Coordinator)</span>
+                    <span>🎯 Assign Event (Permanently Locked Upon Account Creation)</span>
                   </label>
                   <select
                     required
@@ -1007,14 +977,25 @@ export const AccessControlView: React.FC = () => {
                     className="select-input event-selector"
                   >
                     <option value="">-- Select Event to Assign --</option>
-                    {availableEvents.map(e => (
-                      <option key={e.eventId} value={e.name}>
-                        {e.name} {e.category ? `(${e.category})` : ''}
-                      </option>
-                    ))}
+                    {availableEvents.map(e => {
+                      const isTaken = assignedEventsSet.has(e.name.trim().toLowerCase());
+                      const assignedUser = isTaken
+                        ? staffUsers.find(s => s.role === 'event_coordinator' && s.assignedEvent?.trim().toLowerCase() === e.name.trim().toLowerCase())
+                        : null;
+                      return (
+                        <option
+                          key={e.eventId}
+                          value={e.name}
+                          disabled={isTaken}
+                          style={isTaken ? { color: '#94a3b8', background: '#f8fafc' } : {}}
+                        >
+                          {e.name} {e.category ? `(${e.category})` : ''} {isTaken ? `— 🔒 [Assigned to ${assignedUser?.name || 'Coordinator'}]` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                   <span className="field-hint">
-                    This coordinator will only see participants and teams registered for this specific event.
+                    Each event can only have ONE coordinator account. Once created, this event is permanently assigned and locked.
                   </span>
                 </div>
               )}
@@ -1626,13 +1607,14 @@ export const AccessControlView: React.FC = () => {
         /* Assigned Event Box on Staff Card */
         .card-event-badge-row {
           margin-top: 8px;
-          padding: 8px 10px;
-          background: #f8fafc;
-          border: 1.5px solid #e2e8f0;
+          padding: 8px 12px;
+          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+          border: 1.5px solid #fde68a;
           border-radius: 10px;
           display: flex;
-          flex-direction: column;
-          gap: 6px;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
         }
 
         .event-badge-meta {
@@ -1650,19 +1632,33 @@ export const AccessControlView: React.FC = () => {
         .event-badge-title {
           font-size: 0.72rem;
           font-weight: 700;
-          color: #475569;
+          color: #92400e;
           text-transform: uppercase;
           letter-spacing: 0.03em;
         }
 
         .event-pill-active {
-          font-size: 0.75rem;
+          font-size: 0.78rem;
           font-weight: 700;
-          color: #b45309;
-          background: #fef3c7;
-          border: 1px solid #fde68a;
-          padding: 2px 8px;
+          color: #92400e;
+          background: #ffffff;
+          border: 1.5px solid #fcd34d;
+          padding: 3px 9px;
           border-radius: 6px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .event-pill-locked {
+          font-size: 0.70rem;
+          font-weight: 700;
+          color: #047857;
+          background: #d1fae5;
+          border: 1px solid #a7f3d0;
+          padding: 2px 7px;
+          border-radius: 6px;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+          white-space: nowrap;
         }
 
         .event-pill-unassigned {
@@ -1672,24 +1668,6 @@ export const AccessControlView: React.FC = () => {
           background: #f1f5f9;
           padding: 2px 7px;
           border-radius: 6px;
-        }
-
-        .card-event-select {
-          width: 100%;
-          padding: 5px 8px;
-          border-radius: 8px;
-          border: 1.5px solid #cbd5e1;
-          font-size: 0.78rem;
-          font-weight: 600;
-          color: #1e293b;
-          background: #ffffff;
-          outline: none;
-          cursor: pointer;
-          transition: border-color 0.15s ease;
-        }
-
-        .card-event-select:focus {
-          border-color: #d97706;
         }
 
         /* Modal Highlight Event Field */

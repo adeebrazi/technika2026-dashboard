@@ -623,6 +623,26 @@ router.post('/staff', verifyAdminToken, authorizeRoles('admin'), async (req, res
       ? req.body.assignedEvents
       : (assignedEvent ? [assignedEvent] : []);
 
+    if (role === 'event_coordinator') {
+      if (!assignedEvent) {
+        return res.status(400).json({ message: 'An event must be selected when creating an Event Coordinator.' });
+      }
+      // Strictly enforce: only ONE active coordinator account per event
+      const existingCoord = await AdminUser.findOne({
+        role: 'event_coordinator',
+        isActive: true,
+        $or: [
+          { assignedEvent: new RegExp(`^${assignedEvent.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+          { assignedEvents: assignedEvent }
+        ]
+      });
+      if (existingCoord) {
+        return res.status(400).json({
+          message: `The event "${assignedEvent}" already has an assigned Event Coordinator (${existingCoord.name} - ${existingCoord.email}). Each event can only have one coordinator.`
+        });
+      }
+    }
+
     const newStaff = await AdminUser.create({
       name: name.trim(),
       email: cleanEmail,
@@ -833,7 +853,28 @@ router.put('/staff/:id/event', verifyAdminToken, authorizeRoles('admin'), async 
     if (!staff) {
       return res.status(404).json({ message: 'Staff member not found.' });
     }
+    if (staff.assignedEvent && staff.assignedEvent.trim()) {
+      return res.status(400).json({
+        message: `Event "${staff.assignedEvent}" is permanently assigned to ${staff.name} and cannot be changed.`
+      });
+    }
     const cleanEvent = assignedEvent ? String(assignedEvent).trim() : '';
+    if (cleanEvent) {
+      const existingCoord = await AdminUser.findOne({
+        _id: { $ne: staff._id },
+        role: 'event_coordinator',
+        isActive: true,
+        $or: [
+          { assignedEvent: new RegExp(`^${cleanEvent.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+          { assignedEvents: cleanEvent }
+        ]
+      });
+      if (existingCoord) {
+        return res.status(400).json({
+          message: `The event "${cleanEvent}" already has an assigned Event Coordinator (${existingCoord.name}). Only one coordinator is allowed per event.`
+        });
+      }
+    }
     staff.assignedEvent = cleanEvent;
     staff.assignedEvents = cleanEvent ? [cleanEvent] : [];
     await staff.save();
