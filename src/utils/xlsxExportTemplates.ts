@@ -321,3 +321,179 @@ export async function generateMasterXlsxBlob(options: {
     compression: 'DEFLATE'
   });
 }
+
+export interface CoordinatorExportRecord {
+  regId: string;
+  name: string;
+  phone: string;
+  email: string;
+  gender: string;
+  institute: string;
+  course: string;
+  semester: string;
+  eventName: string;
+  paymentStatus: string;
+  paymentUtr: string;
+}
+
+/**
+ * Generate Clean 12-Column XLSX Blob for Event Coordinators
+ */
+export async function generateCoordinatorEventXlsxBlob(options: {
+  eventName: string;
+  exportDate: string;
+  records: CoordinatorExportRecord[];
+}): Promise<Blob> {
+  const zip = new JSZip();
+
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`);
+
+  zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`);
+
+  zip.file('xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`);
+
+  zip.file('xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="${escapeXml(options.eventName.substring(0, 31))}" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`);
+
+  zip.file('xl/styles.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="4">
+    <font><name val="Calibri"/><sz val="11"/></font>
+    <font><name val="Calibri"/><sz val="11"/><b/><color rgb="FFFFFFFF"/></font>
+    <font><name val="Calibri"/><sz val="15"/><b/><color rgb="FFFFFFFF"/></font>
+    <font><name val="Calibri"/><sz val="10"/><i/><color rgb="FFE0E7FF"/></font>
+  </fonts>
+  <fills count="5">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF4338CA"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF1E1B4B"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/></patternFill></fill>
+  </fills>
+  <borders count="2">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FFCBD5E1"/></left>
+      <right style="thin"><color rgb="FFCBD5E1"/></right>
+      <top style="thin"><color rgb="FFCBD5E1"/></top>
+      <bottom style="thin"><color rgb="FFCBD5E1"/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="7">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+  </cellXfs>
+</styleSheet>`);
+
+  const cols = [
+    { name: 'S.No', width: 8, align: 'center' },
+    { name: 'REGISTRATION ID', width: 17, align: 'center' },
+    { name: 'PARTICIPANT NAME', width: 28, align: 'left' },
+    { name: 'CONTACT / WHATSAPP', width: 18, align: 'center' },
+    { name: 'EMAIL ADDRESS', width: 32, align: 'left' },
+    { name: 'GENDER', width: 12, align: 'center' },
+    { name: 'INSTITUTION NAME', width: 38, align: 'left' },
+    { name: 'COURSE / DEGREE', width: 22, align: 'left' },
+    { name: 'SEMESTER / CLASS', width: 16, align: 'center' },
+    { name: 'ASSIGNED EVENT', width: 22, align: 'left' },
+    { name: 'PAYMENT STATUS', width: 24, align: 'center' },
+    { name: 'UTR / REF NUMBER', width: 20, align: 'center' }
+  ];
+
+  const colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+
+  let sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <cols>`;
+  cols.forEach((c, i) => {
+    sheetXml += `<col min="${i + 1}" max="${i + 1}" width="${c.width}" customWidth="1"/>`;
+  });
+  sheetXml += `</cols>
+  <sheetData>`;
+
+  sheetXml += `<row r="1" ht="34" customHeight="1">
+    <c r="A1" s="1" t="inlineStr"><is><t>TECHNIKA 6.0 — ${escapeXml(options.eventName.toUpperCase())} PARTICIPANT DIRECTORY</t></is></c>
+  </row>`;
+  sheetXml += `<row r="2" ht="20" customHeight="1">
+    <c r="A2" s="2" t="inlineStr"><is><t>Official Event Coordinator Export • Export Date: ${escapeXml(options.exportDate)} • Total Participants: ${options.records.length}</t></is></c>
+  </row>`;
+
+  sheetXml += `<row r="4" ht="28" customHeight="1">`;
+  cols.forEach((c, i) => {
+    sheetXml += `<c r="${colLetters[i]}4" s="3" t="inlineStr"><is><t>${escapeXml(c.name)}</t></is></c>`;
+  });
+  sheetXml += `</row>`;
+
+  options.records.forEach((rec, idx) => {
+    const r = idx + 5;
+    const isZebra = idx % 2 === 1;
+    sheetXml += `<row r="${r}" ht="22" customHeight="1">`;
+
+    const rowValues = [
+      { val: String(idx + 1), align: 'center' },
+      { val: rec.regId || '', align: 'center' },
+      { val: rec.name || '', align: 'left' },
+      { val: rec.phone || '', align: 'center' },
+      { val: rec.email || '', align: 'left' },
+      { val: rec.gender || '', align: 'center' },
+      { val: rec.institute || '', align: 'left' },
+      { val: rec.course || '', align: 'left' },
+      { val: rec.semester || '', align: 'center' },
+      { val: rec.eventName || options.eventName, align: 'left' },
+      { val: rec.paymentStatus || '', align: 'center' },
+      { val: rec.paymentUtr || '', align: 'center' }
+    ];
+
+    rowValues.forEach((cell, ci) => {
+      let styleIdx = 4;
+      if (cell.align === 'center') styleIdx = 6;
+      else if (isZebra) styleIdx = 5;
+
+      sheetXml += `<c r="${colLetters[ci]}${r}" s="${styleIdx}" t="inlineStr"><is><t>${escapeXml(cell.val)}</t></is></c>`;
+    });
+
+    sheetXml += `</row>`;
+  });
+
+  sheetXml += `</sheetData>
+  <mergeCells count="2">
+    <mergeCell ref="A1:L1"/>
+    <mergeCell ref="A2:L2"/>
+  </mergeCells>
+</worksheet>`;
+
+  zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+  return await zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    compression: 'DEFLATE'
+  });
+}

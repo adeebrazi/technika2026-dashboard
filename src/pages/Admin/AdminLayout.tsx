@@ -44,7 +44,8 @@ export const AdminLayout: React.FC = () => {
   }, [token]);
 
   const canAccessWhatsapp = role === 'admin' || isAdeeb || isMamatha || Boolean(userPerms?.canManageWhatsapp);
-  const canAccessExport = role === 'admin' || isAdeeb || isMamatha || Boolean(userPerms?.canExportCSV);
+  const isEventCoord = role === 'event_coordinator' || Boolean(localStorage.getItem('adminAssignedEvent') || userPerms?.assignedEvents?.[0] || userPerms?.assignedEvent);
+  const canAccessExport = role === 'admin' || isAdeeb || isMamatha || isEventCoord || Boolean(userPerms?.canExportCSV || userPerms?.canExportExcel);
 
   const isTokenExpired = (tokenStr: string | null) => {
     if (!tokenStr) return true;

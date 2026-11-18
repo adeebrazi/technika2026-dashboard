@@ -1,6 +1,11 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Mail, QrCode, CheckCircle2, Clock, Send, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Mail, QrCode, CheckCircle2, Clock, Send, AlertCircle, RefreshCw, ShieldCheck, FileSpreadsheet } from 'lucide-react';
 import { API_BASE_URL as API, fetchAdminApi, getSharedUsersCache, setSharedUsersCache, clearSharedUsersCache } from '../../utils/adminAuth';
+import {
+  generateCoordinatorEventXlsxBlob,
+  downloadXlsxBlob
+} from '../../utils/xlsxExportTemplates';
+import type { CoordinatorExportRecord } from '../../utils/xlsxExportTemplates';
 
 export const UsersView: React.FC = () => {
   const role = localStorage.getItem('adminRole');
@@ -36,6 +41,7 @@ export const UsersView: React.FC = () => {
   const [emailModalUser, setEmailModalUser] = useState<any | null>(null);
   const [sendingEmailType, setSendingEmailType] = useState<'confirmation' | 'qr' | null>(null);
   const [emailToast, setEmailToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const toggleExpandEvents = (userId: string) => {
     setExpandedEvents(prev => ({
@@ -553,6 +559,74 @@ export const UsersView: React.FC = () => {
   const canViewFinancials = isAdmin || Boolean(perms?.canViewFinancials || perms?.canVerifyPayments);
   const canViewDocuments = isAdmin || Boolean(perms?.canViewDocuments || perms?.canVerifyPayments);
   const canDelete = isAdmin;
+  const canExport = isAdmin || isEventCoord || Boolean(perms?.canExportCSV || perms?.canExportExcel);
+
+  const handleExportCoordinatorExcel = async () => {
+    if (exportingExcel || sortedUsers.length === 0) return;
+    try {
+      setExportingExcel(true);
+      const effectiveEventName = assignedEvent || (filterEvent !== 'all' ? filterEvent : 'All_Events');
+      const today = new Date().toISOString().slice(0, 10);
+      const cleanEventName = effectiveEventName.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      const records: CoordinatorExportRecord[] = sortedUsers.map(u => {
+        const isExempt = u.isAjuExempt || (u.paymentUTR && u.paymentUTR.startsWith('NODUES-')) || isAjuBtechBcaDiploma(u);
+        const hasSS = isScreenshotUploaded(u);
+        const amount = getUserAmount(u);
+
+        let paymentStatus = '';
+        if (isExempt) {
+          paymentStatus = (hasSS || u.noDuesSlipUrl) ? 'AJU (₹600 Clearance Verified)' : 'AJU (₹600 Slip Missing)';
+        } else {
+          paymentStatus = hasSS ? `Online Paid (₹${amount})` : `Payment Pending (₹${amount})`;
+        }
+
+        const validUtr = getValidUTR(u) || (u.paymentUTR || '');
+
+        const evName = (u.registeredEvents && u.registeredEvents.length > 0)
+          ? u.registeredEvents.map((r: any) => r.event?.name || r.name || r.eventId).filter(Boolean).join(', ')
+          : effectiveEventName;
+
+        return {
+          regId: u.registrationId || '',
+          name: u.name || '',
+          phone: u.whatsapp || u.phone || '',
+          email: u.email || '',
+          gender: u.gender || 'Not Specified',
+          institute: u.institution || 'ARKA JAIN University',
+          course: u.course || '',
+          semester: u.semester ? String(u.semester) : '',
+          eventName: evName,
+          paymentStatus,
+          paymentUtr: validUtr
+        };
+      });
+
+      const blob = await generateCoordinatorEventXlsxBlob({
+        eventName: effectiveEventName,
+        exportDate: today,
+        records
+      });
+
+      const filename = `technika_${cleanEventName}_participants_${today}.xlsx`;
+      downloadXlsxBlob(filename, blob);
+
+      setEmailToast({
+        type: 'success',
+        message: `Successfully exported ${records.length} participants to ${filename}!`
+      });
+      setTimeout(() => setEmailToast(null), 4000);
+    } catch (err: any) {
+      console.error('Failed to export coordinator Excel:', err);
+      setEmailToast({
+        type: 'error',
+        message: 'Failed to generate Excel export. Please try again.'
+      });
+      setTimeout(() => setEmailToast(null), 4000);
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -709,7 +783,32 @@ export const UsersView: React.FC = () => {
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {canExport && (
+            <button
+              onClick={handleExportCoordinatorExcel}
+              disabled={exportingExcel || sortedUsers.length === 0}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                padding: '8px 16px',
+                borderRadius: '12px',
+                border: '1px solid #16a34a',
+                background: exportingExcel ? '#94a3b8' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: exportingExcel || sortedUsers.length === 0 ? 'not-allowed' : 'pointer',
+                boxShadow: '0 3px 10px rgba(22, 163, 74, 0.25)',
+                transition: 'all 0.2s ease'
+              }}
+              title="Export visible participants to official Excel (.xlsx)"
+            >
+              <FileSpreadsheet size={15} />
+              <span>{exportingExcel ? 'Exporting...' : 'Export Excel (.xlsx)'}</span>
+            </button>
+          )}
           <button
             onClick={() => {
               clearSharedUsersCache();

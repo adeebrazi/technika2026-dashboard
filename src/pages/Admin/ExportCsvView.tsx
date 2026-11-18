@@ -36,7 +36,9 @@ export const ExportCsvView: React.FC = () => {
     }
   })();
 
-  const canAccessExport = role === 'admin' || isAdeeb || isMamatha || Boolean(perms?.canExportCSV);
+  const assignedEvent = localStorage.getItem('adminAssignedEvent') || perms?.assignedEvents?.[0] || perms?.assignedEvent || '';
+  const isEventCoord = role === 'event_coordinator' || Boolean(assignedEvent);
+  const canAccessExport = role === 'admin' || isAdeeb || isMamatha || isEventCoord || Boolean(perms?.canExportCSV || perms?.canExportExcel);
 
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -51,7 +53,7 @@ export const ExportCsvView: React.FC = () => {
   const [institutePaymentFilter, setInstitutePaymentFilter] = useState<'all' | 'done' | 'not_done'>('all');
 
   // Section 3: Selected Event filter
-  const [selectedEvent, setSelectedEvent] = useState<string>('all');
+  const [selectedEvent, setSelectedEvent] = useState<string>(assignedEvent || 'all');
 
   const showToast = (message: string, type: 'success' | 'info' = 'success') => {
     setToast({ message, type });
@@ -705,14 +707,22 @@ export const ExportCsvView: React.FC = () => {
                   value={selectedEvent}
                   onChange={(e) => setSelectedEvent(e.target.value)}
                   className="clay-select"
+                  disabled={isEventCoord && Boolean(assignedEvent)}
                 >
-                  <option value="all">🏆 All Events (Full Database: {users.length} participants)</option>
+                  {!isEventCoord && (
+                    <option value="all">🏆 All Events (Full Database: {users.length} participants)</option>
+                  )}
                   {eventStats.map((ev, idx) => (
                     <option key={idx} value={ev.name}>
                       {ev.name} ({ev.count} {ev.count === 1 ? 'registration' : 'registrations'})
                     </option>
                   ))}
                 </select>
+                {isEventCoord && assignedEvent && (
+                  <p style={{ marginTop: '6px', fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                    🔒 Locked to your assigned event: <strong>{assignedEvent}</strong>
+                  </p>
+                )}
               </div>
             </div>
           </div>
