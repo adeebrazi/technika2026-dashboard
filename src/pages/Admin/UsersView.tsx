@@ -769,19 +769,22 @@ export const UsersView: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className="clay-filter-box">
-          <span className="clay-filter-icon">🏷️</span>
-          <select 
-            value={filterSource} 
-            onChange={(e) => setFilterSource(e.target.value)}
-            className="clay-filter-select"
-          >
-            <option value="all">All Sources</option>
-            <option value="website">🌐 Website Portal (Frozen)</option>
-            <option value="google_form">📝 Google Form</option>
-            <option value="admin_import">📂 School Import</option>
-          </select>
-        </div>
+        {/* Source Filter (Hidden for Event Coordinators) */}
+        {!isEventCoord && (
+          <div className="clay-filter-box">
+            <span className="clay-filter-icon">🏷️</span>
+            <select 
+              value={filterSource} 
+              onChange={(e) => setFilterSource(e.target.value)}
+              className="clay-filter-select"
+            >
+              <option value="all">All Sources</option>
+              <option value="website">🌐 Website Portal (Frozen)</option>
+              <option value="google_form">📝 Google Form</option>
+              <option value="admin_import">📂 School Import</option>
+            </select>
+          </div>
+        )}
         {canViewFinancials && (
           <div className="clay-filter-box">
             <span className="clay-filter-icon">💳</span>
@@ -798,20 +801,22 @@ export const UsersView: React.FC = () => {
           </div>
         )}
 
-        {/* Email Status Filter */}
-        <div className="clay-filter-box">
-          <span className="clay-filter-icon">✉️</span>
-          <select 
-            value={filterEmail} 
-            onChange={(e) => setFilterEmail(e.target.value as any)}
-            className="clay-filter-select"
-            title="Filter by Confirmation Email status"
-          >
-            <option value="all">Email Filter (All)</option>
-            <option value="sent">✉️ Confirmation Email Sent</option>
-            <option value="pending">⏳ Confirmation Pending</option>
-          </select>
-        </div>
+        {/* Email Status Filter (Hidden for Event Coordinators) */}
+        {!isEventCoord && (
+          <div className="clay-filter-box">
+            <span className="clay-filter-icon">✉️</span>
+            <select 
+              value={filterEmail} 
+              onChange={(e) => setFilterEmail(e.target.value as any)}
+              className="clay-filter-select"
+              title="Filter by Confirmation Email status"
+            >
+              <option value="all">Email Filter (All)</option>
+              <option value="sent">✉️ Confirmation Email Sent</option>
+              <option value="pending">⏳ Confirmation Pending</option>
+            </select>
+          </div>
+        )}
 
                 {/* Manual Institute Search Filter */}
         <div 
@@ -1017,12 +1022,14 @@ export const UsersView: React.FC = () => {
                       <div className="clay-user-cell">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span className="clay-user-name">{user.name}</span>
-                          {user.source === 'google_form' ? (
-                            <span className="source-pill source-gform" title="Registered via Google Form">📝 Google Form</span>
-                          ) : user.source === 'admin_import' ? (
-                            <span className="source-pill source-import" title="Registered via School Batch Import">📂 School Import</span>
-                          ) : (
-                            <span className="source-pill source-web" title="Registered via Website Portal">🌐 Website</span>
+                          {!isEventCoord && (
+                            user.source === 'google_form' ? (
+                              <span className="source-pill source-gform" title="Registered via Google Form">📝 Google Form</span>
+                            ) : user.source === 'admin_import' ? (
+                              <span className="source-pill source-import" title="Registered via School Batch Import">📂 School Import</span>
+                            ) : (
+                              <span className="source-pill source-web" title="Registered via Website Portal">🌐 Website</span>
+                            )
                           )}
                         </div>
                         {canViewEmail && user.email && <div className="clay-user-email">✉️ {user.email}</div>}
