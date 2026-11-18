@@ -184,6 +184,32 @@ const getDefaultStaffPermissions = (role) => {
 
   }
 
+  if (role === 'event_coordinator') {
+
+    return {
+
+      canViewPhone: true,
+
+      canViewEmail: true,
+
+      canSendEmail: false,
+
+      canVerifyPayments: true,
+
+      canCheckIn: true,
+
+      canExportCSV: false,
+
+      canDelete: false,
+
+      canManageWhatsapp: false,
+
+      canViewContact: true,
+
+    };
+
+  }
+
   // coordinator or volunteer
 
   return {

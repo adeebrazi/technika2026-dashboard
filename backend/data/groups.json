@@ -6,14 +6,14 @@
       "name": "Official WhatsApp Channel",
       "tag": "Channel",
       "link": "https://whatsapp.com/channel/0029VbDvONz9RZAOObeJHv45",
-      "count": 7,
+      "count": 9,
       "status": "OPEN",
       "accent": "#00FF66"
     }
   ],
   "activeGroupId": 1,
-  "totalJoined": 7,
+  "totalJoined": 9,
   "totalCapacity": 100000,
-  "totalRemaining": 99993,
+  "totalRemaining": 99991,
   "allFull": false
 }

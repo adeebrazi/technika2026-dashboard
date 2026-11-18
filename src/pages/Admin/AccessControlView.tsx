@@ -310,10 +310,10 @@ export const AccessControlView: React.FC = () => {
     if (staff.isPermanent || staff.role === 'admin') return;
 
     const currentPerms: StaffPermissions = staff.permissions ? { ...staff.permissions } : {
-      canViewPhone: staff.role === 'faculty',
-      canViewEmail: staff.role === 'faculty',
+      canViewPhone: staff.role === 'faculty' || staff.role === 'event_coordinator',
+      canViewEmail: staff.role === 'faculty' || staff.role === 'event_coordinator',
       canSendEmail: staff.role === 'faculty',
-      canVerifyPayments: staff.role === 'faculty',
+      canVerifyPayments: staff.role === 'faculty' || staff.role === 'event_coordinator',
       canCheckIn: true,
       canExportCSV: staff.role === 'faculty',
       canDelete: false,
@@ -556,10 +556,10 @@ export const AccessControlView: React.FC = () => {
 
           // Resolve effective permissions
           const p: StaffPermissions = staff.permissions || {
-            canViewPhone: isAdmin || staff.role === 'faculty',
-            canViewEmail: isAdmin || staff.role === 'faculty',
+            canViewPhone: isAdmin || staff.role === 'faculty' || staff.role === 'event_coordinator',
+            canViewEmail: isAdmin || staff.role === 'faculty' || staff.role === 'event_coordinator',
             canSendEmail: isAdmin || staff.role === 'faculty',
-            canVerifyPayments: isAdmin || staff.role === 'faculty',
+            canVerifyPayments: isAdmin || staff.role === 'faculty' || staff.role === 'event_coordinator',
             canCheckIn: true,
             canExportCSV: isAdmin || staff.role === 'faculty',
             canDelete: isAdmin,
