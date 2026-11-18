@@ -576,12 +576,12 @@ export const UsersView: React.FC = () => {
 
         let paymentStatus = '';
         if (isExempt) {
-          paymentStatus = (hasSS || u.noDuesSlipUrl) ? 'AJU (₹600 Clearance Verified)' : 'AJU (₹600 Slip Missing)';
+          paymentStatus = (hasSS || u.noDuesSlipUrl) ? 'AJU (₹600 Clearance)' : 'AJU (₹600 Slip Missing)';
         } else {
           paymentStatus = hasSS ? `Online Paid (₹${amount})` : `Payment Pending (₹${amount})`;
         }
 
-        const validUtr = getValidUTR(u) || (u.paymentUTR || '');
+        const validUtr = getValidUTR(u) || (u.utrEnteredManually || u.paymentUTR || '');
 
         const evName = (u.registeredEvents && u.registeredEvents.length > 0)
           ? u.registeredEvents.map((r: any) => r.event?.name || r.name || r.eventId).filter(Boolean).join(', ')
@@ -590,9 +590,8 @@ export const UsersView: React.FC = () => {
         return {
           regId: u.registrationId || '',
           name: u.name || '',
-          phone: u.whatsapp || u.phone || '',
           email: u.email || '',
-          gender: u.gender || 'Not Specified',
+          phone: u.whatsapp || u.phone || '',
           institute: u.institution || 'ARKA JAIN University',
           course: u.course || '',
           semester: u.semester ? String(u.semester) : '',

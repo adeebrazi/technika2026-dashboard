@@ -38,7 +38,7 @@ export const ExportCsvView: React.FC = () => {
 
   const assignedEvent = localStorage.getItem('adminAssignedEvent') || perms?.assignedEvents?.[0] || perms?.assignedEvent || '';
   const isEventCoord = role === 'event_coordinator' || Boolean(assignedEvent);
-  const canAccessExport = role === 'admin' || isAdeeb || isMamatha || isEventCoord || Boolean(perms?.canExportCSV || perms?.canExportExcel);
+  const canAccessExport = (role === 'admin' || isAdeeb || isMamatha || Boolean(perms?.canExportCSV)) && !isEventCoord;
 
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

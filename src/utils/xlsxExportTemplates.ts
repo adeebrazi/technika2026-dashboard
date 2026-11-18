@@ -325,9 +325,8 @@ export async function generateMasterXlsxBlob(options: {
 export interface CoordinatorExportRecord {
   regId: string;
   name: string;
-  phone: string;
   email: string;
-  gender: string;
+  phone: string;
   institute: string;
   course: string;
   semester: string;
@@ -337,7 +336,7 @@ export interface CoordinatorExportRecord {
 }
 
 /**
- * Generate Clean 12-Column XLSX Blob for Event Coordinators
+ * Generate Clean XLSX Blob for Event Coordinators (Exact columns from Participants section)
  */
 export async function generateCoordinatorEventXlsxBlob(options: {
   eventName: string;
@@ -414,20 +413,19 @@ export async function generateCoordinatorEventXlsxBlob(options: {
 
   const cols = [
     { name: 'S.No', width: 8, align: 'center' },
-    { name: 'REGISTRATION ID', width: 17, align: 'center' },
-    { name: 'PARTICIPANT NAME', width: 28, align: 'left' },
-    { name: 'CONTACT / WHATSAPP', width: 18, align: 'center' },
-    { name: 'EMAIL ADDRESS', width: 32, align: 'left' },
-    { name: 'GENDER', width: 12, align: 'center' },
-    { name: 'INSTITUTION NAME', width: 38, align: 'left' },
-    { name: 'COURSE / DEGREE', width: 22, align: 'left' },
-    { name: 'SEMESTER / CLASS', width: 16, align: 'center' },
-    { name: 'ASSIGNED EVENT', width: 22, align: 'left' },
+    { name: 'ID', width: 14, align: 'center' },
+    { name: 'NAME', width: 28, align: 'left' },
+    { name: 'EMAIL', width: 32, align: 'left' },
+    { name: 'CONTACT / PHONE', width: 18, align: 'center' },
+    { name: 'INSTITUTION', width: 38, align: 'left' },
+    { name: 'COURSE / DEGREE', width: 24, align: 'left' },
+    { name: 'SEMESTER', width: 14, align: 'center' },
+    { name: 'REGISTERED EVENTS', width: 24, align: 'left' },
     { name: 'PAYMENT STATUS', width: 24, align: 'center' },
-    { name: 'UTR / REF NUMBER', width: 20, align: 'center' }
+    { name: 'UTR / REF NUMBER', width: 22, align: 'center' }
   ];
 
-  const colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+  const colLetters = ['A','B','C','D','E','F','G','H','I','J','K'];
 
   let sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -460,9 +458,8 @@ export async function generateCoordinatorEventXlsxBlob(options: {
       { val: String(idx + 1), align: 'center' },
       { val: rec.regId || '', align: 'center' },
       { val: rec.name || '', align: 'left' },
-      { val: rec.phone || '', align: 'center' },
       { val: rec.email || '', align: 'left' },
-      { val: rec.gender || '', align: 'center' },
+      { val: rec.phone || '', align: 'center' },
       { val: rec.institute || '', align: 'left' },
       { val: rec.course || '', align: 'left' },
       { val: rec.semester || '', align: 'center' },
@@ -484,8 +481,8 @@ export async function generateCoordinatorEventXlsxBlob(options: {
 
   sheetXml += `</sheetData>
   <mergeCells count="2">
-    <mergeCell ref="A1:L1"/>
-    <mergeCell ref="A2:L2"/>
+    <mergeCell ref="A1:K1"/>
+    <mergeCell ref="A2:K2"/>
   </mergeCells>
 </worksheet>`;
 
